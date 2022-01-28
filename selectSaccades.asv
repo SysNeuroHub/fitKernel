@@ -1,0 +1,17 @@
+function [startSacc_after, endSacc_after] = selectSaccades(startSacc,endSacc, ...
+    excTimes, minSaccInterval)
+    
+    %% omit successive saccades (omit initial leave last)
+    %minSaccInterval = 0.5;%[s]
+    if ~isempty(minSaccInterval)
+        okSacc2 = find(diff(startSacc) > minSaccInterval);
+        startSacc = startSacc(okSacc2);
+        endSacc = endSacc(okSacc2);
+    end
+    
+    [~, startSaccTidx] = arrayfun(@(x)(min(abs(t_cat - x))), startSacc);
+[~, endSaccTidx] = arrayfun(@(x)(min(abs(t_cat - x))), endSacc);
+
+        %[~,inclSaccIdx] = setdiff(startSaccTidx, find(excTimes));
+    %startSaccTidx = startSaccTidx(inclSaccIdx);
+    %endSaccTidx = endSaccTidx(inclSaccIdx);
