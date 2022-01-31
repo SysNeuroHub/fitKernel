@@ -1,12 +1,16 @@
-addpath(genpath('C:\Users\dshi0006\git'))
-% load('C:\Users\dshi0006\Downloads\hugo_oephysdata_ch23.mat', ...
-%     'ch','dd','ephysdata');
 
-saveFolder = '\\storage.erc.monash.edu\shares\R-MNHS-Syncitium\Shared\Daisuke\cuesaccade_data';
+if ispc
+addpath(genpath('C:/Users/dshi0006/git'))
+saveFolder = '//storage.erc.monash.edu/shares/R-MNHS-Syncitium/Shared/Daisuke/cuesaccade_data';
+rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/2021/cuesaccade_data/';
+elseif isunix
+ addpath(genpath('/home/localadmin/Documents/MATLAB'));
+ saveFolder = '/mnt/syncitium/Daisuke/cuesaccade_data';
+ rootFolder = '/mnt/physio/Monash Data/Joanita/2021/cuesaccade_data/';
+end
 
 %% recorded data
 animal = 'hugo';
-rootFolder = '\\storage.erc.monash.edu.au\shares\R-MNHS-Physio\SysNeuroData\Monash Data\Joanita\2021/cuesaccade_data/';
 dataType = 0;%0: each channel, 1: all channels per day
 
 
@@ -14,7 +18,7 @@ dataType = 0;%0: each channel, 1: all channels per day
 
 % to obtain index of specified month&date&channel
 thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    regexptranslate('wildcard','09September\07\*_ch26.mat'))))
+    regexptranslate('wildcard','12December/09/*_ch1.mat'))))
 
 %% omit data
 % no saccade response
@@ -41,7 +45,7 @@ param.cardinalDir = cardinalDir(1:end-1);
 ncDirs = length(param.cardinalDir);
 
 previousDate = [];
-for idata = 886:length(channels) %1061;%865;%
+for idata = thisdata:length(channels) %1061;%865;%
     %886 NG in getSaccDir
     datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
     disp(datech);

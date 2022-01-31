@@ -23,8 +23,7 @@ for im = 1:length(monthNames)
     for id = 1:length(dateNames{im})
         date = [monthNames{im} '/' dateNames{im}{id}];
         
-        loadFolder = fullfile('\\storage.erc.monash.edu.au\shares\R-MNHS-Physio\SysNeuroData\Monash Data\Joanita\2021\cuesaccade_data',...
-            date, 'saved_oephysdata');
+        loadFolder = fullfile(rootFolder, date, 'saved_oephysdata');
         
         fileNames = {dir(fullfile(loadFolder, [animal '_oephysdata_*.mat'])).name};
         
