@@ -1,5 +1,10 @@
 function [startSacc_after, endSacc_after] = selectSaccades(startSacc,endSacc, ...
     t_cat, excTimes, minSaccInterval)
+% [startSacc_after, endSacc_after] = selectSaccades(startSacc,endSacc, ...
+%     t_cat, excTimes, minSaccInterval)
+
+% TODO: should exlude saccades which includes but  not end within excTimes
+
 
 if nargin < 5
     minSaccInterval = [];
@@ -25,6 +30,7 @@ startSaccTidx = startSaccTidx(inclSaccIdx);
 endSaccTidx = endSaccTidx(inclSaccIdx);
 
 %% omit saccades which ends within excTimes
+%FIXME: should exlude saccades which includes but  not end within excTimes
 [~,inclSaccIdx] = setdiff(endSaccTidx, find(excTimes));
 startSaccTidx = startSaccTidx(inclSaccIdx);
 endSaccTidx = endSaccTidx(inclSaccIdx);
