@@ -66,6 +66,7 @@ for itr = 1:nTrials
             onsets_cat.(fdnames{ifd}) = cat(1, onsets_cat.(fdnames{ifd}), ...
                 dd.(fdnames{ifd})(itr)+t0);
         end
+        %onsets_cat = structfun(@(x,y)(cat(1,x,y(itr)+t0)), onsets_cat,dd); NG
     end
     if nargout > 2
         for iedf = 1:length(edfnames)
@@ -77,6 +78,7 @@ for itr = 1:nTrials
 end
 
 eyeData_cat = marmodata.eye(t_cat, x_cat, y_cat, pwdth_cat, phght_cat);
+
 
 %% check STARTBLINK/ENDBLINK
 if length(meta_cat.STARTBLINK) >  length(meta_cat.ENDBLINK)
@@ -105,4 +107,4 @@ end
 assert(isempty(find(meta_cat.ENDSACC-meta_cat.STARTSACC<0)));
 okSacc = find(meta_cat.ENDSACC-meta_cat.STARTSACC>0);
 meta_cat.STARTSACC = meta_cat.STARTSACC(okSacc);
-meta_cat.meta_cat.ENDSACC = meta_cat.meta_cat.ENDSACC(okSacc);
+meta_cat.ENDSACC = meta_cat.ENDSACC(okSacc);

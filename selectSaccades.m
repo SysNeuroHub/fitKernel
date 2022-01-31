@@ -1,6 +1,10 @@
 function [startSacc_after, endSacc_after] = selectSaccades(startSacc,endSacc, ...
     t_cat, excTimes, minSaccInterval)
 
+if nargin < 5
+    minSaccInterval = [];
+end
+
 assert(length(startSacc)==length(endSacc));
 
 %% omit successive saccades (omit initial leave last)
@@ -15,12 +19,12 @@ end
 [~, startSaccTidx] = arrayfun(@(x)(min(abs(t_cat - x))), startSacc);
 [~, endSaccTidx] = arrayfun(@(x)(min(abs(t_cat - x))), endSacc);
 
-%% omit saccades which start within excTimes
+%% omit saccades which starts within excTimes
 [~,inclSaccIdx] = setdiff(startSaccTidx, find(excTimes));
 startSaccTidx = startSaccTidx(inclSaccIdx);
 endSaccTidx = endSaccTidx(inclSaccIdx);
 
-%% omit saccades which end within excTimes
+%% omit saccades which ends within excTimes
 [~,inclSaccIdx] = setdiff(endSaccTidx, find(excTimes));
 startSaccTidx = startSaccTidx(inclSaccIdx);
 endSaccTidx = endSaccTidx(inclSaccIdx);

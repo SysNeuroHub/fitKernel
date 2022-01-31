@@ -9,6 +9,8 @@ function saccade = getSaccMtx(t_r, startSacc, endSacc, eyeData_cat, cardinalDir)
 %if start time = end time, delay the end time one time bin
 [sameTime] = find(endSaccTidx == startSaccTidx);
 endSaccTidx(sameTime) = endSaccTidx(sameTime)+1;
+endSaccTidx(endSaccTidx>length(t_r)) = length(t_r);
+
 
 saccade = zeros(length(cardinalDir),length(t_r));
 % for isacc = 1:length(dirIndex)

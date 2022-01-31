@@ -11,23 +11,27 @@ if nargin < 3
     marginSize = 50; %frames
 end
 
+marginDur = marginSize*median(diff(eyeData.t));%seconds
 
+% beginIdx = [];
+% endIdx = [];
+% for iblk = 1:length(meta_cat.STARTBLINK)
+%     [~, beginIdx_c] = min(abs(eyeData.t - meta_cat.STARTBLINK(iblk)));
+%     beginIdx = [beginIdx; beginIdx_c];
+% 
+%     [~, endIdx_c] = min(abs(eyeData.t - meta_cat.ENDBLINK(iblk)));
+%     endIdx = [endIdx; endIdx_c];
+% end
+% blk_rising = zeros(length(eyeData.parea),1);
+% blk_falling = zeros(length(eyeData.parea),1);
+% blk_rising(max(1, beginIdx-marginSize))=1;
+% blk_falling(min(length(eyeData.parea), endIdx+marginSize))=1;
+% blkidx = find(cumsum(blk_rising)-cumsum(blk_falling) >= 1);
 
-beginIdx = [];
-endIdx = [];
-for iblk = 1:length(meta_cat.STARTBLINK)
-    [~, beginIdx_c] = min(abs(eyeData.t - meta_cat.STARTBLINK(iblk)));
-    beginIdx = [beginIdx; beginIdx_c];
-
-    [~, endIdx_c] = min(abs(eyeData.t - meta_cat.ENDBLINK(iblk)));
-    endIdx = [endIdx; endIdx_c];
-end
-blk_rising = zeros(length(eyeData.parea),1);
-blk_falling = zeros(length(eyeData.parea),1);
-blk_rising(max(1, beginIdx-marginSize))=1;
-blk_falling(min(length(eyeData.parea), endIdx+marginSize))=1;
-blkidx = find(cumsum(blk_rising)-cumsum(blk_falling) >= 1);
-
+blinks = event2Trace(eyeData.t, [meta_cat.STARTBLINK; meta_cat.ENDBLINK], marginDur);
+blkidx = find(blinks);
+%startBlk = eyeData.t(blk_rising);
+%endBlk = eyeData.t(blk_falling);
 
 nblkidx = setxor(1:length(eyeData.parea), blkidx);
 x_rmblinks = interp1(eyeData.t(nblkidx), eyeData.x(nblkidx), eyeData.t, 'linear',median(eyeData.x(nblkidx)));
@@ -38,23 +42,13 @@ phght_rmblinks = interp1(eyeData.t(nblkidx), eyeData.phght(nblkidx), eyeData.t, 
 eyeData_rmblk = marmodata.eye(eyeData.t, x_rmblinks, y_rmblinks, pwdth_rmblinks, phght_rmblinks);
 
 
-%% omit time points with outliers? 
-% cf Nishimoto 2011: "Any motion-energy signal outliers more than 3.0 standard deviations from the mean area truncated to 3.0 in order to improve stability in the model estimation procedure."
-% ngth = 3; %sd
-% mparea = median(eyeData_rmblk_c.parea);
-% sdparea = std(eyeData_rmblk_c.parea);
-% ngidx = setxor(find(eyeData_rmblk_c.parea > mparea+ngth*sdparea), ...
-%     find(eyeData_rmblk_c.parea < mparea-ngth*sdparea));
-% goodidx = setxor(1:length(eyeData.parea), ngidx);
-% plot(eyeData.t(goodidx), eyeData_rmblk_c.parea(goodidx));
-
-%% omit time points with weird pupil position?
+%% omit time points with outliers? ... not in this function
 
 %% blink event time course (may include eyelink misdetection)
 %0: no blink
 %1: blink
-blinks = zeros(length(eyeData.t),1);
-blinks(blkidx) = 1;
+% blinks = zeros(length(eyeData.t),1);
+% blinks(blkidx) = 1;
 
 % blinkOnIdx = cat(1, blkidx(1), blkidx(find(diff(blkidx)>1)+1));
 % blinkOffIdx = cat(1, blkidx(find(diff(blkidx)>1)), blkidx(end));

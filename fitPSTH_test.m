@@ -1,4 +1,4 @@
- addpath(genpath('C:\Users\dshi0006\git'))
+addpath(genpath('C:\Users\dshi0006\git'))
 % load('C:\Users\dshi0006\Downloads\hugo_oephysdata_ch23.mat', ...
 %     'ch','dd','ephysdata');
 
@@ -13,7 +13,8 @@ dataType = 0;%0: each channel, 1: all channels per day
 [loadNames, months, dates, channels] = getMonthDateCh(animal, rootFolder);
 
 % to obtain index of specified month&date&channel
-idata = find(1-cellfun(@isempty, regexp(loadNames, regexptranslate('wildcard','11November\24\*_ch7.mat'))))
+thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    regexptranslate('wildcard','09September\07\*_ch26.mat'))))
 
 %% omit data
 % no saccade response
@@ -27,19 +28,21 @@ param.dt_r = 0.02; %for securing memory for kernel fitting %0.025;%0.5;
 param.lagRange = [-.5 .5];%[-.4 .3];%[-1 1];%[-10 20]; %temporal window for kernel estimation [s]
 param.ridgeParams = 100;%[0 1e-1 1 1e2 1e3]; %10
 % visualize = 0;
-param.predictorNames = {'vision','eyeposition','pdiam','blink'};
+param.predictorNames = {'vision','eyespeed','pdiam','blink'}; %eyeposition
 param.figTWin = [-0.5 0.5]; %temporal window for peri-event traces [s]
 param.respWin = [0.03 0.25]; %temporal window to compute direction tuning
 param.pareaTh = 3;
 param.pareaDiffTh = 5;
 param.cutoffFreq = 0.1;
 param.evName = 'tOnset';%'cOnset';
+%param.minSaccInterval = 0.5; %29/1/22
 cardinalDir = linspace(0,360,9); %direction for saccade and target
 param.cardinalDir = cardinalDir(1:end-1);
 ncDirs = length(param.cardinalDir);
 
 previousDate = [];
-for idata = 683;%439%95:length(channels) %1061;%865;%
+for idata = 886:length(channels) %1061;%865;%
+    %886 NG in getSaccDir
     datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
     disp(datech);
     
@@ -81,70 +84,76 @@ for idata = 683;%439%95:length(channels) %1061;%865;%
         
         
         %% prepare behavioral data (common across channels per day)
-        if ~strcmp(thisDate, previousDate)
-            [eyeData_cat, onsets_cat, meta_cat] = concatenate_eye(eyeData, dd);
-            t_tr={eyeData.t};
-            
-            
-            %% detect and interpolate blinks
-            %removing outliers helps for larger kernels
-            [eyeData_rmblk_cat, blinks] = removeBlinksEDF(eyeData_cat, meta_cat, param.marginSize,1);
-            close;
-            
-            %% remove parea outliers based on diff
-            [eyeData_rmotl_cat, outliers] = removePareaOutliers(eyeData_rmblk_cat, ...
-                param.marginSize, param.pareaTh, param.pareaDiffTh);
-            screen2png(['rmOtl_' saveSuffix]);
-            close;
-            
-            clear eyeData_cat eyeData_rmblk_cat eyeData
-            
-            [pspec_parea,faxis_parea] = pmtm(eyeData_rmotl_cat.parea, 10, ...
-                length(eyeData_rmotl_cat.parea), fs_eye);%slow
-            
-            save(fullfile(saveFolder,['eyeCat_' thisDate '.mat']), 'eyeData_rmotl_cat',...
+        eyeName = fullfile(saveFolder,['eyeCat_' thisDate '.mat']);
+        if  ~strcmp(thisDate, previousDate)
+            load(eyeName, 'eyeData_rmotl_cat',...
                 'onsets_cat','meta_cat','blinks','outliers','pspec_parea','faxis_parea','t_tr');
             
-            %% prepare predictor variables
             t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
-            nPredictors = length(param.predictorNames);
-            predictors_r = [];
-            npredVars = zeros(nPredictors,1);
-            for ivar = 1:nPredictors
-                switch param.predictorNames{ivar}
-                    case 'vision'
-                        thisPredictor = getTgtDirMtx(dd, t_r, onsets_cat, param.cardinalDir);
-                    case 'eyeposition'
-                        thisPredictor = getEyeDirMtx(dd, t_r, eyeData_rmotl_cat, param.cardinalDir);
-                    case 'pdiam'
-                        [~, pdiam] = getPupilDiameter(eyeData_rmotl_cat);
-                        pdiam_r = interp1(eyeData_rmotl_cat.t, pdiam, t_r)';
-                        thisPredictor = hpFilt(pdiam_r', 1/param.dt_r, param.cutoffFreq)';
-                    case 'pdiam_prctile'
-                        pdiam_prctile = getPupilDiameter(eyeData_rmotl_cat);
-                        thisPredictor = interp1(eyeData_rmotl_cat.t, pdiam_prctile, t_r)';
-                    case 'parea'
-                        parea_r = interp1(eyeData_rmotl_cat.t, eyeData_rmotl_cat.parea, t_r)';
-                        thisPredictor = hpFilt(parea_r', 1/param.dt_r, param.cutoffFreq)';
-                    case 'blink'
-                        thisPredictor = interp1(eyeData_rmotl_cat.t, blinks, t_r)';
+            
+            %check startsacc and endsacc (to be done in concatenate_eye)
+            if length(meta_cat.STARTSACC) ~= length(meta_cat.ENDSACC)%41
+                nSaccs = min(length(meta_cat.STARTSACC), length(meta_cat.ENDSACC));
+                ngIdx=find(meta_cat.ENDSACC(1:nSaccs)-meta_cat.STARTSACC(1:nSaccs)<0);
+                
+                if isempty(ngIdx)
+                    meta_cat.STARTSACC = meta_cat.STARTSACC(1:nSaccs);
+                    meta_cat.ENDSACC = meta_cat.ENDSACC(1:nSaccs);
+                    %else
+                    % FILL ME?
                 end
-                predictors_r = cat(1, predictors_r, thisPredictor);
-                npredVars(ivar) = size(thisPredictor,1);
             end
-            %predictors_r = norm_std_mean(predictors_r')';23/1/22
             
-            predictorInfo.predictors_r = predictors_r;
-            predictorInfo.npredVars = npredVars;
-            predictorInfo.t_r = t_r;
-            predictorInfo.nPredictors = nPredictors;
+            assert(isempty(find(meta_cat.ENDSACC-meta_cat.STARTSACC<0)));
+            okSacc = find(meta_cat.ENDSACC-meta_cat.STARTSACC>0);
+            meta_cat.STARTSACC = meta_cat.STARTSACC(okSacc);
+            meta_cat.ENDSACC = meta_cat.ENDSACC(okSacc);
+            %             tic
+            %             [eyeData_cat, onsets_cat, meta_cat] = concatenate_eye(eyeData, dd);%takes 90s
+            %             t0=toc
+            %             t_tr={eyeData.t};
+            %
+            %
+            %             %% detect and interpolate blinks
+            %             %removing outliers helps for larger kernels
+            %             tic
+            %             [eyeData_rmblk_cat, blinks] = removeBlinksEDF(eyeData_cat, meta_cat, param.marginSize,1);
+            %             close;
+            %             t1=toc
+            %
+            %             %% remove parea outliers based on diff
+            %             tic
+            %             [eyeData_rmotl_cat, outliers] = removePareaOutliers(eyeData_rmblk_cat, ...
+            %                 param.marginSize, param.pareaTh, param.pareaDiffTh);
+            %             screen2png(['rmOtl_' saveSuffix]);
+            %             close;
+            %             t2=toc
             
+            %% detect saccades
+            [startSacc, endSacc] = selectSaccades(meta_cat.STARTSACC, meta_cat.ENDSACC,...
+                t_cat, (blinks+outliers>0));    % exculde blink and outlier periods
+            
+            catEvTimes = onsets_cat;
+            [catEvTimes.blinkStartTimes, catEvTimes.blinkEndTimes] = trace2Event(blinks, t_cat);
+            [catEvTimes.outlierStartTimes, catEvTimes.outlierEndTimes] = trace2Event(outliers, t_cat);
+            catEvTimes.saccadeStartTimes = startSacc;
+            catEvTimes.saccadeEndTimes = endSacc;
+            %catEvents.t
+            %catTraces.saccadeDirs < no need to be here
+            save(eyeName, 'catEvTimes','-append');
+            clear  meta_cat
+            
+            %             [pspec_parea,faxis_parea] = pmtm(eyeData_rmotl_cat.parea, 10, ...
+            %                 length(eyeData_rmotl_cat.parea), fs_eye);%slow
+            
+            
+            %% prepare predictor variables
+            predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
             save(fullfile(saveFolder,['predictorInfo_' thisDate '.mat']), 'predictorInfo');
         else
             disp('loading eye/predictor data');
             load(fullfile(saveFolder,['predictorInfo_' thisDate '.mat']), 'predictorInfo');
-            load(fullfile(saveFolder,['eyeCat_' thisDate '.mat']), 'eyeData_rmotl_cat',...
-                'onsets_cat','meta_cat','blinks','outliers','pspec_parea','faxis_parea','t_tr');
+            load(fullfile(saveFolder,['eyeCat_' thisDate '.mat']));
         end
         
         
@@ -152,13 +161,11 @@ for idata = 683;%439%95:length(channels) %1061;%865;%
         
         %% obtain kernels!
         disp('fit kernels')
-        % TODO: allow to have different ranges depending on predictor
-        %param.lagRanges.vis = [-0.05 0.2];
-        %param.lagRanges.sacc = [-0.1 0.1];
-        % obtain prediction from each predictor variables
+        %param.lagRange = repmat([-0.5 0.5],[18,1]);
+        %param.lagRange(1:8,1)=0;
         [predicted_all, PSTH_f, kernelInfo] = fitPSTH(spk_all_cat, ...
-            predictorInfo.t_r, predictors_r(), param.psth_sigma, param.lagRange, param.ridgeParams);
-        
+            predictorInfo.t_r, predictorInfo.predictors_r, param.psth_sigma, param.lagRange, param.ridgeParams);
+
         predicted = zeros(predictorInfo.nPredictors, length(predictorInfo.t_r));
         for ivar = 1:predictorInfo.nPredictors
             if ivar==1
@@ -206,36 +213,36 @@ for idata = 683;%439%95:length(channels) %1061;%865;%
         axis tight;
         
         %set(gca,'ytick',predictorInfo.predictors_r);
-        screen2png(['kernels' saveSuffix]);
+        screen2png(['kernels_' saveSuffix]);
         close;
         
         
         %% spectral analysis
-        disp('spectral analysis');
-        figure('position',[0 0 1000 500]);
-        subplot(121);
-        loglog(faxis_parea, pspec_parea);
-        grid on
-        axis tight
-        xlabel('frequency [Hz]'); ylabel('psd');
-        title('parea');
-        
-        [pspec_psth,faxis_psth] = pmtm(PSTH_f, 10, length(PSTH_f), 1/param.dt_r);%slow
-        subplot(122);
-        semilogy(faxis_psth, pspec_psth);
-        grid on
-        axis tight
-        xlabel('frequency [Hz]'); ylabel('psd');
-        title('psth');
-        screen2png(['pspec_parea_psth' saveSuffix]);
-        close;
+        %         disp('spectral analysis');
+        %         figure('position',[0 0 1000 500]);
+        %         subplot(121);
+        %         loglog(faxis_parea, pspec_parea);
+        %         grid on
+        %         axis tight
+        %         xlabel('frequency [Hz]'); ylabel('psd');
+        %         title('parea');
+        %
+        %         [pspec_psth,faxis_psth] = pmtm(PSTH_f, 10, length(PSTH_f), 1/param.dt_r);%slow
+        %         subplot(122);
+        %         semilogy(faxis_psth, pspec_psth);
+        %         grid on
+        %         axis tight
+        %         xlabel('frequency [Hz]'); ylabel('psd');
+        %         title('psth');
+        %         screen2png(['pspec_parea_psth' saveSuffix]);
+        %         close;
         
         
         %% decompose back into individual trials
         eyeData_rmotl_tr = decompose_eye(eyeData_rmotl_cat, t_tr);
         
         
-        %% upsampling (not necessary??)
+        %% upsampling
         psth_predicted_all = interp1(predictorInfo.t_r, predicted_all, eyeData_rmotl_cat.t, 'linear');
         psth_predicted = zeros(predictorInfo.nPredictors, length(eyeData_rmotl_cat.t));
         for ivar = 1:predictorInfo.nPredictors
@@ -245,7 +252,7 @@ for idata = 683;%439%95:length(channels) %1061;%865;%
         % psth_predicted =  predicted_slow+predicted_fast+predicted_fast_x+predicted_fast_y;
         
         
-        %% triggered by external events
+        %% triggered by external events TOBE REMOVED
         psth_predicted_all_tr = cell(nTrials, 1);
         psth_predicted_tr = cell(nTrials, predictorInfo.nPredictors);
         psth_denoised_tr = cell(nTrials,1);
@@ -268,14 +275,52 @@ for idata = 683;%439%95:length(channels) %1061;%865;%
         psth_all = cat(2,psth_tr, psth_predicted_all_tr, psth_predicted_tr); %cell(#trials, 2+nPredictors)
         
         %% avg trials
-%         [f, psth_snippet, parea_snippet, dist_snippet, taxis_snippet] ...
-%             = pupilFigureAvgSingle(dd, eyeData_rmotl_tr, psth_all, param.evName, param.figTWin);
-                [f, psth_snippet, parea_snippet, dist_snippet, taxis_snippet] ...
-                    = pupilFigure(dd, eyeData_rmotl_tr, psth_all, param.evName, param.figTWin);
+        %         [f, psth_snippet, parea_snippet, dist_snippet, taxis_snippet] ...
+        %             = pupilFigureAvgSingle(dd, eyeData_rmotl_tr, psth_all, param.evName, param.figTWin);
+        [f, psth_snippet, pdiam_snippet, dist_snippet, taxis_snippet] ...
+            = pupilFigure(dd, eyeData_rmotl_tr, psth_all, param.evName, param.figTWin);
         legend(psthNames(2:end),'location','northwest');
         screen2png(['pupilPsth_' param.evName saveSuffix], f);
         close;
         
+        
+        %% response to saccades
+        tOnset = catEvTimes.tOnset;
+        cOnset = catEvTimes.cOnset;
+        validEvents = intersect(find(~isnan(tOnset)), find(~isnan(cOnset)));
+        tOnset = tOnset(validEvents);
+        cOnset = cOnset(validEvents);
+        
+        tcOnset_trace = event2Trace(t_cat, [tOnset; cOnset], 2*0.5);
+        excEventT_cat = (tcOnset_trace + blinks + outliers > 0); %28/1/22
+        
+        [startSaccNoTask, endSaccNoTask] = selectSaccades(catEvTimes.saccadeStartTimes, ...
+            catEvTimes.saccadeEndTimes, t_cat, excEventT_cat);%param.minSaccInterval);
+        
+        [saccDirNoTask, dirIndexNoTask] = getSaccDir(startSaccNoTask, endSaccNoTask, ...
+            eyeData_rmotl_cat, param.cardinalDir);
+        
+        [avgSaccResp, winSamps_sacc, singleSaccResp, sortedSaccLabels, uniqueSaccLabels] ...
+            = eventLockedAvg(cat(1,PSTH_f',predicted_all, predicted), ...
+            predictorInfo.t_r, startSaccNoTask, saccDirNoTask, param.figTWin);
+        
+        nvars = size(avgSaccResp,2);
+        figure('position',[0 0 400 1000]);
+        for ivar = 1:nvars
+            subplot(nvars, 1, ivar);
+            imagesc(winSamps_sacc, param.cardinalDir, squeeze(avgSaccResp(:,ivar,:)));
+            set(gca, 'ytick',param.cardinalDir);
+            xlabel('time from saccade onset [s]');
+            ylabel(psthNames{ivar});
+            mcolorbar(gca,.5);
+            
+        end
+        
+        screen2png(['saccOn_' saveSuffix]);
+        close;
+        
+        
+        %% TODO response to pupil dilation / constiction
         
         %% individual trials
         theseTimes = intersect(find(taxis_snippet > param.respWin(1)), find(taxis_snippet < param.respWin(2)));
@@ -307,13 +352,21 @@ for idata = 683;%439%95:length(channels) %1061;%865;%
             title(['vs ' psthNames{itype} ', R: ' num2str(Rmsnippet(1,itype))]);
             xlabel(psthNames{itype})
         end
-        screen2png(['indtrials' saveSuffix]);
+        screen2png(['indtrials_' saveSuffix]);
         close;
         
         
         %% compare direction tuning (trig by dd.tOnset) before/after denoising
         disp('direction tuning');
         dirs = unique(dd.targetloc);
+        
+        %         theseTr = find(dd.successTrials);
+        %         [mDir, winSamps_sacc, singleDirResp, sortedDirLabels, uniqueDirLabels] ...
+        %             = eventLockedAvg(cat(1,PSTH_f',predicted_all), ...
+        %             predictorInfo.t_r, catEvTimes.tOnset(theseTr), pi/180*dd.targetloc(theseTr), param.figTWin);
+        %         cvar = circ_var(sortedDirLabels, singleDirResp);
+        %         cmean = circ_mean(sortedDirLabels, singleDirResp);
+        
         [mDir, sdDir, cmean, cvar, nTrials_dtune] = dirTuning(psth_tr, eyeData_rmotl_tr, dd, param.respWin);
         [mDir_pred, sdDir_pred, cmean_pred, cvar_pred ] = dirTuning(psth_predicted_all_tr, eyeData_rmotl_tr, dd, param.respWin);
         seDir = sdDir./sqrt(nTrials_dtune);
@@ -327,18 +380,18 @@ for idata = 683;%439%95:length(channels) %1061;%865;%
             1e3*param.respWin(1), 1e3*param.respWin(2),cvar, cvar_pred);
         title(tname);
         
-        screen2png(['dirTuning' saveSuffix]);
+        screen2png(['dirTuning_' saveSuffix]);
         close all
         
         
         %% save results
         saveName = fullfile(saveFolder, [saveSuffix '.mat']);
         
-        save(saveName, 'kernelInfo','psth_all','mDir',...
-            'seDir','mDir_pred','seDir_pred','cvar','cmean', ...
-            'cvar_pred','cmean_pred','mFiringRate',...
-            'param','eyeData_rmotl_cat',...
-            'pspec_psth','pspec_parea','faxis_psth','faxis_parea');
+        save(saveName, 'PSTH_f','predicted_all', 'predicted','kernelInfo','psth_all','mDir',...
+            'seDir','mDir_pred','seDir_pred','cvar','cmean', 't_r',...
+            'cvar_pred','cmean_pred','mFiringRate','param',...
+            'winSamps_sacc', 'singleSaccResp', 'sortedSaccLabels');
+            %'pspec_psth','pspec_parea','faxis_psth','faxis_parea');
         clear spk_all dd kernel kernel_x kernel_y psth_all mDir seDir mDir_pred seDir_pred
         
         previousDate = thisDate;
