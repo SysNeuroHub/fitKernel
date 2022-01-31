@@ -13,7 +13,7 @@ if nargin < 3
     marginDur = 0;
 end
 
-assert(size(eventTimes,1) >= size(eventTimes,2));
+%assert(size(eventTimes,1) >= size(eventTimes,2));
 
 %% implementation 1: SLOW
 % trace = zeros(length(taxis),1);
