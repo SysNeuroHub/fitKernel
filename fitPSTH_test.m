@@ -137,8 +137,8 @@ for idata = thisdata:length(channels) %1061;%865;%
                 t_cat, (blinks+outliers>0));    % exculde blink and outlier periods
             
             catEvTimes = onsets_cat;
-            [catEvTimes.blinkStartTimes, catEvTimes.blinkEndTimes] = trace2Event(blinks, t_cat);
-            [catEvTimes.outlierStartTimes, catEvTimes.outlierEndTimes] = trace2Event(outliers, t_cat);
+            [~,catEvTimes.blinkStartTimes, catEvTimes.blinkEndTimes] = trace2Event(blinks, t_cat);
+            [~,catEvTimes.outlierStartTimes, catEvTimes.outlierEndTimes] = trace2Event(outliers, t_cat);
             catEvTimes.saccadeStartTimes = startSacc;
             catEvTimes.saccadeEndTimes = endSacc;
             %catEvents.t

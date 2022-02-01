@@ -1,5 +1,5 @@
-function [evStart, evEnd] = trace2Event(trace, taxis)
-%[evStartIdx, evEndIdx] = trace2Event(trace)
+function [evTimes, evStart, evEnd] = trace2Event(trace, taxis)
+% evTimes = trace2Event(trace)
 % rerutns index of on and off times in trace
 %
 % see also: event2Trace
@@ -29,6 +29,8 @@ else
     evStart = evStartIdx;
     evEnd = evEndIdx;
 end
+
+evTimes = [evStart evEnd];
 
 %% sanity check
 % [evStartIdx, evEndIdx] = trace2Event(trace);
