@@ -18,7 +18,7 @@ dataType = 0;%0: each channel, 1: all channels per day
 
 % to obtain index of specified month&date&channel
 thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    regexptranslate('wildcard','12December/09/*_ch1.mat'))))
+    regexptranslate('wildcard','12December\09\*_ch1.mat'))));
 
 %% omit data
 % no saccade response
@@ -45,8 +45,7 @@ param.cardinalDir = cardinalDir(1:end-1);
 ncDirs = length(param.cardinalDir);
 
 previousDate = [];
-for idata = 916:length(channels) %1061;%865;%
-    %886 NG in getSaccDir
+for idata = thisdata:length(channels) %1061;%865;%
     datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
     disp(datech);
     

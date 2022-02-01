@@ -43,4 +43,5 @@ onTrace(evStartTidx)=1;
 offTrace = zeros(length(taxis),1);
 offTrace(evEndTidx)=1;
 trace = cumsum(onTrace) - cumsum(offTrace);
+trace = (trace>0);
 
