@@ -24,7 +24,7 @@ bpFreq = [5 15];%[hz] %alpha oscillation of PSTH
 %     regexptranslate('wildcard','09September\01\*_ch27.mat'))));
 
 previousDate = [];
-for idata = 865%1:length(channels) %1061;%865;%
+for idata = 14:length(channels) %1061;%865;%
     datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
     disp(datech);
     
@@ -54,11 +54,11 @@ for idata = 865%1:length(channels) %1061;%865;%
         alphaAmp =abs(analytic);
         
         %sanity check
-        subplot(211);
-        plot(t_r, PSTH_f, t_r, alphaOsc);
-        subplot(212);
-        plot(t_r, alphaAmp);
-        linksubaxes('x');
+%         subplot(211);
+%         plot(t_r, PSTH_f, t_r, alphaOsc);
+%         subplot(212);
+%         plot(t_r, alphaAmp);
+%         linksubaxes('x');
         
         
         %% prepare behavioral data (common across channels per day)
@@ -150,7 +150,7 @@ for idata = 865%1:length(channels) %1061;%865;%
         %linksubaxes('y',ax(1:nvars-1));
         marginplots;
         %legend(pupilLabels,'location','best');
-        mlegend(pupilLabels,gca,'northoutside')
+        %mlegend(pupilLabels,gca,'northoutside')
         
         screen2png(fullfile(saveFolder,['pupilOn_f_' saveSuffix]));
         close all;
@@ -158,7 +158,7 @@ for idata = 865%1:length(channels) %1061;%865;%
         %% save results
         save(saveName, 'pupilTimes','pupilLabels','pupilTypes',...
             'avgPupilResp', 'sePupilResp','winSamps', 'singlePupilResp',...
-            'alphaAmp','alphaOsc','bpFreq','paramPupilOn''-append');
+            'alphaAmp','alphaOsc','bpFreq','paramPupilOn','-append');
         %'pspec_psth','pspec_parea','faxis_psth','faxis_parea');
         clear spk_all dd kernel kernel_x kernel_y psth_all mDir seDir mDir_pred seDir_pred
         

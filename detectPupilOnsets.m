@@ -87,17 +87,17 @@ csEndTimes = csEndTimes_th(csNOverlapIdx);
 %pupilTimes = [dlStartTimes; dlEndTimes; csStartTimes; csEndTimes]
 
 %sanity check
-dilationTrace = event2Trace(t, [dlStartTimes dlEndTimes]);
-constrictionTrace = event2Trace(t, [csStartTimes csEndTimes]);
-excludeTrace = event2Trace(t, excludeTimes);
-
-subplot(211);
-plot(t, signal, t, signal_f);
-hold on
-subplot(212);
-plot(t,excludeTrace,'g',t, dilationTrace,'r',t, constrictionTrace, 'b');
-axis padded
-linksubaxes('x');
+% dilationTrace = event2Trace(t, [dlStartTimes dlEndTimes]);
+% constrictionTrace = event2Trace(t, [csStartTimes csEndTimes]);
+% excludeTrace = event2Trace(t, excludeTimes);
+% 
+% subplot(211);
+% plot(t, signal, t, signal_f);
+% hold on
+% subplot(212);
+% plot(t,excludeTrace,'g',t, dilationTrace,'r',t, constrictionTrace, 'b');
+% axis padded
+% linksubaxes('x');
 
 % trigger PSTH by pupil dilation/constriction
 
