@@ -1,8 +1,3 @@
-%% use fixation period?
-%% extract alpha power from PSTH
-
-
-
 if ispc
     addpath(genpath('C:/Users/dshi0006/git'))
     saveFolder = '//storage.erc.monash.edu/shares/R-MNHS-Syncitium/Shared/Daisuke/cuesaccade_data';
@@ -16,19 +11,14 @@ end
 %% recorded data
 animal = 'hugo';
 
-marginSacc = 0.2;%s
-cutoffFreq = 1;
-durTh = 0.5;
-sizeTh = 5;
-
-[loadNames, months, dates, channels] = getMonthDateCh(animal, rootFolder);
+%[loadNames, months, dates, channels] = getMonthDateCh(animal, rootFolder);
 
 % to obtain index of specified month&date&channel
 thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    regexptranslate('wildcard','09September\01\*_ch27.mat'))));
+    regexptranslate('wildcard','08August\13\*_ch19.mat'))));
 
 previousDate = [];
-for idata = 1:length(channels) %1061;%865;%
+for idata = thisdata;%1:length(channels) %1061;%865;%
     datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
     disp(datech);
     
@@ -60,16 +50,8 @@ for idata = 1:length(channels) %1061;%865;%
         %% target onsets
         dirs = unique(dd.targetloc);
         
-        successTr = find(dd.successTrials);
-
-        
-        %% combine all events
-        %         pupilTimes = [dlStartTimes; csStartTimes];
-        %         pupilTypes = [ones(length(dlStartTimes),1);
-        %             2*ones(length(csStartTimes),1)];
-        %pupilLabels = {'dilation st','constriction st'};
-        
-        
+        successTr = intersect(find(dd.successTrials), find(~isnan(catEvTimes.tOnset))); %2/2/22
+           
         [~,minDirIdx] = arrayfun(@(x)(min(abs(circ_dist(pi/180*x, pi/180*param.cardinalDir)))), dd.targetloc);
 
         %% spike/prdiction response to targetOnsets
@@ -78,27 +60,39 @@ for idata = 1:length(channels) %1061;%865;%
             predictorInfo.t_r, catEvTimes.tOnset(successTr), minDirIdx(successTr), param.figTWin);
         
         psthNames = cat(2,{'psth','predicted_all'}, param.predictorNames);
+        tgtTimes = intersect(find(winTgtSamps>0.03), find(winTgtSamps<0.25));
+        pavgTgtResp = permute(avgTgtResp, [3 1 2]);
+        [centeredDir, cavgTgtResp]  = alignMtxDir(pavgTgtResp, tgtTimes, param.cardinalDir);
         
         nvars = size(avgTgtResp,2);
-        figure('position',[0 0 700 1000]);
+        figure('position',[0 0 400 1000]);
         ax=[];
         for ivar = 1:nvars
+
+            %thisImage = squeeze(avgTgtResp(:,ivar,:));
+            thisImage = squeeze(cavgTgtResp(:,:,ivar))';
+
             ax(ivar)=subplot(nvars, 1, ivar);
-            imagesc(winTgtSamps, param.cardinalDir, squeeze(avgTgtResp(:,ivar,:)));
-            %plot(winSamps, squeeze(avgTgtResp(:,ivar,:)));
-            if ivar==1
-                original = squeeze(avgTgtResp(:,ivar,:));
-                crange = prctile(original(:),[5 99]);
-            end
+            %imagesc(winTgtSamps, param.cardinalDir, thisImage);
+            imagesc(winTgtSamps, centeredDir, thisImage);
             
-            set(gca, 'ytick',param.cardinalDir,'yticklabel',param.cardinalDir);
+            %plot(winSamps, squeeze(avgTgtResp(:,ivar,:)));
+            %             if ivar==1
+            %                 original = squeeze(avgTgtResp(:,ivar,:));
+            %                 crange = prctile(original(:),[5 99]);
+            %             end
+            
+            %set(gca, 'ytick',param.cardinalDir,'yticklabel',param.cardinalDir);
+            set(gca, 'ytick',centeredDir,'yticklabel',centeredDir);
             set(gca,'tickdir','out');
             %xlabel('time from pupil onset [s]');
             title(psthNames{ivar});
-            caxis(crange);
-            if ivar==1
+            %caxis(crange);
+            caxis(prctile(thisImage(:),[5 99]));
+            %if ivar==1
                 mcolorbar(gca,.5);
-            end
+            %end
+            xlim([0 param.figTWin(2)]);
         end
         
         screen2png(fullfile(saveFolder,['tgtOn_' saveSuffix]));
@@ -109,13 +103,28 @@ for idata = 1:length(channels) %1061;%865;%
         directions = pi/180*repmat(param.cardinalDir(minDirIdx(successTr))',...
             [1, size(singleTgtResp,2) size(singleTgtResp,3)]);
         %singleTgtResp(isnan(singleTgtResp))=0;
-        cvar = circ_var(directions, singleTgtResp,1);
-        cmean = circ_mean(directions, singleTgtResp,1);
+        
+        singleTgtResp_m = singleTgtResp;
+        singleTgtResp_m(:,3:end,:) = singleTgtResp_m(:,3:6,:) + mFiringRate;
+        cvar = squeeze(circ_var(directions, singleTgtResp_m,1)); %[variables x time]
+        cmean = squeeze(circ_mean(directions, singleTgtResp_m,1)); %[variables x time]
+        
+        %% temporal sequence of each kernels wrt to measured
+        %option1:distance between preferred direction
+        %dist_cmean = circ_dist(cmean(1,:),cmean(2,:));
+        %
+        %option2: similarity of tuning curve
+        %for tt = 1:size(avgTgtResp,3)
+        %    R=corrcoef(avgTgtResp(:,1,tt),avgTgtResp(:,4,tt));
+        %    corr(tt) = R(1,2);
+        %end
         
         subplot(211);
         imagesc(winTgtSamps, 1:nvars, squeeze(cmean));
         set(gca, 'ytick',1:nvars,'yticklabel',psthNames);
-        title('circular mean')
+        title('circular mean');
+        colormap(gca,'hsv');
+        xlim([0 param.figTWin(2)]);
         mcolorbar(gca,.5);
         
         subplot(212);
@@ -123,6 +132,7 @@ for idata = 1:length(channels) %1061;%865;%
         set(gca, 'ytick',1:nvars,'yticklabel',psthNames);
         title('circular variance');
         mcolorbar(gca,.5);
+        xlim([0 param.figTWin(2)]);
         xlabel('Time from target onset [s]');
         
         screen2png(fullfile(saveFolder,['cmeanvar_' saveSuffix]));
