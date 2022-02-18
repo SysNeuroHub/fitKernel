@@ -20,7 +20,7 @@ for ivar = 1:nPredictors
     switch param.predictorNames{ivar}
         case 'vision'
             thisPredictor = getTgtDirMtx(dd, t_r, catEvTimes, param.cardinalDir);
-        case 'cue'
+        case 'cue' %NOT YET IMPLEMENTED
             thisPredictor = getCueDirMtx(dd, t_r, catEvTimes, param.cardinalDir);
         case 'eyeposition'
             thisPredictor = getEyeDirMtx(dd, t_r, eyeData_rmotl_cat, param.cardinalDir);
@@ -36,7 +36,7 @@ for ivar = 1:nPredictors
             thisPredictor = hpFilt(parea_r', 1/param.dt_r, param.cutoffFreq)';
         case 'blink'
             blinks = event2Trace(eyeData_rmotl_cat.t, [catEvTimes.blinkStartTimes catEvTimes.blinkEndTimes]);
-            thisPredictor = interp1(eyeData_rmotl_cat.t, blinks, t_r)';
+            thisPredictor = interp1(eyeData_rmotl_cat.t, single(blinks), t_r)';
         case 'eyespeed' %resampling rate needs to be high (>100Hz)
             excludeTimes = [catEvTimes.blinkStartTimes catEvTimes.blinkEndTimes; ...
                 catEvTimes.outlierStartTimes catEvTimes.outlierEndTimes];
@@ -50,6 +50,10 @@ for ivar = 1:nPredictors
             [startSacc, endSacc] = selectSaccades(catEvTimes.saccadeStartTimes, ...
                 catEvTimes.saccadeEndTimes, eyeData_rmotl_cat.t, excludePeriod);
             thisPredictor = getSaccMtx(t_r, startSacc, endSacc, eyeData_rmotl_cat, param.cardinalDir);
+        case 'reward'
+            [rewardTimes, punishTimes] = getRewardTimes(dd);
+            
+            thisPredictor = cat(1,event2Trace(t_r, rewardTimes)',event2Trace(t_r, punishTimes)');
     end
     predictors_r = cat(1, predictors_r, thisPredictor);
     npredVars(ivar) = size(thisPredictor,1);

@@ -36,6 +36,10 @@ else
     PSTH_f = filtPSTH(PSTH_r, dt_r, sigma, 2);%causal
 end
 
+nanIdx = find(isnan(sum(predictors_r,1)));
+PSTH_f(nanIdx) = nan;
+
+
 %% ridge regression of PSTH by behavioral signals
 regIdx = intersect(find(t_r>=t_r(1)+omitDuration), find(t_r<=t_r(end)-omitDuration));
 timeVec = t_r(regIdx)';

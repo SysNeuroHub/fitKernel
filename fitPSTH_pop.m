@@ -60,7 +60,7 @@ for idata = 1:length(channels) %1061;%865;%
 %             'pspec_psth','pspec_parea','faxis_psth','faxis_parea',...
 %             'corrCoef_parea_alpha','corrCoef_parea_spk');
         
-        avgPupilResp_pop(:,:,:,idataIdx) = avgPupilResp;%[dl/cs x variables x time] pupilOnsetsResp.m
+%         avgPupilResp_pop(:,:,:,idataIdx) = avgPupilResp;%[dl/cs x variables x time] pupilOnsetsResp.m
 
         kerneltlags = kernelInfo.tlags;
 
@@ -78,9 +78,9 @@ for idata = 1:length(channels) %1061;%865;%
         %cmean_pred_pop(idataIdx) = cmean_pred;
         cvar_pop(:,:,idataIdx) = cvar;
         %cvar_pred_pop(idataIdx) = cvar_pred;
-        corrcoef_parea_alpha_pop(:,idataIdx) = corrCoef_parea_alpha;
-        corrcoef_parea_spk_pop(:,idataIdx) = corrCoef_parea_spk;
-        avgTgtResp_pop(:,:,:,idataIdx) = avgTgtResp;
+        %corrcoef_parea_alpha_pop(:,idataIdx) = corrCoef_parea_alpha;
+        %corrcoef_parea_spk_pop(:,idataIdx) = corrCoef_parea_spk;
+        %avgTgtResp_pop(:,:,:,idataIdx) = avgTgtResp;
         
         R = corrcoef(PSTH_f, predicted_all);
         corrcoef_pred_spk_pop(idataIdx) = R(1,2); 
@@ -91,17 +91,14 @@ for idata = 1:length(channels) %1061;%865;%
         end
         %FIX: avgSaccResp includes nans
         
-        avgSaccResp_pop(:,:,:,idataIdx) = avgSaccResp;
+        avgSaccResp_pop(:,:,:,idataIdx) = avgSaccResp; %[saccDir, kernel?, time, channel]
         idataIdx = idataIdx+1;
         clear mFiringRate kernelInfo
     end 
 end
 % save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
-save('fitPSTH_pop20220202','mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
-    'cmean_pop','cvar_pop',...
-    'datech_pop','avgSaccResp_pop','corrcoef_parea_alpha_pop',...
-    'corrcoef_parea_spk_pop','avgSaccResp','avgTgtResp_pop',...
-    'corrcoef_pred_spk_pop','avgPupilResp_pop');
+save('fitPSTH_pop20220209','mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
+    'cmean_pop','cvar_pop','datech_pop','avgSaccResp_pop','avgSaccResp');
 
 
 
@@ -117,7 +114,7 @@ ax=[];
 for ivar = 1:nvars
     ax(ivar)=subplot(5, 2, ivar);
     %imagesc(winSamps, param.cardinalDir, squeeze(avgDlResp(:,ivar,:)));
-    errorbar(repmat(winSamps',[1 length(pupilLabels)]), ...
+    errorbar(repmat(winSamps_sacc',[1 length(pupilLabels)]), ...
         squeeze(mPupilResp(:,ivar,:))',squeeze(sePupilResp(:,ivar,:))');
     
     %set(gca, 'ytick',1:4,'yticklabel',pupilLabels);
@@ -130,6 +127,23 @@ end
 legend(pupilLabels);
 marginplots;
 screen2png('pupilOn_pop');
+
+%% saccade resp. recorded vs predicted
+psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
+avgSacc = permute(squeeze(nanmean(avgSaccResp_pop,4)),[3 1 2]); 
+crange = prctile(avgSacc(:),[1 99]);
+for ipred = 1:size(avgSacc,3)
+    subplot(7,1,ipred);
+    imagesc(winSamps_sacc, param.cardinalDir, squeeze(avgSacc(:,:,ipred))');
+    ylabel(psthNames{ipred})
+    %caxis(crange);
+    vline(0);
+    mcolorbar(gca,.5);
+end
+xlabel('time from saccade onset [s]');
+screen2png('Sacc_pop');
+savePaperFigure(gcf,'Sacc_pop');
+
 
 %% saccade resp aligned to preferred saccde direction. recorded vs predicted
 tgtTimes = intersect(find(winSamps>0.03), find(winSamps<0.25));
@@ -201,7 +215,7 @@ set(gca,'ytick',centeredDir);
 xlabel('time from eye movement [s]');
 ylabel('relative eye direction [deg]');
 
-subplot(224);
+subplot(424);
 plot(kerneltlags, squeeze(kernel_pop(:,17,:)), 'color',[.5 .5 .5]);
 hold on;
 plot(kerneltlags, mean(kernel_pop(:,17,:),3), 'linewidth',2);
@@ -209,11 +223,27 @@ xlabel('time from pupil dilation [s]');
 axis tight
 vline(0);
 
-subplot(222);
+subplot(422);
 plot(kerneltlags, squeeze(kernel_pop(:,18,:)), 'color',[.5 .5 .5]);
 hold on;
 plot(kerneltlags, mean(kernel_pop(:,18,:),3), 'linewidth',2);
 xlabel('time from blink onset [s]');
+axis tight
+vline(0);
+
+subplot(426);
+plot(kerneltlags, squeeze(kernel_pop(:,19,:)), 'color',[.5 .5 .5]);
+hold on;
+plot(kerneltlags, mean(kernel_pop(:,19,:),3), 'linewidth',2);
+xlabel('time from reward on [s]');
+axis tight
+vline(0);
+
+subplot(428);
+plot(kerneltlags, squeeze(kernel_pop(:,20,:)), 'color',[.5 .5 .5]);
+hold on;
+plot(kerneltlags, mean(kernel_pop(:,20,:),3), 'linewidth',2);
+xlabel('time from punish onset [s]');
 axis tight
 vline(0);
 
