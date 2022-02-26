@@ -14,7 +14,7 @@ if nargin < 3
     marginDur = 0;
 end
 
-assert(size(eventTimes,1) >= size(eventTimes,2));
+%assert(size(eventTimes,1) >= size(eventTimes,2));
 
 if size(eventTimes,2)==2
     assert(isempty(find(eventTimes(:,2)-eventTimes(:,1)<=0)));
@@ -34,11 +34,11 @@ end
 %% implementation 2
 %[~, evStartTidx] = arrayfun(@(x)(min(abs(taxis - x))), eventTimes(:,1) - 0.5*marginDur);
 %evStartTidx(evStartTidx<1) = 1;
-evStartTidx=interp1(taxis, 1:length(taxis), eventTimes(:,1) - 0.5*marginDur, 'nearest');%this is it!
+evStartTidx=interp1(taxis, 1:length(taxis), eventTimes(:,1) - 0.5*marginDur, 'nearest','extrap');%this is it!
 
 % [~, evEndTidx] = arrayfun(@(x)(min(abs(taxis - x))), eventTimes(:,end) + 0.5*marginDur);
 % evEndTidx(evEndTidx>length(taxis)) = length(taxis);
-evEndTidx=interp1(taxis, 1:length(taxis), eventTimes(:,end) + 0.5*marginDur, 'nearest');%this is it!
+evEndTidx=interp1(taxis, 1:length(taxis), eventTimes(:,end) + 0.5*marginDur, 'nearest','extrap');%this is it!
 
 [sameTime] = find(evStartTidx == evEndTidx);
 evEndTidx(sameTime) = evEndTidx(sameTime)+1;

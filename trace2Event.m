@@ -2,6 +2,9 @@ function [evTimes, evStart, evEnd] = trace2Event(trace, taxis)
 % evTimes = trace2Event(trace)
 % rerutns index of on and off times in trace
 %
+% evTimes = trace2Event(trace, taxis)
+% rerutns times of on and off 
+%
 % see also: event2Trace
 
 if size(trace,1)<size(trace,2)

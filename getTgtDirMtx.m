@@ -10,14 +10,13 @@ function dirMtx = getTgtDirMtx(dd, t_r, onsets_cat, cardinalDir)
 % OUTPUT:
 % dirMtx: matrix [cardinalDir x t_r]
 
+%TODO
+%failed trials (cOnset=nan) are ignored but dont know why...
+
 if nargin < 4
     cardinalDir = unique(dd.targetloc);
 end
 
-% minDirIdx = zeros(dd.numTrials);
-% for itr = 1:dd.numTrials
-%     [~, minDirIdx(itr)] = min(abs(circ_dist(pi/180*dd.targetloc(itr), pi/180*cardinalDir)));
-% end
 [~,minDirIdx] = arrayfun(@(x)(min(abs(circ_dist(pi/180*x, pi/180*cardinalDir)))), dd.targetloc);
 
 dirMtx = zeros(length(cardinalDir), length(t_r));
@@ -28,3 +27,4 @@ for itr = 1:dd.numTrials
     [~, offIdx] = min(abs(t_r - cOnset));
     dirMtx(minDirIdx(itr), onIdx:offIdx) = 1;
 end
+

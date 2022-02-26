@@ -1,0 +1,131 @@
+
+if ispc
+    addpath(genpath('C:/Users/dshi0006/git'))
+    saveFolder = '//storage.erc.monash.edu/shares/R-MNHS-Syncitium/Shared/Daisuke/cuesaccade_data';
+    rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/2021/cuesaccade_data/';
+elseif isunix
+    addpath(genpath('/home/localadmin/Documents/MATLAB'));
+    saveFolder = '/mnt/syncitium/Daisuke/cuesaccade_data';
+    rootFolder = '/mnt/physio/Monash Data/Joanita/2021/cuesaccade_data/';
+end
+
+%% recorded data
+animal = 'hugo';
+dataType = 0;%0: each channel, 1: all channels per day
+
+
+[loadNames, months, dates, channels] = getMonthDateCh(animal, rootFolder);
+
+% to obtain index of specified month&date&channel
+thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    regexptranslate('wildcard','12December\09\*_ch1.mat'))));
+
+ii = 1;
+singleSaccDir = [];
+for idata = 1:length(channels) %1061;%865;%
+    datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
+    disp(datech);
+    
+    saveSuffix = [animal replace(datech,'/','_')];
+    
+    thisDate = [months{idata} '_' dates{idata}];
+        
+    saveName = fullfile(saveFolder, [saveSuffix '.mat']);
+    try
+        load(saveName, 'msaccParam','msaccTimes', 'avgSaccResp', 'winSamps_sacc', ...
+            'singleSaccResp', 'sortedSaccLabels', 'uniqueSaccLabels', ...
+            'avgConsetResp', 'winSamps_conset', 'singleConsetResp', ...
+            'sortedConsetLabels', 'uniqueConsetLabels', 'param');
+        
+        avgSaccResp_pop(:,:,:,ii) = avgSaccResp;
+        avgConsetResp_pop(:,:,:,ii) = avgConsetResp;
+        
+        
+        %% band pass filtering (should have done before making snippets)
+        cutoffFreq = [7 13];
+        [avgConsetResp_f,avgConsetPhase] = resp_f_tmp(singleConsetResp, sortedConsetLabels, uniqueConsetLabels, cutoffFreq);
+        [avgSaccResp_f, avgSaccPhase] = resp_f_tmp(singleSaccResp, sortedSaccLabels, uniqueSaccLabels, cutoffFreq);
+        
+        avgConsetResp_f_pop(:,:,:,ii) = avgConsetResp_f;
+        avgSaccResp_f_pop(:,:,:,ii) = avgSaccResp_f;
+        avgConsetPhase_pop(:,:,:,ii) = avgConsetPhase;
+        avgSaccPhase_pop(:,:,:,ii) = avgSaccPhase;
+        
+        bins = [param.cardinalDir 360] - 22.5;
+        singleSaccDir(:,ii) = histcounts(sortedSaccLabels, bins);
+        singleConsetDir(:,ii) = histcounts(sortedConsetLabels, bins);
+        
+        
+        %% avg across all directions
+        labels_c = ones(1, length(sortedConsetLabels));
+        ulabels_c = 1;
+        [mavgConsetResp_f,mavgConsetPhase] = resp_f_tmp(singleConsetResp, labels_c, ulabels_c, cutoffFreq);
+        labels_c = ones(1, length(sortedSaccLabels));
+        ulabels_c = 1;
+        [mavgSaccResp_f, mavgSaccPhase] = resp_f_tmp(singleSaccResp, labels_c,ulabels_c, cutoffFreq);
+        
+        
+        ii = ii+1;
+    catch err
+        continue;
+    end
+end
+
+%% saccade direction histogram
+figure;
+errorbar(param.cardinalDir, mean(singleSaccDir,2), 1/sqrt(size(singleSaccDir,2))*std(singleSaccDir,[],2));
+xlabel('saccade direction [deg]');
+ylabel('#saccades');
+marginplot;
+screen2png('microsaccadeDirs');
+
+figure;
+errorbar(param.cardinalDir, mean(singleConsetDir,2), 1/sqrt(size(singleConsetDir,2))*std(singleConsetDir,[],2));
+xlabel('saccade direction [deg]');
+ylabel('#saccades');
+marginplot;
+screen2png('cOnsetDirs');
+
+%% triggered response per direction
+varNames = cat(2,{'psth','all kernels'},param.predictorNames ,{'pdiam ori'});
+nvars = 8;
+for itype = 5:6
+    switch itype
+        case 1
+            thisData = avgConsetResp_pop;
+            thisName = 'cOnset';
+        case 2
+            thisData = avgConsetResp_f_pop;
+            thisName = 'cOnset filt';
+        case 3
+            thisData = avgSaccResp_pop;
+            thisName = 'micro saccade';
+        case 4
+            thisData = avgSaccResp_f_pop;
+            thisName = 'micro saccade filt';
+        case 5
+            thisData = avgSaccPhase_pop;
+            thisName = 'micro saccade phase';
+        case 6
+            thisData = avgConsetPhase_pop;
+            thisName = 'cOnset phase';
+    end
+    figure('position',[0 0 500 1000]);
+    
+    for ivar = 1:nvars
+        ax(ivar)=subplot(nvars, 1, ivar);
+        imagesc(winSamps_sacc, param.cardinalDir, squeeze(mean(thisData(:,ivar,:,:),4)));
+        
+        %set(gca, 'ytick',1:4,'yticklabel',pupilLabels);
+        title(varNames{ivar});
+        vline(0);
+        mcolorbar;
+        colormap(hsv);
+    end
+    xlabel(['time from ' thisName '[s]']);
+    screen2png(thisName);
+    close;
+end
+
+
+
