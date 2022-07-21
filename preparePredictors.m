@@ -19,7 +19,8 @@ for ivar = 1:nPredictors
     disp(['preparePredictors: ' param.predictorNames{ivar}]);
     switch param.predictorNames{ivar}
         case 'vision'
-            thisPredictor = getTgtDirMtx(dd, t_r, catEvTimes, param.cardinalDir);
+            thisPredictor = getTgtDirMtx(dd, t_r, catEvTimes, param.cardinalDir);%,...
+                %eyeData_rmotl_cat);
         case 'cue' %NOT YET IMPLEMENTED
             thisPredictor = getCueDirMtx(dd, t_r, catEvTimes, param.cardinalDir);
         case 'eyeposition'
@@ -38,14 +39,21 @@ for ivar = 1:nPredictors
             blinks = event2Trace(eyeData_rmotl_cat.t, [catEvTimes.blinkStartTimes catEvTimes.blinkEndTimes]);
             thisPredictor = interp1(eyeData_rmotl_cat.t, single(blinks), t_r)';
         case 'eyespeed' %resampling rate needs to be high (>100Hz)
-            excludeTimes = [catEvTimes.blinkStartTimes catEvTimes.blinkEndTimes; ...
-                catEvTimes.outlierStartTimes catEvTimes.outlierEndTimes];
+            ex1 = event2Trace(eyeData_rmotl_cat.t,[catEvTimes.blinkStartTimes catEvTimes.blinkEndTimes]);
+            ex2 = event2Trace(eyeData_rmotl_cat.t,[catEvTimes.outlierStartTimes catEvTimes.outlierEndTimes]);
+            excludePeriod = single(ex1+ex2>0);
+            excludePeriod_r = logical(interp1(eyeData_rmotl_cat.t, excludePeriod, t_r, 'nearest'));
+
             thisPredictor = getEyeSpdDirMtx(dd, t_r, eyeData_rmotl_cat, ...
-                param.cardinalDir, excludeTimes);
+                param.cardinalDir, excludePeriod_r);
         case 'saccade'
             % exculde blink and outlier periods
-            excludePeriod = (event2Trace(eyeData_rmotl_cat.t, [catEvTimes.blinkStartTimes catEvTimes.blinkEndTimes; ...
-                catEvTimes.outlierStartTimes catEvTimes.outlierEndTimes])>0);
+            %             excludePeriod = (event2Trace(eyeData_rmotl_cat.t, [catEvTimes.blinkStartTimes catEvTimes.blinkEndTimes; ...
+            %                 catEvTimes.outlierStartTimes
+            %                 catEvTimes.outlierEndTimes])>0); %NG!!
+            ex1 = event2Trace(eyeData_rmotl_cat.t,[catEvTimes.blinkStartTimes catEvTimes.blinkEndTimes]);
+            ex2 = event2Trace(eyeData_rmotl_cat.t,[catEvTimes.outlierStartTimes catEvTimes.outlierEndTimes]);
+            excludePeriod = (ex1+ex2>0);
             
             [startSacc, endSacc] = selectSaccades(catEvTimes.saccadeStartTimes, ...
                 catEvTimes.saccadeEndTimes, eyeData_rmotl_cat.t, excludePeriod);

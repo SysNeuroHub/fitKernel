@@ -72,7 +72,8 @@ for idir = 1:2
             
             blkidx_diff_rising = [];
             for iii = 1:length(blkidx_diff_falling)
-                snippet = diff([eyeData_rmotl_c.parea(blkidx_diff_falling(iii):blkidx_diff_falling(iii)+4*marginSize)]);
+                snippet = diff([eyeData_rmotl_c.parea(blkidx_diff_falling(iii)...
+                    : min(numel(eyeData_rmotl_c.parea),blkidx_diff_falling(iii)+4*marginSize))]);
                 [~,idx] = max(snippet);
                 if iii < length(blkidx_diff_falling)
                     blkidx_diff_rising(iii) = min(idx+blkidx_diff_falling(iii), blkidx_diff_falling(iii+1)-1);

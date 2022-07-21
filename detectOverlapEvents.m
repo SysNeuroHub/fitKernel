@@ -5,7 +5,7 @@ function evOverlappedIdx = detectOverlapEvents(taxis, eventTimes, excEventTimes)
 excTrace = event2Trace(taxis, excEventTimes);
 
 evOverlapped = zeros(length(eventTimes),1);
-for iev = 1:length(eventTimes)
+parfor iev = 1:length(eventTimes)
     thisEvTrace = event2Trace(taxis, [eventTimes(iev,1) eventTimes(iev,end)]);
     evOverlapped(iev) = (thisEvTrace'*excTrace > 0);
 end

@@ -1,4 +1,4 @@
-function [centeredDir, centeredMtx] = alignMtxDir(mtx, tgtTidx, cardinalDir)
+function [centeredDir, centeredMtx] = alignMtxDir(mtx, tgtTidx, cardinalDir, prefDirs)
 %[centeredDir, centeredMtx] = alignMtx(mtx, tgtTidx, cardinalDir)
 % returns a matrix which 2nd dimension is rotated based on its activity
 % during tgtTidx in the 1st dimension
@@ -6,6 +6,10 @@ function [centeredDir, centeredMtx] = alignMtxDir(mtx, tgtTidx, cardinalDir)
 % INPUTS:
 %     mtx: [time x directions (x channels)]
 %     tgtTidx: time index to compute preferred direction
+
+if nargin < 4
+    prefDirs = [];
+end
 
 centralBin = round(0.5*length(cardinalDir));
 centralDir = cardinalDir(centralBin);
@@ -28,7 +32,12 @@ centeredDir = 180/pi*circ_dist(pi/180*cardinalDir, pi/180*centralDir);
 
 centeredMtx = zeros(size(mtx));
 for idata = 1:size(mtx,3)
-    [~,prefDir] = max(mean(mtx(tgtTidx,:,idata),1));
+    
+    if ~isempty(prefDirs)
+        prefDir = prefDirs(idata);
+    else
+        [~,prefDir] = max(mean(mtx(tgtTidx,:,idata),1));
+    end
     centeredMtx(:,:,idata) = circshift(mtx(:,:,idata), centralBin - prefDir, 2);
 end
 if dims>=3

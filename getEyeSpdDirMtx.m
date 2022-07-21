@@ -1,10 +1,11 @@
-function dirMtx = getEyeSpdDirMtx(dd, t_r, eyeData_rmblk_cat, cardinalDir, excTimes)
+function dirMtx = getEyeSpdDirMtx(dd, t_r, eyeData_rmblk_cat, cardinalDir, excludePeriod_r)
 % dirMtx = getEyeSpdDirMtx(dd, t_r, tOnset_cat, cardinalDir)
 %
 % INPUT:
 % dd
 % t_r: time axis of concatenated events
 % cardinalDir: list of directions of targets in deg
+% excludePeriod_r: trace of [0 1]
 %
 % OUTPUT:
 % dirMtx: matrix [cardinalDir x t_r]
@@ -13,7 +14,7 @@ function dirMtx = getEyeSpdDirMtx(dd, t_r, eyeData_rmblk_cat, cardinalDir, excTi
 %this function will miss saccades if resampling rate is too low (>100Hz)
 
 if nargin < 5
-    excTimes = [];
+    excludePeriod_r = zeros(numel(t_r),1);
 end
 if nargin < 4
     cardinalDir = unique(dd.targetloc);
@@ -30,15 +31,14 @@ y_f = sgolayfilt(eyeData_rmblk_cat.y, order, framelen);
 x_r = interp1(eyeData_rmblk_cat.t, x_f, t_r);
 y_r = interp1(eyeData_rmblk_cat.t, y_f, t_r);
 
-blinks = (event2Trace(eyeData_rmblk_cat.t, excTimes)>0);
+%blinks = (event2Trace(eyeData_rmblk_cat.t, excTimes)>0);
 %blinks_r = (event2Trace(t_r, excTimes)>0);%NG
-blinks_r = logical(interp1(eyeData_rmblk_cat.t, single(blinks), t_r, 'nearest'));
 
 dx_r = [0; diff(x_r)]/dt_r;
 dy_r = [0; diff(y_r)]/dt_r;
 
-dx_r(blinks_r) = 0; 
-dy_r(blinks_r) = 0; 
+dx_r(excludePeriod_r) = 0; 
+dy_r(excludePeriod_r) = 0; 
 
 eyeRad_r = atan2(dy_r, dx_r); %[-pi pi]
 dist_r = sqrt(dy_r.^2+dx_r.^2);

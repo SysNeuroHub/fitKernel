@@ -4,6 +4,7 @@ function [startSacc_after, endSacc_after] = selectSaccades(startSacc,endSacc, ..
 %     t_cat, excTimes, minSaccInterval)
 
 % TODO: should exlude saccades which includes but  not end within excTimes
+% make the function faster
 
 if nargin < 6
     marginDur = 0;

@@ -39,6 +39,9 @@ y_cat = [];
 t_cat = [];
 %dd_cat = marmodata.cuesaccade;
 
+[~, cOnset] = getChoice(dd); %cOnset time including FAIL
+[outcome, cueOnset] = getCueOnset(dd);
+
 for itr = 1:nTrials
     x_cat = cat(1, x_cat, eyeData(itr).x);
     y_cat = cat(1, y_cat, eyeData(itr).y);
@@ -67,6 +70,9 @@ for itr = 1:nTrials
                 dd.(fdnames{ifd})(itr)+t0);
         end
         %onsets_cat = structfun(@(x,y)(cat(1,x,y(itr)+t0)), onsets_cat,dd); NG
+        onsets_cat.cOnset(itr,1) = cOnset(itr) + t0;
+        onsets_cat.cueOnset(itr,1) = cueOnset(itr) + t0;
+        
     end
     if nargout > 2
         for iedf = 1:length(edfnames)
@@ -77,7 +83,8 @@ for itr = 1:nTrials
     end
 end
 
-eyeData_cat = marmodata.eye(t_cat, x_cat, y_cat, pwdth_cat, phght_cat);
+[t_cat, ix] = unique(t_cat);
+eyeData_cat = marmodata.eye(t_cat, x_cat(ix), y_cat(ix), pwdth_cat(ix), phght_cat(ix));
 
 
 %% check STARTBLINK/ENDBLINK
@@ -86,6 +93,7 @@ if length(meta_cat.STARTBLINK) >  length(meta_cat.ENDBLINK)
 elseif length(meta_cat.STARTBLINK) <  length(meta_cat.ENDBLINK)
     meta_cat.STARTBLINK = [meta_cat.STARTBLINK; eyeData_cat.t(1)];
 end
+
 
 if ~isempty(find(meta_cat.ENDBLINK - meta_cat.STARTBLINK < 0))
     error('ENDBLINK comes earlier than STARTBLINK');
@@ -103,6 +111,9 @@ if length(meta_cat.STARTSACC) ~= length(meta_cat.ENDSACC)%41
         % FILL ME?
     end
 end
+idx = find(meta_cat.STARTBLINK-meta_cat.ENDBLINK~=0);
+meta_cat.STARTBLINK = meta_cat.STARTBLINK(idx);
+meta_cat.ENDBLINK = meta_cat.ENDBLINK(idx);
 
 assert(isempty(find(meta_cat.ENDSACC-meta_cat.STARTSACC<0)));
 okSacc = find(meta_cat.ENDSACC-meta_cat.STARTSACC>0);

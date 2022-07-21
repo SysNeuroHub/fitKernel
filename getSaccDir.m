@@ -9,7 +9,7 @@ t = eyeData_rmotl_cat.t;
 
 
 dirIndex = zeros(length(startSacc),1);
-for isacc = 1:length(startSacc)
+parfor isacc = 1:length(startSacc)
     tsnippet = intersect(find(t>=startSacc(isacc)), find(t<=endSacc(isacc)));
     %if isempty(tsnippet)
     %    continue;

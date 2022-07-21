@@ -45,7 +45,7 @@ param.cardinalDir = cardinalDir(1:end-1);
 ncDirs = length(param.cardinalDir);
 
 previousDate = [];
-for idata = 365:length(channels) %1061;%865;%
+for idata = 865:length(channels) %1061;%865;%
     datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
     disp(datech);
     

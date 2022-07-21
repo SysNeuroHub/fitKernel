@@ -1,7 +1,10 @@
 
 if ispc
 addpath(genpath('C:/Users/dshi0006/git'))
-saveFolder = '//storage.erc.monash.edu/shares/R-MNHS-Syncitium/Shared/Daisuke/cuesaccade_data';
+saveFolder = 'E:/tmp/cuesaccade_data';
+saveFigFolder = [saveFolder, '/20220705_2'];
+mkdir(saveFigFolder);
+%saveFolder = '//storage.erc.monash.edu/shares/R-MNHS-Syncitium/Shared/Daisuke/cuesaccade_data';
 rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/2021/cuesaccade_data/';
 elseif isunix
  addpath(genpath('/home/localadmin/Documents/MATLAB'));
@@ -18,7 +21,7 @@ dataType = 0;%0: each channel, 1: all channels per day
 
 % to obtain index of specified month&date&channel
 thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    regexptranslate('wildcard','12December\09\*_ch1.mat'))));
+    regexptranslate('wildcard','12December\10\*_ch6.mat'))));
 
 %% omit data
 % no saccade response
@@ -26,26 +29,12 @@ thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
 % low number of successful trials
 
 % parameters
-param.marginSize = 50;%40; %frames
-param.psth_sigma = .05;%0.1; %0.025;%0.02;%0.01;%0.05;%[s] %gaussian filter
-param.dt_r = 0.02; %for securing memory for kernel fitting %0.025;%0.5;
-param.lagRange = [-.5 .5];%[-.4 .3];%[-1 1];%[-10 20]; %temporal window for kernel estimation [s]
-param.ridgeParams = 100;%[0 1e-1 1 1e2 1e3]; %10
-% visualize = 0;
-param.predictorNames = {'vision','eyespeed','pdiam','blink'}; %eyeposition
-param.figTWin = [-0.5 0.5]; %temporal window for peri-event traces [s]
-param.respWin = [0.03 0.25]; %temporal window to compute direction tuning
-param.pareaTh = 3;
-param.pareaDiffTh = 5;
-param.cutoffFreq = 0.1;
-param.evName = 'tOnset';%'cOnset';
-%param.minSaccInterval = 0.5; %29/1/22
-cardinalDir = linspace(0,360,9); %direction for saccade and target
-param.cardinalDir = cardinalDir(1:end-1);
+load('E:\tmp\cuesaccade_data\param20220626','param');
 ncDirs = length(param.cardinalDir);
+param.lagRange = [repmat([0 0.5],[8 1]); repmat([-0.5 0.5],[10 1])];%test
 
 previousDate = [];
-for idata = 865;%thisdata:length(channels) %1061;%865;%
+for idata = 864%1:813%:length(channels) %1:795
     datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
     disp(datech);
     
@@ -87,76 +76,24 @@ for idata = 865;%thisdata:length(channels) %1061;%865;%
         
         
         %% prepare behavioral data (common across channels per day)
-        eyeName = fullfile(saveFolder,['eyeCat_' thisDate '.mat']);
-        if  ~strcmp(thisDate, previousDate)
-            load(eyeName, 'eyeData_rmotl_cat',...
-                'onsets_cat','meta_cat','blinks','outliers','pspec_parea','faxis_parea','t_tr');
-            
-            t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
-            
-            %check startsacc and endsacc (to be done in concatenate_eye)
-            if length(meta_cat.STARTSACC) ~= length(meta_cat.ENDSACC)%41
-                nSaccs = min(length(meta_cat.STARTSACC), length(meta_cat.ENDSACC));
-                ngIdx=find(meta_cat.ENDSACC(1:nSaccs)-meta_cat.STARTSACC(1:nSaccs)<0);
-                
-                if isempty(ngIdx)
-                    meta_cat.STARTSACC = meta_cat.STARTSACC(1:nSaccs);
-                    meta_cat.ENDSACC = meta_cat.ENDSACC(1:nSaccs);
-                    %else
-                    % FILL ME?
-                end
-            end
-            
-            assert(isempty(find(meta_cat.ENDSACC-meta_cat.STARTSACC<0)));
-            okSacc = find(meta_cat.ENDSACC-meta_cat.STARTSACC>0);
-            meta_cat.STARTSACC = meta_cat.STARTSACC(okSacc);
-            meta_cat.ENDSACC = meta_cat.ENDSACC(okSacc);
-            %             tic
-            %             [eyeData_cat, onsets_cat, meta_cat] = concatenate_eye(eyeData, dd);%takes 90s
-            %             t0=toc
-            %             t_tr={eyeData.t};
-            %
-            %
-            %             %% detect and interpolate blinks
-            %             %removing outliers helps for larger kernels
-            %             tic
-            %             [eyeData_rmblk_cat, blinks] = removeBlinksEDF(eyeData_cat, meta_cat, param.marginSize,1);
-            %             close;
-            %             t1=toc
-            %
-            %             %% remove parea outliers based on diff
-            %             tic
-            %             [eyeData_rmotl_cat, outliers] = removePareaOutliers(eyeData_rmblk_cat, ...
-            %                 param.marginSize, param.pareaTh, param.pareaDiffTh);
-            %             screen2png(['rmOtl_' saveSuffix]);
-            %             close;
-            %             t2=toc
-            
-            %% detect saccades
-            [startSacc, endSacc] = selectSaccades(meta_cat.STARTSACC, meta_cat.ENDSACC,...
-                t_cat, (blinks+outliers>0));    % exculde blink and outlier periods
-            
-            catEvTimes = onsets_cat;
-            [~,catEvTimes.blinkStartTimes, catEvTimes.blinkEndTimes] = trace2Event(blinks, t_cat);
-            [~,catEvTimes.outlierStartTimes, catEvTimes.outlierEndTimes] = trace2Event(outliers, t_cat);
-            catEvTimes.saccadeStartTimes = startSacc;
-            catEvTimes.saccadeEndTimes = endSacc;
-            %catEvents.t
-            %catTraces.saccadeDirs < no need to be here
-            save(eyeName, 'catEvTimes','-append');
-            clear  meta_cat
-            
+        eyeName = fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']);
+         if  ~exist(eyeName, 'file') %~strcmp(thisDate, previousDate)
+          
+            [eyeData_rmotl_cat, catEvTimes, t_tr, onsets_cat,meta_cat,blinks,outliers] ...
+                = processEyeData(eyeData, dd, param);
             %             [pspec_parea,faxis_parea] = pmtm(eyeData_rmotl_cat.parea, 10, ...
             %                 length(eyeData_rmotl_cat.parea), fs_eye);%slow
             
             
             %% prepare predictor variables
+            t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
             predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
-            save(fullfile(saveFolder,['predictorInfo_' thisDate '.mat']), 'predictorInfo');
+            save(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
         else
             disp('loading eye/predictor data');
-            load(fullfile(saveFolder,['predictorInfo_' thisDate '.mat']), 'predictorInfo');
-            load(fullfile(saveFolder,['eyeCat_' thisDate '.mat']));
+            load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
+            load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
+            t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
         end
         
         
@@ -164,11 +101,11 @@ for idata = 865;%thisdata:length(channels) %1061;%865;%
         
         %% obtain kernels!
         disp('fit kernels')
-        %param.lagRange = repmat([-0.5 0.5],[18,1]);
-        %param.lagRange(1:8,1)=0;
         [predicted_all, PSTH_f, kernelInfo] = fitPSTH(spk_all_cat, ...
-            predictorInfo.t_r, predictorInfo.predictors_r, param.psth_sigma, param.lagRange, param.ridgeParams);
+            predictorInfo.t_r, predictorInfo.predictors_r, param.psth_sigma, ...
+            param.lagRange, param.ridgeParams, param.snonlin);
 
+        %% decompose respose
         predicted = zeros(predictorInfo.nPredictors, length(predictorInfo.t_r));
         for ivar = 1:predictorInfo.nPredictors
             if ivar==1
@@ -176,9 +113,14 @@ for idata = 865;%thisdata:length(channels) %1061;%865;%
             else
                 theseVarIdx = sum(predictorInfo.npredVars(1:ivar-1))+1:sum(predictorInfo.npredVars(1:ivar));
             end
+            if size(param.lagRange,1)== 1
+                thisLagRange = param.lagRange;
+            else
+                thisLagRange = [min(param.lagRange(:,1)) max(param.lagRange(:,2))];
+            end
             
             predicted(ivar, :) = predictXs(predictorInfo.t_r, predictorInfo.predictors_r(theseVarIdx,:), ...
-                kernelInfo.intercept, kernelInfo.kernel(:,theseVarIdx), param.lagRange);
+                kernelInfo.intercept, kernelInfo.kernel(:,theseVarIdx), thisLagRange);
         end
         
         figure('position',[0 0 1000 500]);
@@ -216,7 +158,7 @@ for idata = 865;%thisdata:length(channels) %1061;%865;%
         axis tight;
         
         %set(gca,'ytick',predictorInfo.predictors_r);
-        screen2png(['kernels_' saveSuffix]);
+        screen2png(fullfile(saveFigFolder,['kernels_' saveSuffix]));
         close;
         
         
@@ -283,7 +225,7 @@ for idata = 865;%thisdata:length(channels) %1061;%865;%
         [f, psth_snippet, pdiam_snippet, dist_snippet, taxis_snippet] ...
             = pupilFigure(dd, eyeData_rmotl_tr, psth_all, param.evName, param.figTWin);
         legend(psthNames(2:end),'location','northwest');
-        screen2png(['pupilPsth_' param.evName saveSuffix], f);
+        screen2png(fullfile(saveFigFolder,['pupilPsth_' param.evName saveSuffix]), f);
         close;
         
         
@@ -319,7 +261,7 @@ for idata = 865;%thisdata:length(channels) %1061;%865;%
             
         end
         
-        screen2png(['saccOn_' saveSuffix]);
+        screen2png(fullfile(saveFigFolder,['saccOn_' saveSuffix]));
         close;
         
         
@@ -355,7 +297,7 @@ for idata = 865;%thisdata:length(channels) %1061;%865;%
             title(['vs ' psthNames{itype} ', R: ' num2str(Rmsnippet(1,itype))]);
             xlabel(psthNames{itype})
         end
-        screen2png(['indtrials_' saveSuffix]);
+        screen2png(fullfile(saveFigFolder,['indtrials_' saveSuffix]));
         close;
         
         
@@ -383,7 +325,7 @@ for idata = 865;%thisdata:length(channels) %1061;%865;%
             1e3*param.respWin(1), 1e3*param.respWin(2),cvar, cvar_pred);
         title(tname);
         
-        screen2png(['dirTuning_' saveSuffix]);
+        screen2png(fullfile(saveFigFolder,['dirTuning_' saveSuffix]));
         close all
         
         
