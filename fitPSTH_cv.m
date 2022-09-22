@@ -12,6 +12,7 @@ unitOfTime = 's';
 uniqueID = 1;
 KFolds = 5;
 kernelInfo.basisType = 'raised cosine';
+detrend = 1; %22/7/22
 %nBasisFunctions = 20;
 %offset = -25; %slide the kernel window back in time 
 
@@ -23,7 +24,7 @@ end
 dt_r = median(diff(t_r));
 
 PSTH_r = getPSTH(spk_cat, t_r);
-PSTH_f = filtPSTH(PSTH_r, dt_r, sigma, 2);
+PSTH_f = filtPSTH(PSTH_r, dt_r, sigma, 2, detrend);
 
 
 expt = buildGLM.initExperiment(unitOfTime, dt_r, uniqueID);

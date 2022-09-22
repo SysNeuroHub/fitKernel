@@ -16,7 +16,7 @@ validTrials = find(~isnan(fOnset));
 
 if numel(uniqueLabels)==1
     for icue = 1:2
-        if icue == uniqueLabels+1 
+        if icue == uniqueLabels+1
             avgfOnsetResp_c(icue,:,:) = avgfOnsetResp;
         else
             avgfOnsetResp_c(icue,:,:) = nan(size(avgfOnsetResp));
@@ -35,14 +35,23 @@ for icue = 1:2
             condName = 'w cue';
     end
     subplot(1,3,icue);
-    imagesc(winSamps, 1:nRespTypes, squeeze(avgfOnsetResp(icue,:,:)));
-    if icue == 1
-    set(gca,'yticklabel',psthNames);%[{'observed'},{'predicted_all'},predictorNames(:)']);
+    if nRespTypes ==1
+        plot(winSamps, squeeze(avgfOnsetResp(icue,:,:)));
+        ylabel(psthNames);
+    else
+        imagesc(winSamps, 1:nRespTypes, squeeze(avgfOnsetResp(icue,:,:)));
+        if icue == 1
+            set(gca,'yticklabel',psthNames);%[{'observed'},{'predicted_all'},predictorNames(:)']);
+        end
     end
     vline(0);
     xlabel('Time from fOnset [s]');
     title(['fixOn ' condName ': ' num2str(sum(dd.cueOn(validTrials)==icue-1)) ' trials']);
-    caxis(gca,crange);
+    if nRespTypes == 1
+        ylim(gca,crange);
+    else
+        caxis(gca,crange);
+    end
 end
 % mcolorbar;
 % screen2png(fullfile(saveFigFolder,['fOnset_' saveSuffix]));
@@ -61,15 +70,20 @@ if ~isempty(validEvents)
         = eventLockedAvg(y_r', t_r, cueOnset, ones(numel(cueOnset),1), figTWin);%param.figTWin);
     
     subplot(1,3,3);
-    imagesc(winSamps, 1:nRespTypes, squeeze(avgCueResp));
-    %set(gca,'yticklabel',[{'observed'},{'predicted_all'},param.predictorNames(:)']);
+    if nRespTypes ==1
+        plot(winSamps, squeeze(avgCueResp));
+    else
+        imagesc(winSamps, 1:nRespTypes, squeeze(avgCueResp));
+    end
     vline(0);
-    caxis(gca,crange);
+    if nRespTypes == 1
+        ylim(gca,crange);
+    else
+        caxis(gca,crange);
+        mcolorbar(gca,.5);
+    end
     xlabel('Time from cueOnset [s]');
     title(['cueOn']);
-    mcolorbar(gca,.5);
-    %             screen2png(fullfile(saveFigFolder,['cueOn_' saveSuffix]));
-    %             close;
 else
     avgCueResp = nan(size(avgfOnsetResp));
 end

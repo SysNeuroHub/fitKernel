@@ -1,7 +1,16 @@
 function [f, avgTonsetByCue, winSamps_tonsetByCue] = showTonsetByCue(t_r, ...
-    y_r, cardinalDir, catEvTimes, dd, psthNames, figTWin)
+    y_r, cardinalDir, catEvTimes, dd, psthNames, figTWin, onlySuccess)
 % [f, avgTOnsetByCue, winSamps_tonsetByCue] = showTonsetByCue(t_r, ...
 %     y_r, cardinalDir, catEvTimes, dd, psthNames, figTWin)
+% returns target onset response avg across success&fail trials
+%
+% [~] = showTonsetByCue(t_r, ...
+%     y_r, cardinalDir, catEvTimes, dd, psthNames, figTWin, 1)
+% returns avg across success trials
+
+if nargin < 8
+    onlySuccess = 0;
+end
 
 % created from resp_cueConditions
 onset = catEvTimes.tOnset;
@@ -10,7 +19,12 @@ onset = catEvTimes.tOnset;
 
 for icue = 1:2
     validEvents = intersect(find(~isnan(onset)), find(dd.cueOn==icue-1));
-    %< this condition only includes sucessful saccades
+    %< this condition only includes all trials irrespective of the trial outcome
+
+    if onlySuccess
+        validEvents = intersect(validEvents, find(~isnan(dd.cOnset)));
+    end
+    
     
     onsetTimes = onset(validEvents);
     tgtDir = getTgtDir(dd.targetloc(validEvents), cardinalDir);
@@ -28,7 +42,7 @@ for icue = 1:3
     
     switch icue
         case {1,2}
-            crange = prctile(avgTonsetByCue(:),[1 99]);
+            crange = prctile(avgTonsetByCue(:),[0 100]);
         case 3
             cache = abs(diff(avgTonsetByCue,1,4));
             crange = [-prctile(cache(:),99) prctile(cache(:),99)];
@@ -46,7 +60,7 @@ for icue = 1:3
             ylabel(psthNames{ivar});
         end
         caxis(crange);
-        %mcolorbar(gca,.5);
+        mcolorbar;
         if ivar == 1
             if icue==1
                 title('wo cue');
@@ -57,6 +71,6 @@ for icue = 1:3
             end
         end
     end
-    mcolorbar;
+    %mcolorbar;
 end
 xlabel(['time from tOnset [s]']);

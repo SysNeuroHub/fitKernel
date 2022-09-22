@@ -38,6 +38,8 @@ avgfOnsetResp_pop = [];
 navgfOnsetResp_pop = [];
 avgCueResp_pop = [];
 navgCueResp_pop = [];
+
+kk = [];
 for idata = 1:length(channels)
     %     %rerun: 68
     %     %03March/23; 03March/25; 03March/26; 03March/29; 03March/30; 04April/08; 04April/09; 06June/14; 06June/18; %07July/28
@@ -78,10 +80,12 @@ for idata = 1:length(channels)
     %         clear spk_all_cat t_cat
     saveName = fullfile(saveFolder, [saveSuffix '.mat']);
     if ~exist(saveName,'file')
+        kk = [kk idata];
         continue;
     end
     load(saveName,'mFiringRate');
     if  ~exist('mFiringRate','var') || mFiringRate < 5
+        kk = [kk idata];
         disp([chName 'skipped as mFiringRate<5']);
         continue;
     end

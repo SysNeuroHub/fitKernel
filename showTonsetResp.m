@@ -1,13 +1,12 @@
-%created from classifyUnits_circ & resp_cueConditions.m
-
 function [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
     startSaccNoTask, saccDirNoTask, param, figTWin)
+%[f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
+%    startSaccNoTask, saccDirNoTask, param, figTWin)
+%
+%created from classifyUnits_circ & resp_cueConditions.m
+
 
 allTr = 0;
-% param.tOnRespWin = [0 0.5];
-% param.baseWin = [-0.1 0];
-% param.Pth = 0.01; %0.05
-
 
 psthIdx = find(strcmp(psthNames, 'psth'));
 allMdlIdx = find(strcmp(psthNames, 'predicted_all'));
@@ -53,6 +52,10 @@ if allTr
     theseTrials = 1:numel(tgtDir);
 else
     theseTrials = find(tgtDir == param.cardinalDir(prefDirIdx));%trials with cell's preferred direction
+%     for tt = 1:numel(tgtDir)
+%         [~,minDirIdx(tt)] = min(abs(circ_dist(tgtDir(tt), pi/180*param.cardinalDir))); %from getTgtDirMtx 23/7/22
+%     end
+%     theseTrials = find(minDirIdx == prefDirIdx);
 end
 
 %plot(tgtDir'/180*pi, tonsetRespAmp_p(:,psthIdx),'.');
@@ -75,47 +78,20 @@ mtOnsetResp = squeeze(mean(singleOnsetResp(theseTrials,:,:)));%avg response to p
 setOnsetResp = 1/sqrt(numel(theseTrials))*squeeze(std(singleOnsetResp(theseTrials,:,:)));%avg response to preferred direction
 
 %% mean response amplitude across trials
-mtOnsetRespAmp_p_c = abs(mean(tonsetRespAmp_p .* exp(1i*tgtDir'/180*pi)));
-mtOnsetRespAmp_b_c = abs(mean(tonsetRespAmp_b .* exp(1i*tgtDir'/180*pi)));
+%mtOnsetRespAmp_p_c = abs(mean(tonsetRespAmp_p .* exp(1i*tgtDir'/180*pi)));
+%mtOnsetRespAmp_b_c = abs(mean(tonsetRespAmp_b .* exp(1i*tgtDir'/180*pi)));
 mtOnsetRespAmp = mean(tonsetRespAmp(theseTrials,[psthIdx visionIdx eyevelIdx]),1);
 %mtOnsetRespAmp = mtOnsetRespAmp_p_c - mtOnsetRespAmp_b_c;
 
-if isempty(theseTrials)
-    return; %continue
+if ~isempty(theseTrials)
+    [PtonsetResp_paired] = signrank(tonsetRespAmp(theseTrials,visionIdx), ...
+        tonsetRespAmp(theseTrials,eyevelIdx));
+else 
+    PtonsetResp_paired = nan;
 end
-[PtonsetResp_paired] = signrank(tonsetRespAmp(theseTrials,visionIdx), ...
-    tonsetRespAmp(theseTrials,eyevelIdx));
+
 
 %% triggered by saccade onsets (outside of the task)
-%from fitPSTH_test.m
-%load(saveName, 'singleSaccResp'); %event x saccade direction x time
-% tOnset = catEvTimes.tOnset;
-% cOnset = catEvTimes.cOnset;
-% validEvents = intersect(find(~isnan(tOnset)), find(~isnan(cOnset)));
-% tOnset = tOnset(validEvents);
-% cOnset = cOnset(validEvents);
-
-% tcOnset_trace = event2Trace(t_cat, [tOnset; cOnset], 2*0.5);
-% excEventT_cat = (tcOnset_trace + blinks + outliers > 0); %28/1/22
-
-% test = load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']), 'startSaccNoTask');
-%         if isempty(fieldnames(test))
-%             [startSaccNoTask, endSaccNoTask] = selectSaccades(catEvTimes.saccadeStartTimes, ...
-%                 catEvTimes.saccadeEndTimes, t_cat, excEventT_cat);%param.minSaccInterval);
-%             %<slow
-%
-%             [saccDirNoTask, dirIndexNoTask] = getSaccDir(startSaccNoTask, endSaccNoTask, ...
-%                 eyeData_rmotl_cat, param.cardinalDir);
-%             %<slow
-%
-%             save(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']), 'startSaccNoTask', 'endSaccNoTask', ...
-%                 'saccDirNoTask', 'dirIndexNoTask','-append');
-%         else
-% load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']), ...
-%     'startSaccNoTask', 'endSaccNoTask', ...
-%     'saccDirNoTask', 'dirIndexNoTask');
-%         end
-
 [avgSaccResp, ~, singleSaccResp, sortedSaccLabels, uniqueSaccLabels] ...
     = eventLockedAvg(y_r',t_r, startSaccNoTask, saccDirNoTask, figTWin);
 
@@ -145,26 +121,23 @@ PsaccResp = dirDotProdTest(saccDirNoTask(nonanEvents)'/180*pi, ...
 
 
 %% triggered by tOnset without saccade
-
 validEvents = intersect(find(~isnan(catEvTimes.tOnset)), find(dd.successTrials==0));
-if isempty(validEvents)
-    return;
-end
-
-onsetTimes = catEvTimes.tOnset(validEvents);
-tgtDir_v = getTgtDir(dd.targetloc(validEvents), param.cardinalDir);
-
-[avgOnsetResp_v, winSamps, singleOnsetResp_v, ...
-    sortedOnsetLabels_v, uniqueOnsetLabels_v] ...
-    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir_v, param.figTWin);
-
-if allTr
-    theseTrials_v = 1:numel(tgtDir_v);
-else
-    theseTrials_v = find(tgtDir_v == param.cardinalDir(prefDirIdx));%trials with cell's preferred direction
-end
-mtOnsetResp_v = squeeze(mean(singleOnsetResp_v(theseTrials_v,:,:)));%avg response to preferred direction
-setOnsetResp_v = 1/sqrt(numel(theseTrials_v))*squeeze(std(singleOnsetResp_v(theseTrials_v,:,:)));%avg response to preferred direction
+%if ~isempty(validEvents)
+    onsetTimes = catEvTimes.tOnset(validEvents);
+    tgtDir_v = getTgtDir(dd.targetloc(validEvents), param.cardinalDir);
+    
+    [avgOnsetResp_v, winSamps, singleOnsetResp_v, ...
+        sortedOnsetLabels_v, uniqueOnsetLabels_v] ...
+        = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir_v, param.figTWin);
+    
+    if allTr
+        theseTrials_v = 1:numel(tgtDir_v);
+    else
+        theseTrials_v = find(tgtDir_v == param.cardinalDir(prefDirIdx));%trials with cell's preferred direction
+    end
+    mtOnsetResp_v = squeeze(mean(singleOnsetResp_v(theseTrials_v,:,:)));%avg response to preferred direction
+    setOnsetResp_v = 1/sqrt(numel(theseTrials_v))*squeeze(std(singleOnsetResp_v(theseTrials_v,:,:)));%avg response to preferred direction
+%end
 
 %% categorise the cell
 %unitClass = getCellClass2(PtonsetResp, PsaccResp, param.Pth);
@@ -205,6 +178,7 @@ boundedline(winSamps, mtOnsetResp(eyevelIdx,:), setOnsetResp(eyevelIdx,:),'c', '
 xlim([-0.1 0.5]);
 ylabel(['tOnset (success), n=' num2str(numel(theseTrials))]);
 %title([datech ' ' num2str(unitClass)]);
+title(['resp to' num2str(param.cardinalDir(prefDirIdx)) 'deg']);
 
 ax(2) = subplot(312);
 boundedline(winSamps, mtOnsetResp_v(psthIdx,:), setOnsetResp_v(psthIdx,:),'k', 'linewidth',2);
