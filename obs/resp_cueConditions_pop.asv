@@ -20,7 +20,7 @@ dataType = 0;%0: each channel, 1: all channels per day
 
 % to obtain index of specified month&date&channel
 thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    regexptranslate('wildcard','08August\13\*_ch27.mat'))));
+    regexptranslate('wildcard','09September\16\*_ch27.mat'))));
 
 %% omit data
 % no saccade response
@@ -44,9 +44,10 @@ for idata = 1:length(channels)
     
     %% load results
     try
-        load(saveName, 'avgTOnsetByCue','winSamps_sacc','t_r');
+        load(saveName, 'avgTOnsetByCue','winSamps_sacc','PSTH_f');
         
-        
+        h=cusumtest((1:numel(PSTH_f))', PSTH_f, 'plot','on','display='on')
+
         %substitute NANs to directions without a trial
         tmp = squeeze(avgTOnsetByCue(:,ivar,:,:));
         zerodir = (sum(tmp,2)==0);

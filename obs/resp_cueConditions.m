@@ -1,7 +1,9 @@
 
 if ispc
-    addpath(genpath('C:/Users/dshi0006/git'))
-    saveFolder = '//storage.erc.monash.edu/shares/R-MNHS-Syncitium/Shared/Daisuke/cuesaccade_data';
+    %saveFolder = '//storage.erc.monash.edu/shares/R-MNHS-Syncitium/Shared/Daisuke/cuesaccade_data';
+    %rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/2021/cuesaccade_data/';
+    saveFolder = 'E:/tmp/cuesaccade_data';
+    saveFigFolder = [saveFolder, '/20220722'];
     rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/2021/cuesaccade_data/';
 elseif isunix
     addpath(genpath('/home/localadmin/Documents/MATLAB'));
@@ -20,74 +22,29 @@ dataType = 0;%0: each channel, 1: all channels per day
 thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     regexptranslate('wildcard','04April\08\*_ch25.mat'))));
 
-%% omit data
-% no saccade response
-% low spontaneous firing
-% low number of successful trials
-
 % parameters
-param.th_frate = 5;
-param.marginSize = 50;%40; %frames
-param.psth_sigma = .05;%0.1; %0.025;%0.02;%0.01;%0.05;%[s] %gaussian filter
-param.dt_r = 0.02; %for securing memory for kernel fitting %0.025;%0.5;
-param.lagRange = [-.5 .5];%[-.4 .3];%[-1 1];%[-10 20]; %temporal window for kernel estimation [s]
-param.ridgeParams = 100;%[0 1e-1 1 1e2 1e3]; %10
-% visualize = 0;
-param.predictorNames = {'vision','eyespeed','pdiam','blink','reward'}; %eyeposition
-param.figTWin = [-0.5 0.5]; %temporal window for peri-event traces [s]
-param.respWin = [0.03 0.25]; %temporal window to compute direction tuning
-param.pareaTh = 3;
-param.pareaDiffTh = 5;
-param.cutoffFreq = 0.1;
-param.evName = 'tOnset';%'cOnset';
-%param.minSaccInterval = 0.5; %29/1/22
-cardinalDir = linspace(0,360,9); %direction for saccade and target
-param.cardinalDir = cardinalDir(1:end-1);
-ncDirs = length(param.cardinalDir);
-param.times = 1e-3*(0:30:390);%[0 50 100 150 200 250 300 350 400];
+load('E:\tmp\cuesaccade_data\param20220719','param');
+psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
 
 previousDate = [];
-for idata = 154%:length(channels) %1061;%865;%
+for idata = 1:length(channels) %1061;%865;%
     datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
     disp(datech);
     
     saveSuffix = [animal replace(datech,'/','_')];
     
     thisDate = [months{idata} '_' dates{idata}];
-    if sum(strcmp(thisDate, {'06June_06','06June_11','06June_09'}))>0
-        %june11  Sample points must be unique.
-        %june09
-        %june06 weird blank period in time around 500-600s
+    
+    saveName = fullfile(saveFolder, [saveSuffix '.mat']);
+    load(saveName,'mFiringRate');
+    if mFiringRate < 5
+        disp(['skipped as mFiringRate<5']);
         continue;
     end
     
-    
     load(loadNames{idata});
     
-    if dataType == 0
-        spk_all = ephysdata.spikes.spk;
-        chName = ['_ch' num2str(ephysdata.spikes.chanIds)];
-        clear ephysdata
-    end
     
-    
-    if ~isempty(spk_all)
-        
-        
-        nTrials = length(dd.eye);
-        fs_eye = median([dd.eye.fs]);
-        eyeData = dd.eye;
-        
-%         %% concatenate across trials
-%         [spk_all_cat, t_cat] = concatenate_spk(spk_all, {dd.eye.t});
-%         clear spk_all
-%         mFiringRate = length(spk_all_cat)/(t_cat(end)-t_cat(1)); %spks/s
-%         if mFiringRate < param.th_frate
-%             disp([chName 'skipped as mFiringRate<' num2str(param.th_frate)]);
-%             continue;
-%         end
-        
-        
         %% prepare behavioral data (common across channels per day)
         eyeName = fullfile(saveFolder,['eyeCat_' thisDate '.mat']);
         
@@ -96,7 +53,6 @@ for idata = 154%:length(channels) %1061;%865;%
         load(fullfile(saveFolder,['eyeCat_' thisDate '.mat']));
         
         
-        saveName = fullfile(saveFolder, [saveSuffix '.mat']);
         load(saveName, 'PSTH_f','kernelInfo','predicted_all','predicted');
         
         [~, pdiam] = getPupilDiameter(eyeData_rmotl_cat);
@@ -109,9 +65,6 @@ for idata = 154%:length(channels) %1061;%865;%
         
         
         %% triggered by tOnsets
-        psthNames = cat(2,{'psth','psth_f','predicted_all'},...
-            param.predictorNames,'pdiam ori');
-        
        
         onset = catEvTimes.(param.evName);
         
@@ -145,26 +98,6 @@ for idata = 154%:length(channels) %1061;%865;%
         minAvgOnsetResp_m = squeeze(min(mean(avgOnsetResp_m,4),[],1));
         % varType x time
         
-        %% fit curve
-        for icue = 1:2
-            for it = 1:length(param.times)-1
-                for ivar = 1:length(psthNames)
-                    
-                    if it==1
-                        initPars = [];
-                    else
-                        initPars = fitPars(:,ivar, it-1, icue);
-                    end
-                    %TODO: replace w fitResponse
-                    [fitPars(:,ivar, it, icue), fitErr(ivar, it, icue)] ...
-                        = fitoriWrapped(sortedOnsetLabels{icue}, singleOnsetResp_m{icue}(:,ivar,it),...
-                        [], [nan nan 0 minAvgOnsetResp_m(ivar,it) nan],'',20, initPars);
-                    %[Dp(peak angle), Rp(peak amp), Rn(2nd peak amp = 0), Ro(baseline), sigma(width)]
-                    fittedOnsetResp_m(:,ivar,it,icue) ...
-                        = orituneWrapped(fitPars(:,ivar,it,icue), param.cardinalDir);
-                end
-            end
-        end
         
         avgOnsetResp_m = [];
         for it = 1:length(param.times)-1
@@ -172,51 +105,6 @@ for idata = 154%:length(channels) %1061;%865;%
             avgOnsetResp_m(:,:,it,:) = mean(avgOnsetResp(:,:,tidx,:),3);
             % target direction x varType x time x wo/w cue x trigger type x channels
         end
-        
-        %% inspect fitting result
-        figure('position',[0 0 1400 1000]);
-        for ifit = 1:2
-            for icue = 1:2
-                nvars = size(avgOnsetResp_m,2);
-                for ivar = 1:nvars
-                    if (ifit==1)
-                        thisData = squeeze(avgOnsetResp_m(:,ivar,:,icue));
-                        if icue == 1
-                            irow=1;
-                        elseif icue == 2
-                            irow=3;
-                        end
-                    elseif (ifit==2)
-                        thisData = squeeze(fittedOnsetResp_m(:,ivar,:,icue));
-                        if icue == 1
-                            irow=2;
-                        elseif icue == 2
-                            irow=4;
-                        end
-                    end
-                    
-                    
-                    subplot(nvars, 4, 4*(ivar-1) + irow);
-                    imagesc(param.times(1:end-1)+.5*mean(diff(param.times)), param.cardinalDir, thisData);
-                    set(gca, 'ytick',param.cardinalDir);
-                    if icue==1
-                        ylabel(psthNames{ivar});
-                    end
-                    mcolorbar(gca,.5);
-                    if ivar == 1
-                        if icue==1
-                            title('wo cue');
-                        elseif icue ==2
-                            title('w cue');
-                        end
-                    end
-                end
-            end
-        end
-        xlabel(['time from' param.evName ' [s]']);
-        screen2png([param.evName '_' saveSuffix '_fit']);
-        close all;
-        
         
         %% w vs wo cue
         colormap('parula');

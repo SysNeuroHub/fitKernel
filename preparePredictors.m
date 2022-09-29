@@ -1,8 +1,13 @@
 function predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes)
+% predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes)
+% returns matrix (time x target direction) about predictors specified as param.predictorNames
+%
 %param:
 %     cardinalDir
 %     dt_r
 %     cutoffFreq
+%     predictorNames:
+%     {'vision','cue','eyeposition','pdiam','pdiam_prctile','parea','blink','saccade','reward'}
 %
 % predictorInfo:
 %     predictors_r
@@ -20,7 +25,7 @@ for ivar = 1:nPredictors
     switch param.predictorNames{ivar}
         case 'vision'
             thisPredictor = getTgtDirMtx(dd, t_r, catEvTimes, param.cardinalDir);%,...
-                %eyeData_rmotl_cat);
+                %eyeData_rmotl_cat); %< currently ignoring trials with NAN
         case 'cue' %NOT YET IMPLEMENTED
             thisPredictor = getCueDirMtx(dd, t_r, catEvTimes, param.cardinalDir);
         case 'eyeposition'

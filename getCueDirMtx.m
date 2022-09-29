@@ -1,12 +1,10 @@
 function dirMtx = getCueDirMtx(dd, t_r, onsets_cat, cardinalDir)
 % dirMtx = getCueDirMtx(dd, t_r, tOnset_cat, cardinalDir)
-% 
-% NOT YET IMPLEMENTED
 %
 % INPUT:
 % dd
 % t_r: time axis of concatenated events
-% tOnset_cat: time of target onsets
+% onsets_cat: time of target and cue onsets
 % cardinalDir: list of directions of targets in deg
 %
 % OUTPUT:
@@ -23,9 +21,14 @@ end
 
 dirMtx = zeros(length(cardinalDir), length(t_r));
 for itr = 1:dd.numTrials
-    tOnset = onsets_cat.tOnset(itr);
+    %only register trials with cue and task completion
+    cueOnset = onsets_cat.cueOnset(itr);
     cOnset = onsets_cat.cOnset(itr);
-    [~, onIdx] = min(abs(t_r - tOnset));
+    if isinf(cueOnset) || isnan(cOnset)
+        continue;
+    end
+    
+    [~, onIdx] = min(abs(t_r - cueOnset));
     [~, offIdx] = min(abs(t_r - cOnset));
     dirMtx(minDirIdx(itr), onIdx:offIdx) = 1;
 end
