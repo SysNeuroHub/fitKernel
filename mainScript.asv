@@ -18,21 +18,9 @@ switch getenv('COMPUTERNAME')
         rootFolder = '/mnt/physio/Monash Data/Joanita/2021/cuesaccade_data/';
 end
 
-saveFigFolder = [saveFolder, '/20230504'];
-mkdir(saveFigFolder);
-
 %% recorded data
 animal = 'hugo'; %'m1899' 'andy' 'ollie' 
 year = '2022';
-%NG 11 01January/27/17
-% MException with properties:
-% 
-%     identifier: 'MATLAB:sizeDimensionsMustMatch'
-%        message: 'Arrays have incompatible sizes for this operation.'
-%          cause: {}
-%          stack: [1×1 struct]
-%     Correction: []
-
 dataType = 0;%0: each channel, 1: all channels per day
 fitIt = 0;
 
@@ -40,12 +28,7 @@ fitIt = 0;
 
 % to obtain index of specified month&date&channel
 % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-%     regexptranslate('wildcard','09September\07\*_ch26.mat'))));
-thisdata = [];
-
-if isempty(thisdata)
-    thisdata = 1:length(channels);
-end
+%     regexptranslate('wildcard','08August\13\*_ch21.mat'))));
 
 %% omit data
 % no saccade response
@@ -61,7 +44,7 @@ psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
 
 ng = [];
 previousDate = [];
-for idata = 11:length(channels) %1:795
+for idata = 2:length(channels) %1:795
     %ng 243, 555
     try
         % datech = [years{idata} filesep months{idata} filesep dates{idata} filesep num2str(channels{idata})];
