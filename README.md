@@ -5,7 +5,7 @@
 
 # Requirement
 
-* marmodata (loading eye data)
+* marmodata (loading eye data, needs to be MASTER branch)
 * marmolab-stimuli (loading cuesaccade data)
 * dsbox (ridge regression and some visualization)
 * https://github.com/pillowlab/neuroGLM (GLM fitting)

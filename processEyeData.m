@@ -37,26 +37,7 @@ assert(isempty(find(meta_cat.ENDSACC-meta_cat.STARTSACC<0)));
 okSacc = find(meta_cat.ENDSACC-meta_cat.STARTSACC>0);
 meta_cat.STARTSACC = meta_cat.STARTSACC(okSacc);
 meta_cat.ENDSACC = meta_cat.ENDSACC(okSacc);
-%             tic
-%             [eyeData_cat, onsets_cat, meta_cat] = concatenate_eye(eyeData, dd);%takes 90s
-%             t0=toc
-%             t_tr={eyeData.t};
-%
-%
-%             %% detect and interpolate blinks
-%             %removing outliers helps for larger kernels
-%             tic
-%             [eyeData_rmblk_cat, blinks] = removeBlinksEDF(eyeData_cat, meta_cat, param.marginSize,1);
-%             close;
-%             t1=toc
-%
-%             %% remove parea outliers based on diff
-%             tic
-%             [eyeData_rmotl_cat, outliers] = removePareaOutliers(eyeData_rmblk_cat, ...
-%                 param.marginSize, param.pareaTh, param.pareaDiffTh);
-%             screen2png(['rmOtl_' saveSuffix]);
-%             close;
-%             t2=toc
+
 
 %% detect saccades
 [startSacc, endSacc] = selectSaccades(meta_cat.STARTSACC, meta_cat.ENDSACC,...
