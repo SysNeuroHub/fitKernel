@@ -1,24 +1,20 @@
-function [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder)
-%[loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder)
+function [loadNames, years, months, dates, channels] = getYearMonthDateCh(animal, rootFolder)
+%FIXME
 
-foldersByYear = dir(rootFolder);
+foldersByYear = dir(rootFolder);%FIX
 foldersByYear = foldersByYear(3:end);
 foldersByYear = foldersByYear([foldersByYear.isdir]);
-thisFolder = strcmp({foldersByYear.name}, year);
-if sum(thisFolder)==0
-    error('no data found in this year');
-end
-foldersByYear = foldersByYear(thisFolder);
+foldersByYear = foldersByYear((cellfun(@numel, {foldersByYear.name}) == 4));
+YearNames = {foldersByYear.name};
 
-thisFolder = fullfile(foldersByYear.folder,foldersByYear.name, 'cuesaccade_data');
-foldersByMonth = dir(thisFolder);
+foldersByMonth = dir(rootFolder);%FIX
 foldersByMonth = foldersByMonth(3:end);
 foldersByMonth = foldersByMonth([foldersByMonth.isdir]);
 
 monthNames = {foldersByMonth.name};
 dateNames = cell(1,length(monthNames));
 for im = 1:length(monthNames)
-    foldersByDate = dir(fullfile(thisFolder, monthNames{im}));
+    foldersByDate = dir(fullfile(rootFolder, monthNames{im}));
     foldersByDate = foldersByDate(3:end);
     foldersByDate = foldersByDate([foldersByDate.isdir]);
     dateNames{im} = {foldersByDate.name};
@@ -33,7 +29,7 @@ for im = 1:length(monthNames)
     for id = 1:length(dateNames{im})
         date = [monthNames{im} '/' dateNames{im}{id}];
         
-        loadFolder = fullfile(thisFolder, date, 'saved_oephysdata');
+        loadFolder = fullfile(rootFolder, date, 'saved_oephysdata');
         
         fileNames = {dir(fullfile(loadFolder, [animal '_oephysdata_*.mat'])).name};
         

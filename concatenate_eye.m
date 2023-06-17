@@ -56,11 +56,13 @@ for itr = 1:nTrials
     %     end
     if isempty(t_cat)
         t0 = eyeData(itr).t(1);
-    else
+    elseif ~isempty(eyeData(itr).t)
         t0 =  max(t_cat)-eyeData(itr).t(1)+eyeData(itr).dt;
     end
-    t_cat = cat(1, t_cat, eyeData(itr).t+t0);
-    
+    if ~isempty(eyeData(itr).t)
+        t_cat = cat(1, t_cat, eyeData(itr).t+t0);
+    end
+
     if nargout > 1
         %         for idd = 1:length(ddnames)
         %             dd_cat.(ddnames{idd}) = cat(1, dd_cat.(ddnames{idd}), dd.(ddnames)(itr)+t0);
@@ -82,7 +84,7 @@ for itr = 1:nTrials
         end
     end
 end
-
+t_cat = t_cat(~isnan(t_cat));
 [t_cat, ix] = unique(t_cat);
 eyeData_cat = marmodata.eye(t_cat, x_cat(ix), y_cat(ix), pwdth_cat(ix), phght_cat(ix));
 

@@ -26,6 +26,7 @@ Functions about concatenating trial-based data
 Main function for kernel estimation
 * fitPSTH_cv: estimate linear kernel with K-fold cross validation using neuroGLM
 * fitPSTH: estimate linear kernel with ridge regression in dsbox (obsolete)
+* fitMultiplicative: (under testing)
 
 Functions about preparing predictor signals
 * processEyeData: main function to concatenate eye data, extract times of saccades, blinks and outliers
