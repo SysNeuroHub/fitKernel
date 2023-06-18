@@ -18,7 +18,8 @@ nTrials = length(eyeData);
 
 if nargout>1
     fdnames = fieldnames(dd)';
-    fdnames = fdnames(contains(fdnames, 'Onset'));
+    fdnames = fdnames(contains(fdnames, 'Onset') & ~contains(fdnames, 'cOnset')...
+        & ~contains(fdnames, 'fOnset'));
     c = cell(length(fdnames),1);
     onsets_cat = cell2struct(c,fdnames);
 end
@@ -41,6 +42,7 @@ t_cat = [];
 
 [~, cOnset] = getChoice(dd); %cOnset time including FAIL
 [outcome, cueOnset] = getCueOnset(dd);
+fOnset = getFOnset(dd);
 
 for itr = 1:nTrials
     x_cat = cat(1, x_cat, eyeData(itr).x);
@@ -74,6 +76,7 @@ for itr = 1:nTrials
         %onsets_cat = structfun(@(x,y)(cat(1,x,y(itr)+t0)), onsets_cat,dd); NG
         onsets_cat.cOnset(itr,1) = cOnset(itr) + t0;
         onsets_cat.cueOnset(itr,1) = cueOnset(itr) + t0;
+        onsets_cat.fOnset(itr,1) = fOnset(itr) + t0;
         
     end
     if nargout > 2

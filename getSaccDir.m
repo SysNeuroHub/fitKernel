@@ -9,14 +9,16 @@ t = eyeData_rmotl_cat.t;
 
 
 dirIndex = zeros(length(startSacc),1);
-parfor isacc = 1:length(startSacc)
-    tsnippet = intersect(find(t>=startSacc(isacc)), find(t<=endSacc(isacc)));
-    %if isempty(tsnippet)
-    %    continue;
-    %end
-    eyeRad = atan2(y(tsnippet)-y(tsnippet(1)), x(tsnippet)-x(tsnippet(1)));
-    [~, minDirIdx] = arrayfun(@(x)(min(abs(circ_dist(x, pi/180*cardinalDir)))), eyeRad);
-    dirIndex(isacc) = mode(minDirIdx);
+if isempty(startSacc)
+    saccDir = [];
+else
+    parfor isacc = 1:length(startSacc)
+        tsnippet = intersect(find(t>=startSacc(isacc)), find(t<=endSacc(isacc)));
+        if ~isempty(tsnippet)
+            eyeRad = atan2(y(tsnippet)-y(tsnippet(1)), x(tsnippet)-x(tsnippet(1)));
+            [~, minDirIdx] = arrayfun(@(x)(min(abs(circ_dist(x, pi/180*cardinalDir)))), eyeRad);
+            dirIndex(isacc) = mode(minDirIdx);
+        end
+    end
+    saccDir = cardinalDir(dirIndex(dirIndex>0));
 end
-
-saccDir = cardinalDir(dirIndex);
