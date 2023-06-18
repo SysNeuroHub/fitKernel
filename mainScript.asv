@@ -2,25 +2,43 @@ switch getenv('COMPUTERNAME')
 
     case 'MU00175834'
         addpath(genpath('C:/Users/dshi0006/git'))
-        saveFolder = 'E:/tmp/cuesaccade_data';
-        saveFigFolder = [saveFolder, '/20220722'];
-        mkdir(saveFigFolder);
-        %saveFolder = '//storage.erc.monash.edu/shares/R-MNHS-Syncitium/Shared/Daisuke/cuesaccade_data';
-        rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/2021/cuesaccade_data/';
+        saveServer = 'E:/tmp/cuesaccade_data';
+        %saveFigFolder = [saveServer, '/20220722'];
+        %mkdir(saveFigFolder);
+        rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
 
     case 'MU00011697'
         saveServer = '~/Documents/cuesaccade_data';
         rootFolder = '/mnt/MBI/Monash Data/Joanita/';
 
-    case '' %FIXME
+    case 'MU00108396'
         addpath(genpath('/home/localadmin/Documents/MATLAB'));
         saveFolder = '/mnt/syncitium/Daisuke/cuesaccade_data';
         rootFolder = '/mnt/physio/Monash Data/Joanita/2021/cuesaccade_data/';
 end
 
+%saveFigFolder = [saveFolder, '/20230504'];
+%mkdir(saveFigFolder);
+
 %% recorded data
 animal = 'hugo'; %'m1899' 'andy' 'ollie' 
 year = '2022';
+
+%animal = 'hugo'; %'m1899' 'andy' 'ollie' 
+%year = '2022';
+%NG 11 01January/27/17
+% MException with properties:
+% 
+%     identifier: 'MATLAB:sizeDimensionsMustMatch'
+%        message: 'Arrays have incompatible sizes for this operation.'
+%          cause: {}
+%          stack: [1×1 struct]
+%     Correction: []
+
+
+%m1899
+
+
 dataType = 0;%0: each channel, 1: all channels per day
 fitIt = 0;
 
@@ -28,7 +46,12 @@ fitIt = 0;
 
 % to obtain index of specified month&date&channel
 % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-%     regexptranslate('wildcard','08August\13\*_ch21.mat'))));
+%     regexptranslate('wildcard','09September\07\*_ch26.mat'))));
+thisdata = [];
+
+if isempty(thisdata)
+    thisdata = 1:length(channels);
+end
 
 %% omit data
 % no saccade response
@@ -44,8 +67,7 @@ psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
 
 ng = [];
 previousDate = [];
-for idata = 2:length(channels) %1:795
-    %ng 243, 555
+for idata = [11   956   957   958   959   960   961   962   964   965   966   968   969   970   971]%1:length(channels) 
     try
         % datech = [years{idata} filesep months{idata} filesep dates{idata} filesep num2str(channels{idata})];
         datech = [months{idata} filesep dates{idata} filesep num2str(channels{idata})];
@@ -71,7 +93,7 @@ for idata = 2:length(channels) %1:795
         spk_all = ephysdata.spikes.spk;
         if ~isempty(spk_all)
             %% concatenate across trials
-            [spk_all_cat, t_cat] = concatenate_spk(spk_all, {dd.eye.t});
+            [spk_all_cat, t_cat] = concatenate_spk(spk_all,  dd.eye);
             clear spk_all
             mFiringRate = length(spk_all_cat)/(t_cat(end)-t_cat(1)); %spks/s
         else
@@ -88,7 +110,7 @@ for idata = 2:length(channels) %1:795
 
         %% prepare behavioral data (common across channels per day)
         eyeName = fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']);
-        if  ~exist(eyeName, 'file')%~strcmp(thisDate, previousDate)
+        if  ~exist(eyeName, 'file') %~strcmp(thisDate, previousDate)
 
             [eyeData_rmotl_cat, catEvTimes, t_tr, onsets_cat,meta_cat,blinks,outliers] ...
                 = processEyeData(dd.eye, dd, param);
@@ -125,10 +147,10 @@ for idata = 2:length(channels) %1:795
             predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
             save(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
         else
-            disp('loading eye/predictor data');
-            load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
-            load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
-            t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
+            % %             disp('loading eye/predictor data');
+            % %             load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
+            % %             load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
+            % %             t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
         end
 
 

@@ -21,8 +21,8 @@ end
 %mkdir(saveFigFolder);
 
 %% recorded data
-animal = 'm1899'; %'m1899' 'andy' 'ollie' 
-year = '2021';
+animal = 'hugo'; %'m1899' 'andy' 'ollie' 
+year = '2023';
 
 %animal = 'hugo'; %'m1899' 'andy' 'ollie' 
 %year = '2022';
@@ -93,7 +93,7 @@ for idata = 1:length(channels)
         spk_all = ephysdata.spikes.spk;
         if ~isempty(spk_all)
             %% concatenate across trials
-            [spk_all_cat, t_cat] = concatenate_spk(spk_all, {dd.eye.t});
+            [spk_all_cat, t_cat] = concatenate_spk(spk_all,  dd.eye);
             clear spk_all
             mFiringRate = length(spk_all_cat)/(t_cat(end)-t_cat(1)); %spks/s
         else

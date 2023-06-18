@@ -1,4 +1,5 @@
-function [eyeData_cat, onsets_cat, meta_cat] = concatenate_eye(eyeData, dd)
+function [eyeData_cat, onsets_cat, meta_cat] = ...
+    concatenate_eye(eyeData, dd)
 %[eyeData_cat] = concatenate_eye(dd)
 % returns mamordata.eye concatenated across trials
 
