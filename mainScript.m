@@ -27,6 +27,10 @@ year = '2021';
 saveFigFolder = fullfile(saveServer, '20230619',year,animal);
 mkdir(saveFigFolder);
 
+%ollie
+% animal = 'ollie'; %'m1899' 'andy' 'ollie' 
+% year = '2023';
+% 06June\13\17 outofmemory (478)
 
 dataType = 0;%0: each channel, 1: all channels per day
 fitIt = 1;
