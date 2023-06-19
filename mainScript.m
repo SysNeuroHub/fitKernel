@@ -21,8 +21,8 @@ end
 %mkdir(saveFigFolder);
 
 %% recorded data
-animal = 'hugo'; %'m1899' 'andy' 'ollie' 
-year = '2021';
+animal = 'm1899';% 'andy' 'ollie' 
+year = '2022';
 
 saveFigFolder = fullfile(saveServer, '20230619',year,animal);
 mkdir(saveFigFolder);

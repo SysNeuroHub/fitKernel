@@ -12,6 +12,7 @@ psthIdx = find(strcmp(psthNames, 'psth'));
 allMdlIdx = find(strcmp(psthNames, 'predicted_all'));
 visionIdx = find(strcmp(psthNames, 'vision'));
 eyevelIdx = find(strcmp(psthNames, 'eyespeed'));
+eyeposIdx = find(strcmp(psthNames, 'eyeposition'));
 
 %% triggered by tOnsets
 %validEvents = intersect(find(~isnan(onset)), find(dd.cueOn==icue-1));
@@ -172,6 +173,7 @@ hold on;
 boundedline(winSamps, mtOnsetResp(allMdlIdx,:), setOnsetResp(allMdlIdx,:),'b', 'transparency', 0.5);
 boundedline(winSamps, mtOnsetResp(visionIdx,:), setOnsetResp(visionIdx,:),'m', 'transparency', 0.5);
 boundedline(winSamps, mtOnsetResp(eyevelIdx,:), setOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
+boundedline(winSamps, mtOnsetResp(eyeposIdx,:), setOnsetResp(eyeposIdx,:),'g', 'transparency', 0.5);
 %boundedline(winSamps, mtOnsetResp(5,:), setOnsetResp(5,:),'g', 'transparency', 0.5);
 %vbox(param.baseWin(1), param.baseWin(2))
 %vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
@@ -186,6 +188,7 @@ hold on;
 boundedline(winSamps, mtOnsetResp_v(allMdlIdx,:), setOnsetResp_v(allMdlIdx,:),'b', 'transparency', 0.5);
 boundedline(winSamps, mtOnsetResp_v(visionIdx,:), setOnsetResp_v(visionIdx,:),'m', 'transparency', 0.5);
 boundedline(winSamps, mtOnsetResp_v(eyevelIdx,:), setOnsetResp_v(eyevelIdx,:),'c', 'transparency', 0.5);
+boundedline(winSamps, mtOnsetResp_v(eyeposIdx,:), setOnsetResp_v(eyeposIdx,:),'g', 'transparency', 0.5);
 %vbox(param.baseWin(1), param.baseWin(2))
 %vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
 xlim([-0.1 0.5]);
@@ -197,6 +200,7 @@ hold on;
 boundedline(winSamps, msaccResp(allMdlIdx,:), sesaccResp(allMdlIdx,:),'b', 'transparency', 0.5);
 boundedline(winSamps, msaccResp(visionIdx,:), sesaccResp(visionIdx,:),'m', 'transparency', 0.5);
 boundedline(winSamps, msaccResp(eyevelIdx,:), sesaccResp(eyevelIdx,:),'c', 'transparency', 0.5);
+boundedline(winSamps, msaccResp(eyeposIdx,:), sesaccResp(eyeposIdx,:),'g', 'transparency', 0.5);
 
 linkaxes(ax(:),'y');
 vline(medianSaccDelay, ax(1));
@@ -207,7 +211,7 @@ vline(0, ax(3));
 %vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
 xlim([-0.1-medianSaccDelay winSamps(end)-medianSaccDelay])
 ylabel(['saccade(outside task), n=' num2str(numel(theseSaccTrials))]);
-legend('observed','all mdl','vision','eye velocity','location','northwest')
+legend('observed','all mdl','vision','eye velocity','eye position','location','northwest')
 
 
 % saveas(gcf,saveFigName);
