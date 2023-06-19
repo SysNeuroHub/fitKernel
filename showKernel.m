@@ -34,18 +34,26 @@ set(gca,'ytick',cardinalDir);
 xlabel('time from eye movement [s]');
 mcolorbar(a3,.5);
 
-a3=subplot(4,2,6);
-thisIm = kernelInfo.kernel{3}';
-crange = prctile(abs(thisIm(:)),99);
-%crange = prctile(thisIm(:),[1 99]);
-imagesc(kernelInfo.tlags{3}(:,1),cardinalDir, thisIm);
-caxis([-crange crange]);
-set(gca,'ytick',cardinalDir);
-xlabel('time from eye movement [s]');
-mcolorbar(a3,.5);
+if size(kernelInfo.kernel{3},2)>1
+    a3=subplot(4,2,6);
+    thisIm = kernelInfo.kernel{3}';
+    crange = prctile(abs(thisIm(:)),99);
+    %crange = prctile(thisIm(:),[1 99]);
+    imagesc(kernelInfo.tlags{3}(:,1),cardinalDir, thisIm);
+    caxis([-crange crange]);
+    set(gca,'ytick',cardinalDir);
+    xlabel('time from eye movement [s]');
+    mcolorbar(a3,.5);
 
-a4=subplot(4,2,8);
-plot(kernelInfo.tlags{4}, kernelInfo.kernel{4}');hold on
-plot(kernelInfo.tlags{5}, kernelInfo.kernel{5}');hold on
-xlabel('time from pupil dilation/blink [s]');
-axis tight;
+    a4=subplot(4,2,8);
+    plot(kernelInfo.tlags{4}, kernelInfo.kernel{4}');hold on
+    plot(kernelInfo.tlags{5}, kernelInfo.kernel{5}');hold on
+    xlabel('time from pupil dilation/blink [s]');
+    axis tight;
+else
+    a4=subplot(4,2,8);
+    plot(kernelInfo.tlags{3}, kernelInfo.kernel{3}');hold on
+    plot(kernelInfo.tlags{4}, kernelInfo.kernel{4}');hold on
+    xlabel('time from pupil dilation/blink [s]');
+    axis tight;
+end

@@ -10,7 +10,7 @@ switch getenv('COMPUTERNAME')
     case 'MU00011697'
         saveServer = '~/Documents/cuesaccade_data';
         rootFolder = '/mnt/MBI/Monash Data/Joanita/';
-
+        
     case 'MU00108396'
         addpath(genpath('/home/localadmin/Documents/MATLAB'));
         saveFolder = '/mnt/syncitium/Daisuke/cuesaccade_data';
@@ -22,31 +22,20 @@ end
 
 %% recorded data
 animal = 'hugo'; %'m1899' 'andy' 'ollie' 
-year = '2023';
+year = '2021';
 
-%animal = 'hugo'; %'m1899' 'andy' 'ollie' 
-%year = '2022';
-%NG 11 01January/27/17
-% MException with properties:
-% 
-%     identifier: 'MATLAB:sizeDimensionsMustMatch'
-%        message: 'Arrays have incompatible sizes for this operation.'
-%          cause: {}
-%          stack: [1×1 struct]
-%     Correction: []
-
-
-%m1899
+saveFigFolder = fullfile(saveServer, '20230619',year,animal);
+mkdir(saveFigFolder);
 
 
 dataType = 0;%0: each channel, 1: all channels per day
-fitIt = 0;
+fitIt = 1;
 
 [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
 
 % to obtain index of specified month&date&channel
 % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-%     regexptranslate('wildcard','09September\07\*_ch26.mat'))));
+%     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','12December','14','*_ch13*')))));
 thisdata = [];
 
 if isempty(thisdata)
@@ -59,7 +48,7 @@ end
 % low number of successful trials
 
 % parameters
-load(fullfile(saveServer,'param20220719'),'param');
+load(fullfile(saveServer,'param20230405.mat'),'param');
 ncDirs = length(param.cardinalDir);
 %param.lagRange(2,:)=[-1 0.5];
 
@@ -67,7 +56,7 @@ psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
 
 ng = [];
 previousDate = [];
-for idata = 1:length(channels) 
+for idata = thisdata
     try
         % datech = [years{idata} filesep months{idata} filesep dates{idata} filesep num2str(channels{idata})];
         datech = [months{idata} filesep dates{idata} filesep num2str(channels{idata})];
@@ -147,11 +136,17 @@ for idata = 1:length(channels)
             predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
             save(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
         else
-            % %             disp('loading eye/predictor data');
-            % %             load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
-            % %             load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
-            % %             t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
-        end
+            disp('loading eye/predictor data');
+            %load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
+            load(eyeName,'eyeData_rmotl_cat','catEvTimes',...
+                'onsets_cat','meta_cat','blinks','outliers','t_tr',...
+                'startSaccNoTask', 'endSaccNoTask', ...
+                'saccDirNoTask', 'dirIndexNoTask');
+            t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
+            predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
+            save(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
+            load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
+         end
 
 
         if fitIt
@@ -176,18 +171,18 @@ for idata = 1:length(channels)
             y_r = cat(2,PSTH_f,predicted_all, predicted);
 
             %% figure for kernel fitting
-            f = showKernel( t_r, y_r(:,1:2), kernelInfo, param.cardinalDir);
+            f = showKernel( t_r, y_r, kernelInfo, param.cardinalDir);
             screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
             close(f);
 
 
 
             %% Figure for target onset response
-            %     [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-            %         startSaccNoTask, saccDirNoTask, param, [-0.5 0.5]);
-            %     cellclassInfo.datech = datech;
-            %     screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
-            %     close(f);
+            [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
+                startSaccNoTask, saccDirNoTask, param, [-0.5 0.5]);
+            cellclassInfo.datech = datech;
+            screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
+            close(f);
 
 
             %% Figure for target onset, w/wo cue
@@ -226,10 +221,10 @@ for idata = 1:length(channels)
 
             %% save results
 
-            save(saveName, 'PSTH_f','predicted_all', 'predicted','kernelInfo',...
-                't_r','cellclassInfo','avgfOnsetResp', 'avgCueResp', 'winSamps_fc', ...
-                'avgTOnsetByCue','param','winSamps_sacc', 'singleSaccResp', 'sortedSaccLabels',...
-                'mFiringRate','t_cat');
+            save(saveName, 'PSTH_f','predicted_all', 'predicted','kernelInfo','t_r','cellclassInfo','param','mFiringRate','t_cat');
+                % 'avgfOnsetResp', 'avgCueResp', 'winSamps_fc', ...
+                % 'avgTOnsetByCue','winSamps_sacc', 'singleSaccResp', 'sortedSaccLabels',...
+                %);
             %'pspec_psth','pspec_parea','faxis_psth','faxis_parea');
             %         clear spk_all dd kernel kernel_x kernel_y psth_all mDir seDir mDir_pred seDir_pred
 

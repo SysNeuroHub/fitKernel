@@ -5,6 +5,13 @@ function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, .
 %    t_r, predictorNames, predictors_r, npredVars, sigma, kernelInterval, ...
 %    lagRange, ridgeParam, trIdx_r)
 %created from https://github.com/pillowlab/neuroGLM/blob/master/docs/tutorial.md
+%
+% currently using regression.xvalidationIdx from obsolte neuroGLM by jyts.
+% the path for the obsolte neuroGLM should be below the new neuroGLM
+% Future version should stop using this function
+%
+% fmincon occupies most of the time, GPU computation is not yet implemented
+%cf. https://au.mathworks.com/matlabcentral/answers/1605350-fmincon-running-on-gpu
 
 useSptrain = 0;
     

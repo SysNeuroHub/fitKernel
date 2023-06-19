@@ -1,0 +1,8 @@
+animal = 'hugo'; %'m1899' 'andy' 'ollie' 
+year = '2021';
+
+load('~/Documents/cuesaccade_data/2021/hugo/predictorInfo_hugo12December_14.mat');
+load('~/Documents/cuesaccade_data/param20230405.mat','param');
+fig = showPredictorInfo(predictorInfo, param,[270 370]);
+
+saveas(gcf, 'FigPredictorInfo.fig');
