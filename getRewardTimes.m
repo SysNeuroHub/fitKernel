@@ -1,4 +1,4 @@
-function [rewardTimes, punishTimes, successTimes] = getRewardTimes(dd)
+function [rewardTimes, punishTimes, successTimes, trialOutcome] = getRewardTimes(dd)
 %[rewardTimes, successTimes] = getRewardTimes(dd)
 %returns times of reward delivery detected as item2delivered
 %
@@ -23,6 +23,7 @@ for itr = 1:nTrials
     %end of trial to initiate reward delivery
     [time_s,trialInfo,~,state] = dd.meta.choice.state('trial',itr); % time stamps of the trial 'states'
     success_ind = strcmpi(state, 'SUCCESS');
+    fail_ind = strcmp(state, 'FAIL');
         
     %actual delivery time of reward
     [time_d, trialInfo, frame, data] = dd.meta.newera.item2delivered('trial',itr);
@@ -30,12 +31,14 @@ for itr = 1:nTrials
     if sum(success_ind)>0 %dd.successTrials(itr) 
         successTimes(itr) = time_s(success_ind) - dd.meta.cic.firstFrame('trial',itr).time + t0;
         rewardTimes(itr) = deliveryTime;
-    else
-        punishTimes(itr) = deliveryTime;
+    elseif sum(fail_ind)>0
+        punishTimes(itr) = time_s(fail_ind) - dd.meta.cic.firstFrame('trial',itr).time + t0;
     end
 end
-punishTimes = punishTimes(~isnan(punishTimes));
-rewardTimes = rewardTimes(~isnan(rewardTimes));
+trialOutcome(~isnan(rewardTimes))=1;
+trialOutcome(~isnan(punishTimes))=-1;
+punishTimes = punishTimes(trialOutcome==-1);
+rewardTimes = rewardTimes(trialOutcome==1);
 successTimes = successTimes(~isnan(successTimes));
 
 
