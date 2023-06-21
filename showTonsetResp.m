@@ -100,7 +100,7 @@ end
 if allTr
     theseSaccTrials = 1:numel(saccDirNoTask);
 else
-    theseSaccTrials = (saccDirNoTask == param.cardinalDir(prefDirIdx));
+    theseSaccTrials = (sortedSaccLabels == param.cardinalDir(prefDirIdx));
 end
 msaccResp = squeeze(nanmean(singleSaccResp(theseSaccTrials,:,:)));%avg response to preferred direction
 sesaccResp = 1/sqrt(numel(theseSaccTrials))*squeeze(nanstd(singleSaccResp(theseSaccTrials,:,:),1));
