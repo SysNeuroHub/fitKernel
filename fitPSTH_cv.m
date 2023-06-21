@@ -151,10 +151,13 @@ for ifold = 1:KFolds
     opts = optimoptions(@fminunc, 'Algorithm', 'trust-region', ...
         'GradObj', 'on', 'Hessian','on');%,'UseParallel',true);
     
-    tic
-    [wml, nlogli, exitflag, ostruct, grad, hessian] = fminunc(lfunc, wInit, opts);
-    toc
-    w(:,ifold) = wml;
+    try
+        [wml, nlogli, exitflag, ostruct, grad, hessian] = fminunc(lfunc, wInit, opts);
+        w(:,ifold) = wml;
+    catch err
+        w(:,ifold) = wInit;
+    end
+    
     %wvar = diag(inv(hessian));
     
     %% Simulate from model for test data
