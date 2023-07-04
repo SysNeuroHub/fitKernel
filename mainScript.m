@@ -24,26 +24,9 @@ end
 animal = 'hugo';% 'andy' 'ollie' 
 year = '2021';
 
-saveFigFolder = fullfile(saveServer, '20230619',year,animal);
+saveFigFolder = fullfile(saveServer, '20230704',year,animal);
 mkdir(saveFigFolder);
 
-% animal = 'm1899';% 'andy' 'ollie' 
-% year = '2022';
-%   6     8    10    11    14    15    16    17    23    27    34    35    36    45    48    54    55    60    69    70   100   111
-%    118   119   120   121   122   130   135   158   164   167   185   186   194   202   248   260   284   285   346   347   365   369
-%    379   381   389   390   392   394   395   396   406   410   412   420   430   433   450   455   458]
-%  MException with properties:
-% 
-%     identifier: 'optimlib:sfminbx:InvalidUserFunction'
-%        message: 'Gradient contains Inf, NaN, or complex values. fminunc cannot continue.'
-%          cause: {}
-%          stack: [4×1 struct]
-%     Correction: []
-    
-%ollie
-% animal = 'ollie'; %'m1899' 'andy' 'ollie' 
-% year = '2023';
-% 06June\13\17 outofmemory (478)
 
 dataType = 0;%0: each channel, 1: all channels per day
 fitIt = 1;
@@ -51,9 +34,8 @@ fitIt = 1;
 [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
 
 % to obtain index of specified month&date&channel
-thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','12December','14','*_ch13*')))));
-% thisdata = [801:900];
+% thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+%     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','12December','14','*_ch13*')))));
 
 if isempty(thisdata)
     thisdata = 1:length(channels);
@@ -82,12 +64,12 @@ for idata = thisdata
         saveSuffix = [animal replace(datech,filesep,'_') ];%'_cue'];
 
         thisDate = [months{idata} '_' dates{idata}];
-        if sum(strcmp(thisDate, {'06June_06','06June_11','06June_09'}))>0
-            %june11  Sample points must be unique.
-            %june09
-            %june06 weird blank period in time around 500-600s
-            continue;
-        end
+        % if sum(strcmp(thisDate, {'06June_06','06June_11','06June_09'}))>0
+        %     %june11  Sample points must be unique.
+        %     %june09
+        %     %june06 weird blank period in time around 500-600s
+        %     continue;
+        % end
         saveFolder = fullfile(saveServer, year,animal);%17/6/23
         if ~exist(saveFolder, 'dir')
             mkdir(saveFolder);
