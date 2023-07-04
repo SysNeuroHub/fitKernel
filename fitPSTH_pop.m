@@ -31,7 +31,7 @@ expval_avgtgt_pop = [];
 ntargetTrials_pop = [];
 ntotTrials_pop = [];
 id_pop = [];
-for yy = 1%:3
+for yy = 1:3
     switch yy
         case 1
             year = '2021';
@@ -54,7 +54,7 @@ for yy = 1%:3
     %dataByYear = [];%struct(length(channels),1);
     %datech_pop = nan(length(channels),1);
     %corrcoef_pred_spk_pop = nan(length(channels),1);
-    for idata = 1:50;%length(channels)
+    for idata = 1:length(channels)
         datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
         thisid = [animal '/' year '/' datech];
         disp(thisid);
