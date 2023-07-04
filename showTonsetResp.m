@@ -3,6 +3,18 @@ function [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames
 %[f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
 %    startSaccNoTask, saccDirNoTask, param, figTWin)
 %
+% cellclassInfo:
+%     cellclassInfo.unitClass: (PROVISIONAL)
+%     cellclassInfo.PtonsetResp: p-value if the target response is deviated from (0,) in 2D space (dirDotProdTest.m)
+%     cellclassInfo.mtOnsetRespAmp:
+%     cellclassInfo.mtOnsetResp:
+%     cellclassInfo.npreftonsetTrials:
+%     cellclassInfo.PsaccResp: p-value if the saccade response is significant
+%     cellclassInfo.msaccResp:
+%     cellclassInfo.msaccRespAmp:
+%     cellclassInfo.nprefSaccTrials:
+%     cellclassInfo.winSamps:
+
 %created from classifyUnits_circ & resp_cueConditions.m
 
 

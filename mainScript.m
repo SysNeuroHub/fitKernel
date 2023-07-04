@@ -21,12 +21,25 @@ end
 %mkdir(saveFigFolder);
 
 %% recorded data
-animal = 'm1899';% 'andy' 'ollie' 
-year = '2022';
+animal = 'hugo';% 'andy' 'ollie' 
+year = '2021';
 
 saveFigFolder = fullfile(saveServer, '20230619',year,animal);
 mkdir(saveFigFolder);
 
+% animal = 'm1899';% 'andy' 'ollie' 
+% year = '2022';
+%   6     8    10    11    14    15    16    17    23    27    34    35    36    45    48    54    55    60    69    70   100   111
+%    118   119   120   121   122   130   135   158   164   167   185   186   194   202   248   260   284   285   346   347   365   369
+%    379   381   389   390   392   394   395   396   406   410   412   420   430   433   450   455   458]
+%  MException with properties:
+% 
+%     identifier: 'optimlib:sfminbx:InvalidUserFunction'
+%        message: 'Gradient contains Inf, NaN, or complex values. fminunc cannot continue.'
+%          cause: {}
+%          stack: [4×1 struct]
+%     Correction: []
+    
 %ollie
 % animal = 'ollie'; %'m1899' 'andy' 'ollie' 
 % year = '2023';
@@ -38,9 +51,9 @@ fitIt = 1;
 [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
 
 % to obtain index of specified month&date&channel
-% thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-%     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','12December','14','*_ch13*')))));
-thisdata = [];
+thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','12December','14','*_ch13*')))));
+% thisdata = [801:900];
 
 if isempty(thisdata)
     thisdata = 1:length(channels);
@@ -107,7 +120,8 @@ for idata = thisdata
 
             [eyeData_rmotl_cat, catEvTimes, t_tr, onsets_cat,meta_cat,blinks,outliers] ...
                 = processEyeData(dd.eye, dd, param);
-            %             [pspec_parea,faxis_parea] = pmtm(eyeData_rmotl_cat.parea, 10, ...
+            %             [pspec_parea,faxis_parea] =
+            %             pmtm(eyeData_rmotl_cat.parea, 10, ...
             %                 length(eyeData_rmotl_cat.parea), fs_eye);%slow
 
             tOnset = catEvTimes.tOnset;
@@ -135,7 +149,8 @@ for idata = thisdata
                 'startSaccNoTask', 'endSaccNoTask', ...
                 'saccDirNoTask', 'dirIndexNoTask');
             close all
-            %% prepare predictor variables
+            
+            %% prepare predictor variables after downsampling
             t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
             predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
             save(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
@@ -150,6 +165,8 @@ for idata = thisdata
             predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
             save(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
             load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
+            
+            dds = getCueSaccadeSmall(dd);
          end
 
 
@@ -182,7 +199,7 @@ for idata = thisdata
 
 
             %% Figure for target onset response
-            [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
+            [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dds, psthNames, ...
                 startSaccNoTask, saccDirNoTask, param, [-0.5 0.5]);
             cellclassInfo.datech = datech;
             screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
@@ -191,12 +208,12 @@ for idata = thisdata
 
             %% Figure for target onset, w/wo cue
             [f, avgTOnsetByCue, winSamps_tonsetByCue] = showTonsetByCue(t_r, ...
-                y_r, param.cardinalDir, catEvTimes, dd, psthNames, [-0.5 0.5], 1);
+                y_r, param.cardinalDir, catEvTimes, dds, psthNames, [-0.5 0.5], 1);
             screen2png(fullfile(saveFigFolder,['tonsetByCue_' saveSuffix '_onlySuccess']), f);
             close(f);
 
             [f, avgTOnsetByCue_parea, winSamps_tonsetByCue_parea] = showTonsetByCue(t_r, ...
-                predictorInfo.predictors_r(17,:)', param.cardinalDir, catEvTimes, dd, ...
+                predictorInfo.predictors_r(17,:)', param.cardinalDir, catEvTimes, dds, ...
                 {'parea'}, [-0.5 0.5]);
             set(f,'position',[0 0 1920 300]);
             screen2png(fullfile(saveFigFolder,['tonsetByCue_' saveSuffix '_parea']), f);
@@ -211,7 +228,7 @@ for idata = thisdata
 
             %% response to fixation and cue onsets
             [f, avgfOnsetResp, avgCueResp, winSamps_fc] = showFixCueOnsetResp(t_r, ...
-                y_r, catEvTimes, dd, psthNames, [-0.5 1]);
+                y_r, catEvTimes, dds, psthNames, [-0.5 1]);
             screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix]),f);
             close(f);
 
@@ -219,13 +236,14 @@ for idata = thisdata
 
             %%response of pdiam to fixation and cue onsets
             [f, avgfOnsetResp_pdiam, avgCueResp_pdiam, winSamps_fc_pdiam] = showFixCueOnsetResp(t_r, ...
-                predictorInfo.predictors_r(17,:)', catEvTimes, dd, {'parea'}, [-0.5 1]);
+                predictorInfo.predictors_r(17,:)', catEvTimes, dds, {'parea'}, [-0.5 1]);
             screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix '_pdiam']),f);
             close(f);
 
             %% save results
 
-            save(saveName, 'PSTH_f','predicted_all', 'predicted','kernelInfo','t_r','cellclassInfo','param','mFiringRate','t_cat');
+            save(saveName, 'PSTH_f','predicted_all', 'predicted','kernelInfo'...
+                ,'t_r','cellclassInfo','param','mFiringRate','t_cat','dds');
                 % 'avgfOnsetResp', 'avgCueResp', 'winSamps_fc', ...
                 % 'avgTOnsetByCue','winSamps_sacc', 'singleSaccResp', 'sortedSaccLabels',...
                 %);

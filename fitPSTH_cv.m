@@ -12,6 +12,10 @@ function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, .
 %
 % fmincon occupies most of the time, GPU computation is not yet implemented
 %cf. https://au.mathworks.com/matlabcentral/answers/1605350-fmincon-running-on-gpu
+%
+% predicted: predicted trace by all kernels 
+% predicted_each: predicted traces by each kernel
+% sum(predicted_each) ~= predicted because static nonlinearity was applied differently
 
 useSptrain = 0;
     
@@ -107,6 +111,7 @@ expval = zeros(1,KFolds);
 mse = zeros(1,KFolds);
 R = zeros(1,KFolds);
 for ifold = 1:KFolds
+    disp(['fitPSTH_cv:' num2str(ifold) '/' num2str(KFolds)]);
     dm = buildGLM.compileSparseDesignMatrix(dspec, xvFolds{ifold,1});
     
     %If your design matrix is not very sparse (less than 10% sparse, for example),
