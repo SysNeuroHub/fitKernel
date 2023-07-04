@@ -1,4 +1,5 @@
-function [centeredDir, centeredMtx] = alignMtxDir(mtx, tgtTidx, cardinalDir, prefDirs)
+function [centeredDir, centeredMtx, prefDir, pvalue] = ...
+    alignMtxDir(mtx, tgtTidx, cardinalDir, prefDirOption)
 %[centeredDir, centeredMtx] = alignMtx(mtx, tgtTidx, cardinalDir)
 % returns a matrix which 2nd dimension is rotated based on its activity
 % during tgtTidx in the 1st dimension
@@ -8,8 +9,12 @@ function [centeredDir, centeredMtx] = alignMtxDir(mtx, tgtTidx, cardinalDir, pre
 %     tgtTidx: time index to compute preferred direction
 
 if nargin < 4
-    prefDirs = [];
+    prefDirOption = 1;
 end
+
+% if nargin < 4
+%     prefDirs = [];
+% end
 
 centralBin = round(0.5*length(cardinalDir));
 centralDir = cardinalDir(centralBin);
@@ -31,14 +36,24 @@ centeredDir = 180/pi*circ_dist(pi/180*cardinalDir, pi/180*centralDir);
 %tgtTimes = intersect(find(kerneltlags>0.03), find(kerneltlags<0.25));
 
 centeredMtx = zeros(size(mtx));
+prefDir = nan(1,size(mtx,3));
+pvalue = nan(1,size(mtx,3));
 for idata = 1:size(mtx,3)
-    
-    if ~isempty(prefDirs)
-        prefDir = prefDirs(idata);
-    else
-        [~,prefDir] = max(mean(mtx(tgtTidx,:,idata),1));
+    resp = mean(mtx(tgtTidx,:,idata),1);
+    switch prefDirOption
+        case 0
+            [~,prefDir(idata)] = max(resp);
+        case 1
+            [fitPars, fitErr] ...
+                = fitoriWrapped(cardinalDir, resp,...
+                [], [nan nan 0 min(resp) nan],'',20, []);
+            prefDir(idata) = fitPars(1);
     end
-    centeredMtx(:,:,idata) = circshift(mtx(:,:,idata), centralBin - prefDir, 2);
+    centeredMtx(:,:,idata) = circshift(mtx(:,:,idata), centralBin - round(prefDir(idata)), 2);
+    
+    if nargout>=4
+        pvalue(idata) =  dirDotProdTest(cardinalDir'*pi/180, resp');
+    end
 end
 if dims>=3
     centeredMtx = reshape(centeredMtx, [nTimes nDir nElements(3:end)]);

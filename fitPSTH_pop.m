@@ -2,104 +2,276 @@ addpath(genpath('C:\Users\dshi0006\git'))
 % load('C:\Users\dshi0006\Downloads\hugo_oephysdata_ch23.mat', ...
 %     'ch','dd','ephysdata');
 
-saveFolder = '\\storage.erc.monash.edu\shares\R-MNHS-Syncitium\Shared\Daisuke\cuesaccade_data';
+%saveFolder = '\\storage.erc.monash.edu\shares\R-MNHS-Syncitium\Shared\Daisuke\cuesaccade_data';
+saveServer = 'Z:\Shared\Daisuke\cuesaccade_data';
 
 %% recorded data
 animal = 'hugo';
-rootFolder = '\\storage.erc.monash.edu.au\shares\R-MNHS-Physio\SysNeuroData\Monash Data\Joanita\2021/cuesaccade_data/';
+rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
 dataType = 0;%0: each channel, 1: all channels per day
 
+load(fullfile(saveServer,'param20230405.mat'),'param');
+param.mfiringRateTh = 5;
+param.expvalTh = 0;
+param.ntargetTrTh = 200;
+param.ptonsetRespTh = 0.05;
 
-[loadNames, months, dates, channels] = getMonthDateCh(animal, rootFolder);
-
-% to obtain index of specified month&date&channel
-%find(1-cellfun(@isempty, regexp(loadNames, regexptranslate('wildcard','12December\09\*_ch32.mat'))))
-
-%% omit data
-% no saccade response
-% low spontaneous firing
-% low number of successful trials
-
-% parameters
-% param.marginSize = 50;%40; %frames
-% param.psth_sigma = .05;%0.1; %0.025;%0.02;%0.01;%0.05;%[s] %gaussian filter
-% param.dt_r = 0.02; %for securing memory for kernel fitting %0.025;%0.5;
-% param.lagRange = [-.5 .5];%[-.4 .3];%[-1 1];%[-10 20]; %temporal window for kernel estimation [s]
-% param.ridgeParams = 100;%[0 1e-1 1 1e2 1e3]; %10
-% % visualize = 0;
-% param.predictorNames = {'vision','eyeposition','pdiam','blink'};
-% param.figTWin = [-0.5 0.5]; %temporal window for peri-event traces [s]
-% param.respWin = [0.03 0.25]; %temporal window to compute direction tuning
-% param.pareaTh = 3;
-% param.pareaDiffTh = 5;
-% param.cutoffFreq = 0.1;
-% param.evName = 'tOnset';%'cOnset';
-% cardinalDir = linspace(0,360,9); %direction for saccade and target
-% param.cardinalDir = cardinalDir(1:end-1);
-% ncDirs = length(param.cardinalDir);
-
-idataIdx = 1;
-
-for idata = 1:length(channels) %1061;%865;%
-    datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
-    disp(datech);
+%alldata = [];
+mFiringRate_pop = [];
+kernel_pop = [];
+expval_pop = [];
+corrcoef_pop = [];
+corrcoef_pred_spk_pop = [];
+PtonsetResp_pop = [];
+PsaccResp_pop = [];
+expval_ind_pop = [];
+expval_tgt_pop = [];
+corr_avgtgt_pop = [];
+expval_avgtgt_pop = [];
+ntargetTrials_pop = [];
+ntotTrials_pop = [];
+id_pop = [];
+for yy = 1%:3
+    switch yy
+        case 1
+            year = '2021';
+        case 2
+            year = '2022';
+        case 3
+            year = '2023';
+    end
+    [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
     
-    saveSuffix = [animal replace(datech,'/','_')];
+    % to obtain index of specified month&date&channel
+    %find(1-cellfun(@isempty, regexp(loadNames, regexptranslate('wildcard','12December\09\*_ch32.mat'))))
     
-    thisDate = [months{idata} '_' dates{idata}];
+    %% omit data
+    % no saccade response
+    % low spontaneous firing
+    % low number of successful trials
     
-    saveName = fullfile(saveFolder, [saveSuffix '.mat']);
-    
-    if exist(saveName, 'file')
+    nData = length(channels);
+    %dataByYear = [];%struct(length(channels),1);
+    %datech_pop = nan(length(channels),1);
+    %corrcoef_pred_spk_pop = nan(length(channels),1);
+    for idata = 1:50;%length(channels)
+        datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
+        thisid = [animal '/' year '/' datech];
+        disp(thisid);
         
-        datech_pop{idataIdx} = datech;
-        load(saveName);%, 'kernelInfo','psth_all','mDir',...
-%             'seDir','mDir_pred','seDir_pred','cvar','cmean', ...
-%             'cvar_pred','cmean_pred','mFiringRate',...
-%             'param','eyeData_rmotl_cat',...
-%             'pspec_psth','pspec_parea','faxis_psth','faxis_parea',...
-%             'corrCoef_parea_alpha','corrCoef_parea_spk');
+        saveSuffix = [animal replace(datech,'/','_')];
         
-%         avgPupilResp_pop(:,:,:,idataIdx) = avgPupilResp;%[dl/cs x variables x time] pupilOnsetsResp.m
+        thisDate = [months{idata} '_' dates{idata}];
+        
+        saveFolder = fullfile(saveServer, year,animal);%17/6/23
+        saveName = fullfile(saveFolder, [saveSuffix '.mat']);
+        
+        if exist(saveName, 'file')
+            
+            %datech_pop{idata} = datech;
+            S = load(saveName, 'PSTH_f','predicted_all', 'predicted', ...
+                'kernelInfo','t_r','cellclassInfo','param','mFiringRate','t_cat',...
+                'dds');
+            
+            if isfield(S,'kernelInfo')
+                mFiringRate_pop = cat(2,mFiringRate_pop,S.mFiringRate);
+                kernel_pop = cat(3,kernel_pop,S.kernelInfo.kernel);
+                expval_pop = cat(2,expval_pop,S.kernelInfo.expval);
+                corrcoef_pop = cat(2,corrcoef_pop,S.kernelInfo.corrcoef);
+                
+                R = corrcoef(S.PSTH_f, S.predicted_all);
+                corrcoef_pred_spk_pop = cat(2, corrcoef_pred_spk_pop, R(1,2));
+                %id_pop = cat(2,id_pop, thisid);
+                id_pop{numel(id_pop)+1} = thisid;
+                
+                eyeName = fullfile(saveFolder,[
+                    'eyeCat_' animal thisDate '.mat']);
+                load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), ...
+                    'predictorInfo');
+                load(eyeName,'eyeData_rmotl_cat','catEvTimes');
+                
+                if ~isfield(S,'dds')
+                    load(loadNames{idata},'dd'); %slow to read
+                    dds = getCueSaccadeSmall(dd);
+                    save(saveName, 'dds','-append');
+                    S.dds = dd;
+                end
+                
+                %% response to target
+                PtonsetResp_pop = [PtonsetResp_pop S.cellclassInfo.PtonsetResp];
+                
+                %% response to saccade
+                PsaccResp_pop = [PsaccResp_pop S.cellclassInfo.PsaccResp];
+                
+                %% explained variance per kernel
+                expval = zeros(size(S.predicted,2)+1,1);
+                expval(1,1) = getExpVal(S.PSTH_f-mean(S.PSTH_f), ...
+                    S.predicted_all-mean(S.predicted_all));
+                for ivar = 1:size(S.predicted,2)
+                    expval(ivar+1,1) = getExpVal(S.PSTH_f-mean(S.PSTH_f), ...
+                        S.predicted(:,ivar)-mean(S.predicted(:,ivar)));
+                end
+                expval_ind_pop = [expval_ind_pop expval];
+                
+                %% explained variance for target response
+                expval_tgt(1,1) = getExpVal_tgt(S.PSTH_f, S.predicted_all, catEvTimes, S.t_r, [0 0.5]);
+                expval_tgt(2:6,1) = getExpVal_tgt(S.PSTH_f, S.predicted, catEvTimes, S.t_r, [0 0.5]);
+               
+                expval_tgt_pop = [expval_tgt_pop expval_tgt];
+                
+                %% explained variance for target response averaged across trials
+                [expval_avgtgt(1,1), corr_avgtgt(1,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted_all, ...
+                    catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);                
+                [expval_avgtgt(2:6,1), corr_avgtgt(2:6,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted, ...
+                    catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);
+                expval_avgtgt_pop = [expval_avgtgt_pop expval_avgtgt];
+                corr_avgtgt_pop = [corr_avgtgt_pop corr_avgtgt];
 
-        kerneltlags = kernelInfo.tlags;
-
-        %faxis_common = 1:50; %[Hz]
-        %pspec_psth_interp = interp1(faxis_psth, pspec_psth, faxis_common);
-        %pspec_parea_interp = interp1(faxis_parea, pspec_parea, faxis_common);
-        
-        mFiringRate_pop(idataIdx) = mFiringRate;
-        kernel_pop(:,:,idataIdx) = kernelInfo.kernel;
-        expval_pop(idataIdx) = kernelInfo.expval;
-        corrcoef_pop(idataIdx) = kernelInfo.corrcoef;
-        %pspec_psth_pop(:,idataIdx) = pspec_psth_interp;
-        %pspec_parea_pop(:,idataIdx) = pspec_parea_interp;
-        cmean_pop(:,:,idataIdx) = cmean;
-        %cmean_pred_pop(idataIdx) = cmean_pred;
-        cvar_pop(:,:,idataIdx) = cvar;
-        %cvar_pred_pop(idataIdx) = cvar_pred;
-        %corrcoef_parea_alpha_pop(:,idataIdx) = corrCoef_parea_alpha;
-        %corrcoef_parea_spk_pop(:,idataIdx) = corrCoef_parea_spk;
-        %avgTgtResp_pop(:,:,:,idataIdx) = avgTgtResp;
-        
-        R = corrcoef(PSTH_f, predicted_all);
-        corrcoef_pred_spk_pop(idataIdx) = R(1,2); 
-        avgSaccResp = [];
-        for idir = 1:length(param.cardinalDir)
-            theseTr = find(sortedSaccLabels == param.cardinalDir(idir));
-            avgSaccResp(idir,:,:) = mean(singleSaccResp(theseTr,:,:),1);
+                %% number of target trials
+                ntargetTrials_pop = [ntargetTrials_pop sum(~isnan(catEvTimes.tOnset))];
+                
+                %% number of total trials
+                ntotTrials_pop = [ntotTrials_pop numel(catEvTimes.tOnset)];
+                
+                
+                %retrieve just once
+                tlags = S.kernelInfo.tlags;
+                clear S
+            end
         end
-        %FIX: avgSaccResp includes nans
-        
-        avgSaccResp_pop(:,:,:,idataIdx) = avgSaccResp; %[saccDir, kernel?, time, channel]
-        idataIdx = idataIdx+1;
-        clear mFiringRate kernelInfo
-    end 
+    end
+    %dataByYear = dataByYear(~isnan(dataByYear));
+    %alldata = [alldata dataByYear(:)];
 end
-% save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
-save('fitPSTH_pop20220209','mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
-    'cmean_pop','cvar_pop','datech_pop','avgSaccResp_pop','avgSaccResp');
 
+% save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
+kernel_pop = squeeze(kernel_pop);
+save(['fitPSTH_pop20230704' animal],'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
+    'corrcoef_pred_spk_pop','id_pop','ntotTrials_pop','ntargetTrials_pop','param',...
+    'PsaccResp_pop','PtonsetResp_pop','expval_ind_pop','expval_tgt_pop','tlags',...
+    'corr_avgtgt_pop','expval_avgtgt_pop');
+
+%% apply inclusion critetia
+% [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
+%     = inclusionCriteria(mFiringRate_pop, expval_pop, ntargetTrials_pop, PtonsetResp_pop, param);
+[okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
+    = inclusionCriteria(mFiringRate_pop, expval_tgt_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
+
+kernel_pop = kernel_pop(:,okunits);
+expval_ind_pop = expval_ind_pop(:,okunits);
+expval_tgt_pop = expval_tgt_pop(:,okunits);
+id_pop = id_pop(okunits);
+
+%% selected units
+theseIDs = {'hugo/2021/09September/01/25',...
+    'hugo/2021/11November/16/6',...
+    'hugo/2021/12December/14/13'};
+[~, selectedIDs] = intersect(id_pop, theseIDs);
+
+%% histogram of individual explained variance
+for ii = 1:size(expval_ind_pop,1)
+    ax(ii) = subplot(size(expval_ind_pop,1),1,ii);
+    histogram(expval_ind_pop(ii,:),[0:1:20]);
+    if ii==1
+        ylabel('all');
+    else
+        ylabel(param.predictorNames{ii-1});
+    end
+end
+xlabel('Explained variance [%]')
+savePaperFigure(gcf,['expval_' animal]);
+
+%% scatter plot of individual explained variances
+subplot(131);
+plot(expval_ind_pop(2,:), expval_ind_pop(3,:),'.');
+[rho, pval] = corr(expval_ind_pop(2,:)', expval_ind_pop(3,:)');
+title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+xlabel('vision'); ylabel('eye speed');
+axis equal square;
+subplot(132);
+plot(expval_ind_pop(3,:), expval_ind_pop(4,:),'.');
+[rho, pval] = corr(expval_ind_pop(3,:)', expval_ind_pop(4,:)');
+title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+xlabel('eye speed'); ylabel('eye position');
+axis equal square;
+subplot(133);
+plot(expval_ind_pop(4,:), expval_ind_pop(2,:),'.');
+[rho, pval] = corr(expval_ind_pop(4,:)', expval_ind_pop(2,:)');
+title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+xlabel('eye position'); ylabel('vision');
+axis equal square;
+screen2png(['expval_relation_' animal]);
+
+%% explained variance between kernels
+
+
+figure('position',[0 0 1200 800]);
+valueRange = [-100 200];
+for ii = 1:3
+    switch ii
+        case 1
+            v = [2 3];
+        case 2
+            v = [2 1];
+        case 3
+            v = [1 3];
+    end
+    
+    subplot(1,3,ii);
+    xvalues = 100*expval_tgt_pop(v(1)+1,:)./expval_tgt_pop(1,:);
+    xvalues(xvalues<valueRange(1))=valueRange(1);
+    xvalues(xvalues>valueRange(2))=valueRange(2);
+    yvalues = 100*expval_tgt_pop(v(2)+1,:)./expval_tgt_pop(1,:);
+    yvalues(yvalues<valueRange(1))=valueRange(1);
+    yvalues(yvalues>valueRange(2))=valueRange(2);
+    plot(xvalues, yvalues,'k.'); hold on;
+    plot(xvalues(selectedIDs), yvalues(selectedIDs),'o');
+    [rho, pval] = corr(expval_tgt_pop(v(1)+1,:)', expval_tgt_pop(v(2)+1,:)');
+    title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+    xlabel(param.predictorNames{v(1)}); ylabel(param.predictorNames{v(2)});
+    axis equal square;
+    xlim(valueRange);ylim(valueRange);
+    set(gca,'tickdir','out');
+end
+savePaperFigure(gcf,['expval_tgt_relation_' animal]);
+
+
+%% show average kernel before centering
+[f, kernel_avg] = showKernel3(kernel_pop, tlags, param.cardinalDir, 0);
+savePaperFigure(f,['avgKernel_' animal]);
+
+
+%% centerring by preferred direction
+tgtRange = [0.05 0.15; 0.03 0.25; -0.1 0.1];
+[f, kernel_centered_avg] = showKernel3(kernel_pop, tlags, param.cardinalDir, 1, tgtRange);
+savePaperFigure(f,['avgKernel_centered_' animal]);
+
+
+%% preferred direction across 3 kernels
+%plot3(prefdir{1},prefdir{2},prefdir{3},'.');
+subplot(131);
+%sigUnits = (prefdirPval{1}<0.05) & (prefdirPval{2}<0.05); %EMPTY
+plot(prefdir{1}, prefdir{2},'.');
+%plot(prefdir{1}(sigUnits), prefdir{2}(sigUnits),'b.');
+[rho, pval] = circ_corrcc(prefdir{1}*pi/180,prefdir{2}*pi/180);
+title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+xlabel('vision'); ylabel('eye speed');
+axis equal square;
+subplot(132);
+plot(prefdir{2},prefdir{3},'.');
+[rho, pval] = circ_corrcc(prefdir{2}*pi/180,prefdir{3}*pi/180);
+title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+xlabel('eye speed'); ylabel('eye position');
+axis equal square;
+subplot(133);
+plot(prefdir{3},prefdir{1},'.');
+[rho, pval] = circ_corrcc(prefdir{3}*pi/180,prefdir{1}*pi/180);
+title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+xlabel('eye position'); ylabel('vision');
+axis equal square;
+
+screen2png(['prefDirCorr_' animal]);
+% circular correlation
 
 
 %% pupil dilation/constriction
@@ -120,8 +292,8 @@ for ivar = 1:nvars
     %set(gca, 'ytick',1:4,'yticklabel',pupilLabels);
     %xlabel('time from pupil onset [s]');
     title(psthNames_pupil{ivar});
-   xlim([-0.3 0.3]);
-   vline(0);
+    xlim([-0.3 0.3]);
+    vline(0);
 end
 %linksubaxes('y',ax(1:nvars-1));
 legend(pupilLabels);
@@ -130,7 +302,7 @@ screen2png('pupilOn_pop');
 
 %% saccade resp. recorded vs predicted
 psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
-avgSacc = permute(squeeze(nanmean(avgSaccResp_pop,4)),[3 1 2]); 
+avgSacc = permute(squeeze(nanmean(avgSaccResp_pop,4)),[3 1 2]);
 crange = prctile(avgSacc(:),[1 99]);
 for ipred = 1:size(avgSacc,3)
     subplot(7,1,ipred);
@@ -151,7 +323,7 @@ psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
 pavgSaccResp = permute(avgSaccResp_pop, [3 1 4 2]);
 [centeredDir, centeredData_sacc]  = alignMtxDir(pavgSaccResp, tgtTimes, param.cardinalDir);
 %[time x direction x channels x predictors]
-avgCentSacc = squeeze(nanmean(centeredData_sacc,3)); 
+avgCentSacc = squeeze(nanmean(centeredData_sacc,3));
 crange = prctile(avgCentSacc(:),[1 99]);
 for ipred = 1:size(avgCentSacc,3)
     subplot(6,1,ipred);
@@ -165,126 +337,126 @@ xlabel('time from saccade onset [s]');
 screen2png('centeredSacc_pop');
 savePaperFigure(gcf,'centeredSacc_pop');
 
-
-%% target resp aligned to preferred target direction
-pavgTgtResp = permute(avgTgtResp_pop, [3 1 4 2]);
-[centeredDir, centeredData_tgt]  = alignMtxDir(pavgTgtResp, tgtTimes, param.cardinalDir);
-%[time x direction x channels x predictors]
-avgCentTgt = squeeze(nanmean(centeredData_tgt,3)); 
-crange = prctile(avgCentTgt(:),[1 99]);
-for ipred = 1:size(avgCentTgt,3)
-    subplot(6,1,ipred);
-    imagesc(winSamps, centeredDir, squeeze(avgCentTgt(:,:,ipred))');
-    ylabel(psthNames{ipred})
-    caxis(crange);
-    vline(0);
-    mcolorbar(gca,.5);
-end
-xlabel('time from target onset [s]');
-screen2png('centeredTgt_pop');
-savePaperFigure(gcf,'centeredTgt_pop');
-
-
-%% kernel aligned to preferred direction
-%centerBin = 4;
-%centeredDir = 180/pi*circ_dist(pi/180*param.cardinalDir, pi/180*param.cardinalDir(centerBin)); 
-[centeredDir, centeredData_vis]  = alignMtxDir(kernel_pop(:,1:8,:), tgtTimes, param.cardinalDir);
-[~, centeredData_eye]  = alignMtxDir(kernel_pop(:,9:16,:), tgtTimes, param.cardinalDir);
-
-
-figure('position',[680   276   846   702]);
-subplot(221);
-thisImage = mean(centeredData_vis,3)';
-crange = max(abs(thisImage(:)));
-imagesc(kerneltlags, centeredDir, thisImage);
-vline(0);
-caxis([-crange crange]);
-mcolorbar(gca,.5);
-set(gca,'ytick', centeredDir);
-xlabel('time from target onset [s]');
-ylabel('relative target direction [deg]');
-
-subplot(223);
-thisImage = mean(centeredData_eye,3)';
-imagesc(kerneltlags, centeredDir, thisImage);
-crange = max(abs(thisImage(:)));
-caxis([-crange crange]);
-vline(0);
-mcolorbar(gca,.5);
-set(gca,'ytick',centeredDir);
-xlabel('time from eye movement [s]');
-ylabel('relative eye direction [deg]');
-
-subplot(424);
-plot(kerneltlags, squeeze(kernel_pop(:,17,:)), 'color',[.5 .5 .5]);
-hold on;
-plot(kerneltlags, mean(kernel_pop(:,17,:),3), 'linewidth',2);
-xlabel('time from pupil dilation [s]');
-axis tight
-vline(0);
-
-subplot(422);
-plot(kerneltlags, squeeze(kernel_pop(:,18,:)), 'color',[.5 .5 .5]);
-hold on;
-plot(kerneltlags, mean(kernel_pop(:,18,:),3), 'linewidth',2);
-xlabel('time from blink onset [s]');
-axis tight
-vline(0);
-
-subplot(426);
-plot(kerneltlags, squeeze(kernel_pop(:,19,:)), 'color',[.5 .5 .5]);
-hold on;
-plot(kerneltlags, mean(kernel_pop(:,19,:),3), 'linewidth',2);
-xlabel('time from reward on [s]');
-axis tight
-vline(0);
-
-subplot(428);
-plot(kerneltlags, squeeze(kernel_pop(:,20,:)), 'color',[.5 .5 .5]);
-hold on;
-plot(kerneltlags, mean(kernel_pop(:,20,:),3), 'linewidth',2);
-xlabel('time from punish onset [s]');
-axis tight
-vline(0);
-
-screen2png('centeredkernel_pop');
-savePaperFigure(gcf,'centeredkernel_pop');
-
-
-
-%% explained variance, correlation
-subplot(211);
-plot(mFiringRate_pop, expval_pop, '.');
-xlabel('mean firing rate [Hz]');
-ylabel('explained variance [%]');
-axis square;
-marginplot;
-
-subplot(212);
-plot(mFiringRate_pop, corrcoef_pop, '.');
-xlabel('mean firing rate [Hz]');
-ylabel('correlation coef');
-axis square
-marginplot;
-screen2png('mFiringRate_corrcoef_expVar_pop');
-savePaperFigure(gcf,'mFiringRate_corrcoef_expVar_pop');
+% 
+% %% target resp aligned to preferred target direction
+% pavgTgtResp = permute(avgTgtResp_pop, [3 1 4 2]);
+% [centeredDir, centeredData_tgt]  = alignMtxDir(pavgTgtResp, tgtTimes, param.cardinalDir);
+% %[time x direction x channels x predictors]
+% avgCentTgt = squeeze(nanmean(centeredData_tgt,3));
+% crange = prctile(avgCentTgt(:),[1 99]);
+% for ipred = 1:size(avgCentTgt,3)
+%     subplot(6,1,ipred);
+%     imagesc(winSamps, centeredDir, squeeze(avgCentTgt(:,:,ipred))');
+%     ylabel(psthNames{ipred})
+%     caxis(crange);
+%     vline(0);
+%     mcolorbar(gca,.5);
+% end
+% xlabel('time from target onset [s]');
+% screen2png('centeredTgt_pop');
+% savePaperFigure(gcf,'centeredTgt_pop');
+% 
+% 
+% %% kernel aligned to preferred direction
+% %centerBin = 4;
+% %centeredDir = 180/pi*circ_dist(pi/180*param.cardinalDir, pi/180*param.cardinalDir(centerBin));
+% [centeredDir, centeredData_vis]  = alignMtxDir(kernel_pop(:,1:8,:), tgtTimes, param.cardinalDir);
+% [~, centeredData_eye]  = alignMtxDir(kernel_pop(:,9:16,:), tgtTimes, param.cardinalDir);
+% 
+% 
+% figure('position',[680   276   846   702]);
+% subplot(221);
+% thisImage = mean(centeredData_vis,3)';
+% crange = max(abs(thisImage(:)));
+% imagesc(kerneltlags, centeredDir, thisImage);
+% vline(0);
+% caxis([-crange crange]);
+% mcolorbar(gca,.5);
+% set(gca,'ytick', centeredDir);
+% xlabel('time from target onset [s]');
+% ylabel('relative target direction [deg]');
+% 
+% subplot(223);
+% thisImage = mean(centeredData_eye,3)';
+% imagesc(kerneltlags, centeredDir, thisImage);
+% crange = max(abs(thisImage(:)));
+% caxis([-crange crange]);
+% vline(0);
+% mcolorbar(gca,.5);
+% set(gca,'ytick',centeredDir);
+% xlabel('time from eye movement [s]');
+% ylabel('relative eye direction [deg]');
+% 
+% subplot(424);
+% plot(kerneltlags, squeeze(kernel_pop(:,17,:)), 'color',[.5 .5 .5]);
+% hold on;
+% plot(kerneltlags, mean(kernel_pop(:,17,:),3), 'linewidth',2);
+% xlabel('time from pupil dilation [s]');
+% axis tight
+% vline(0);
+% 
+% subplot(422);
+% plot(kerneltlags, squeeze(kernel_pop(:,18,:)), 'color',[.5 .5 .5]);
+% hold on;
+% plot(kerneltlags, mean(kernel_pop(:,18,:),3), 'linewidth',2);
+% xlabel('time from blink onset [s]');
+% axis tight
+% vline(0);
+% 
+% subplot(426);
+% plot(kerneltlags, squeeze(kernel_pop(:,19,:)), 'color',[.5 .5 .5]);
+% hold on;
+% plot(kerneltlags, mean(kernel_pop(:,19,:),3), 'linewidth',2);
+% xlabel('time from reward on [s]');
+% axis tight
+% vline(0);
+% 
+% subplot(428);
+% plot(kerneltlags, squeeze(kernel_pop(:,20,:)), 'color',[.5 .5 .5]);
+% hold on;
+% plot(kerneltlags, mean(kernel_pop(:,20,:),3), 'linewidth',2);
+% xlabel('time from punish onset [s]');
+% axis tight
+% vline(0);
+% 
+% screen2png('centeredkernel_pop');
+% savePaperFigure(gcf,'centeredkernel_pop');
 
 
-%% powerspectrum
+
+% %% explained variance, correlation
+% subplot(211);
+% plot(mFiringRate_pop, expval_pop, '.');
+% xlabel('mean firing rate [Hz]');
+% ylabel('explained variance [%]');
+% axis square;
+% marginplot;
+% 
+% subplot(212);
+% plot(mFiringRate_pop, corrcoef_pop, '.');
+% xlabel('mean firing rate [Hz]');
+% ylabel('correlation coef');
+% axis square
+% marginplot;
+% screen2png('mFiringRate_corrcoef_expVar_pop');
+% savePaperFigure(gcf,'mFiringRate_corrcoef_expVar_pop');
+
+
+% %% powerspectrum
 % subplot(121);
 % semilogy(faxis_common, pspec_parea_pop, 'color',[.5 .5 .5]);
 % hold on
 % semilogy(faxis_common, mean(pspec_parea_pop,2), 'linewidth',2);
 % xlim([0 25]);
 % xlabel('Frequency [Hz]'); ylabel('parea PSD');
-% 
+%
 % subplot(122);
 % semilogy(faxis_common, pspec_psth_pop, 'color',[.5 .5 .5]);
 % hold on
 % semilogy(faxis_common, mean(pspec_psth_pop,2), 'linewidth',2);
 % xlabel('Frequency [Hz]'); ylabel('psth PSD');
 % xlim([0 25]);
-% 
+%
 % screen2png('powerspectrum_pop');
 
 
@@ -296,7 +468,7 @@ savePaperFigure(gcf,'mFiringRate_corrcoef_expVar_pop');
 % title('Preferred direction (cirular mean)');
 % xlabel('measured [rad]');
 % ylabel('fitted [rad]');
-% 
+%
 % subplot(122);
 % plot(cvar_pop, cvar_pred_pop, '.');
 % squareplot;
@@ -304,24 +476,24 @@ savePaperFigure(gcf,'mFiringRate_corrcoef_expVar_pop');
 % title('Tuning width (cirular variance)');
 % xlabel('measured [rad]');
 % ylabel('fitted [rad]');
-% 
+%
 % screen2png('cmean_var_pop');
 
-%%
-corrbins = -1:.04:1;
-for ifreq = 1:4
-    subplot(4,2,2*ifreq-1);
-    histogram(corrcoef_parea_spk_pop(ifreq,:), corrbins);
-    [~,Pspk(ifreq)]=ttest(corrcoef_parea_spk_pop(ifreq,:));
-    vline(0);
-    title(['ttest p:' num2str(Pspk(ifreq))]);
-
-    subplot(4,2,2*ifreq);
-    histogram(corrcoef_parea_alpha_pop(ifreq,:), corrbins);
-    [~,Palpha(ifreq)]=ttest(corrcoef_parea_alpha_pop(ifreq,:));
-    title(['ttest p:' num2str(Palpha(ifreq))]);
-    vline(0);
-end
-marginplots;
-savePaperFigure(gcf,'corrcoef_parea-spk-alpha');
+% %% alpha power 
+% corrbins = -1:.04:1;
+% for ifreq = 1:4
+%     subplot(4,2,2*ifreq-1);
+%     histogram(corrcoef_parea_spk_pop(ifreq,:), corrbins);
+%     [~,Pspk(ifreq)]=ttest(corrcoef_parea_spk_pop(ifreq,:));
+%     vline(0);
+%     title(['ttest p:' num2str(Pspk(ifreq))]);
+%     
+%     subplot(4,2,2*ifreq);
+%     histogram(corrcoef_parea_alpha_pop(ifreq,:), corrbins);
+%     [~,Palpha(ifreq)]=ttest(corrcoef_parea_alpha_pop(ifreq,:));
+%     title(['ttest p:' num2str(Palpha(ifreq))]);
+%     vline(0);
+% end
+% marginplots;
+% savePaperFigure(gcf,'corrcoef_parea-spk-alpha');
 
