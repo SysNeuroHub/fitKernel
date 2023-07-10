@@ -7,6 +7,8 @@ function [evTimes, evStart, evEnd] = trace2Event(trace, taxis)
 %
 % see also: event2Trace
 
+trace = logical(trace);
+
 if size(trace,1)<size(trace,2)
     trace = trace';
 end

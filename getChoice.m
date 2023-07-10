@@ -3,7 +3,7 @@
  %[outcome, time] = getChoice(d)
  % returns true for trials ending in SUCCESS, false for trials ending in FAIL
 
- %cf. cuesaccade.get.cOnset
+ %cf. cuesaccade.get.cOnset (only return SUCCESS trials)
  
       [t,trial,~,state] = d.meta.choice.state;
       

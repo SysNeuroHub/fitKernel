@@ -1,6 +1,6 @@
 function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, ...
     t_r, predictorNames, predictors_r, npredVars, sigma, kernelInterval, ...
-    lagRange, ridgeParam, trIdx_r)
+    lagRange, ridgeParam, trIdx_r, option)
 %[predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, ...
 %    t_r, predictorNames, predictors_r, npredVars, sigma, kernelInterval, ...
 %    lagRange, ridgeParam, trIdx_r)
@@ -13,19 +13,23 @@ function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, .
 % fmincon occupies most of the time, GPU computation is not yet implemented
 %cf. https://au.mathworks.com/matlabcentral/answers/1605350-fmincon-running-on-gpu
 %
-% predicted: predicted trace by all kernels 
+% predicted: predicted trace by all kernels
 % predicted_each: predicted traces by each kernel
 % sum(predicted_each) ~= predicted because static nonlinearity was applied differently
 
+if nargin < 11
+    option = 4;
+end
+
 useSptrain = 0;
-    
+
 unitOfTime = 's';
 uniqueID = 1;
 KFolds = 5;
 kernelInfo.basisType = 'raised cosine';
 detrend = 1; %22/7/22
 %nBasisFunctions = 20;
-%offset = -25; %slide the kernel window back in time 
+%offset = -25; %slide the kernel window back in time
 
 
 if size(lagRange,1) == 1
@@ -42,7 +46,7 @@ expt = buildGLM.initExperiment(unitOfTime, dt_r, uniqueID);
 
 %Registering variables to the experiment
 for ivar = 1:numel(npredVars)
-    expt = buildGLM.registerContinuous(expt, predictorNames{ivar}, [], npredVars(ivar)); 
+    expt = buildGLM.registerContinuous(expt, predictorNames{ivar}, [], npredVars(ivar));
 end
 if useSptrain
     expt = buildGLM.registerSpikeTrain(expt, 'sptrain', 'Our Neuron'); % Spike train!!!
@@ -88,11 +92,11 @@ for ivar = 1:numel(npredVars)
     covLabel = predictorNames{ivar};
     stimHandle = basisFactory.rawStim(covLabel);
     
-    kernelDur = diff(lagRange(ivar,:));    
+    kernelDur = diff(lagRange(ivar,:));
     nBasisFunctions(ivar) = ceil(kernelDur/kernelInterval);
     bs=basisFactory.makeSmoothTemporalBasis(kernelInfo.basisType, kernelDur, ...
         nBasisFunctions(ivar), expt.binfun);
-
+    
     %offset = lagRange(ivar,1)/kernelInterval;
     offset = ceil(lagRange(ivar,1)/dt_r);
     
@@ -123,58 +127,74 @@ for ifold = 1:KFolds
     dm = buildGLM.addBiasColumn(dm);
     
     %% Get the spike trains back to regress against
+    % identical to dt_r*PSTH_f
     if useSptrain
         y = buildGLM.getBinnedSpikeTrain(expt, 'sptrain', dm.trialIndices);
     else
-        y =  buildGLM.getResponseVariable(expt, 'spfilt', dm.trialIndices);
+        y = buildGLM.getResponseVariable(expt, 'spfilt', dm.trialIndices);
     end
     
-    % Doing the actual regression
-    % option1: simple least squares
-    % w = dm.X' * dm.X \ dm.X' * y;
-    
-    % option2: Maximum likelihood estimation using glmfit
-    %[w, dev, stats] = glmfit(dm.X, y, 'poisson', 'link', 'log');
-    
-    % option3: ridge regression with static nonlinearity
-    %     dspec.model.regressionMode='RIDGEFIXED';
-    %     dspec.model.nlfun = @expfun;
-    %     ndx = []; %glmspike.m
-    %     M = regression.doRegressionPoisson(dm.X, y, dspec, ndx, dt_r, ridgeParam); %from Yate's classy neuroGLM: SLOW
-    %     w(:,ifold) = M.khat;
-    
-    %option4: from neuroGLM/tutorial.m
-    wInit = dm.X \ y;
-    
-    %% Use matRegress for Poisson regression
-    % it requires `fminunc` from MATLAB's optimization toolbox
-    %addpath('C:\Users\dshi0006\git\neuroGLM\matRegress')
-    
-    fnlin = @nlfuns.exp; % inverse link function (a.k.a. nonlinearity)
-    lfunc = @(w)(glms.neglog.poisson(w, dm.X, y, fnlin)); % cost/loss function
-    
-    opts = optimoptions(@fminunc, 'Algorithm', 'trust-region', ...
-        'GradObj', 'on', 'Hessian','on');%,'UseParallel',true);
-    
-    try
-        [wml, nlogli, exitflag, ostruct, grad, hessian] = fminunc(lfunc, wInit, opts);
-        w(:,ifold) = wml;
-    catch err
-        w(:,ifold) = wInit;
+    %% Doing the actual regression
+    switch option
+        case 1
+            % option1: simple least squares
+            dmXg = gpuArray(dm.X);
+            yg = gpuArray(y);
+            w(:,ifold) = dmXg' * dmXg \ dmXg' * yg;
+            
+            %w(:,ifold) = dm.X' * dm.X \ dm.X' * y;
+            
+        case 2
+            % option2: Maximum likelihood estimation using glmfit
+            [w(:,ifold), dev, stats] = glmfit(dm.X, y, 'poisson', 'link', 'log');
+            
+        case 3
+            % option3: ridge regression with static nonlinearity
+            dspec.model.regressionMode='RIDGEFIXED';
+            dspec.model.nlfun = @expfun;
+            ndx = []; %glmspike.m
+            M = regression.doRegressionPoisson(dm.X, y, dspec, ndx, dt_r, ridgeParam); %from Yate's classy neuroGLM: SLOW
+            w(:,ifold) = M.khat;
+            
+        case 4
+            %option4: from neuroGLM/tutorial.m
+            wInit = dm.X \ y;
+            
+            %% Use matRegress for Poisson regression
+            % it requires `fminunc` from MATLAB's optimization toolbox
+            %addpath('C:\Users\dshi0006\git\neuroGLM\matRegress')
+            
+            fnlin = @nlfuns.exp; % inverse link function (a.k.a. nonlinearity)
+            lfunc = @(w)(glms.neglog.poisson(w, dm.X, y, fnlin)); % cost/loss function
+            
+            opts = optimoptions(@fminunc, 'Algorithm', 'trust-region', ...
+                'GradObj', 'on', 'Hessian','on');%,'UseParallel',true);
+            
+            try
+                [wml, nlogli, exitflag, ostruct, grad, hessian] = fminunc(lfunc, wInit, opts);
+                w(:,ifold) = wml;
+            catch err
+                w(:,ifold) = wInit;
+            end
+            
+            %wvar = diag(inv(hessian));
     end
-    
-    %wvar = diag(inv(hessian));
     
     %% Simulate from model for test data
     % dmTest = buildGLM.compileSparseDesignMatrix(dspec, testTrialIndices);
     % yPred = generatePrediction(w, model, dmTest); %does not exist
     dm_pred = buildGLM.compileSparseDesignMatrix(dspec, xvFolds{ifold,2});
     dm_pred = buildGLM.addBiasColumn(dm_pred);
-
-    yPred_xv = exp(dm_pred.X*w(:,ifold)); %for option3
-   if ~useSptrain
-       yPred_xv = yPred_xv/dt_r; %[Hz]
-   end
+    
+    switch option
+        case 1
+            yPred_xv = dm_pred.X*w(:,ifold);
+        case {2,3,4}
+            yPred_xv = exp(dm_pred.X*w(:,ifold)); %for option3
+    end
+    if ~useSptrain
+        yPred_xv = yPred_xv/dt_r; %[Hz]
+    end
     
     tidx_r_xv=[];
     for itr = xvFolds{ifold,2}
@@ -185,8 +205,8 @@ for ifold = 1:KFolds
     [expval(ifold), mse(ifold), R(ifold)] = getExpVal(PSTH_f(tidx_r_xv), ...
         predicted(tidx_r_xv)+mean(PSTH_f(tidx_r_xv))-mean(predicted(tidx_r_xv)));
     %adjust mean of predicted for the case of gradual increase of baseline firing ...kind of cheating
-
-
+    
+    
     head=1;%set 0 if intercept is not estimated
     for ivar = 1:numel(npredVars)
         dspec_sub = dspec;
@@ -197,7 +217,12 @@ for ifold = 1:KFolds
         
         widx = (1:nBasisFunctions(ivar)*npredVars(ivar))+head;
         head = max(widx);
-        yPred_xv_sub = exp(dm_pred_sub.X*w(widx,ifold)+w(1,ifold)); %for option3
+        switch option
+            case {2,3,4}
+                yPred_xv_sub = exp(dm_pred_sub.X*w(widx,ifold)+w(1,ifold)); %for option3
+            case 1
+                yPred_xv_sub = dm_pred_sub.X*w(widx,ifold)+w(1,ifold);
+        end
         if ~useSptrain
             yPred_xv_sub = yPred_xv_sub/dt_r; %[Hz]
         end
@@ -214,7 +239,7 @@ r0 = mw(1);% intercept
 
 % dm = buildGLM.compileSparseDesignMatrix(dspec, 1:numel(trIdx_r));
 % dm.X = full(dm.X);
-% dm = buildGLM.addBiasColumn(dm);   
+% dm = buildGLM.addBiasColumn(dm);
 % yPred = exp(dm.X*mw);
 
 for ivar = 1:numel(npredVars)

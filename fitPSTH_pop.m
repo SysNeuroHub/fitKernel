@@ -12,7 +12,7 @@ dataType = 0;%0: each channel, 1: all channels per day
 
 load(fullfile(saveServer,'param20230405.mat'),'param');
 param.mfiringRateTh = 5;
-param.expvalTh = 0;
+param.expvalTh = 3;%0;
 param.ntargetTrTh = 200;
 param.ptonsetRespTh = 0.05;
 
@@ -146,7 +146,7 @@ end
 
 % save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
 kernel_pop = squeeze(kernel_pop);
-save(['fitPSTH_pop20230704' animal],'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
+save(['fitPSTH_pop20230706' animal],'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
     'corrcoef_pred_spk_pop','id_pop','ntotTrials_pop','ntargetTrials_pop','param',...
     'PsaccResp_pop','PtonsetResp_pop','expval_ind_pop','expval_tgt_pop','tlags',...
     'corr_avgtgt_pop','expval_avgtgt_pop');
@@ -154,18 +154,27 @@ save(['fitPSTH_pop20230704' animal],'mFiringRate_pop','kernel_pop','expval_pop',
 %% apply inclusion critetia
 % [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
 %     = inclusionCriteria(mFiringRate_pop, expval_pop, ntargetTrials_pop, PtonsetResp_pop, param);
+% [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
+%     = inclusionCriteria(mFiringRate_pop, expval_tgt_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
 [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
-    = inclusionCriteria(mFiringRate_pop, expval_tgt_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
+    = inclusionCriteria(mFiringRate_pop, expval_ind_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
 
 kernel_pop = kernel_pop(:,okunits);
 expval_ind_pop = expval_ind_pop(:,okunits);
 expval_tgt_pop = expval_tgt_pop(:,okunits);
+expval_avgtgt_pop = expval_avgtgt_pop(:,okunits);
+corr_avgtgt_pop = corr_avgtgt_pop(:,okunits);
 id_pop = id_pop(okunits);
+mFiringRate_pop = mFiringRate_pop(okunits);
+
 
 %% selected units
+% theseIDs = {'hugo/2021/09September/01/25',...
+%     'hugo/2021/11November/16/6',...
+%     'hugo/2021/12December/14/13'};
 theseIDs = {'hugo/2021/09September/01/25',...
-    'hugo/2021/11November/16/6',...
-    'hugo/2021/12December/14/13'};
+    'hugo/2021/11November/02/18',...
+    'hugo/2022/07July/29/19'};
 [~, selectedIDs] = intersect(id_pop, theseIDs);
 
 %% histogram of individual explained variance
@@ -182,58 +191,49 @@ xlabel('Explained variance [%]')
 savePaperFigure(gcf,['expval_' animal]);
 
 %% scatter plot of individual explained variances
-subplot(131);
-plot(expval_ind_pop(2,:), expval_ind_pop(3,:),'.');
-[rho, pval] = corr(expval_ind_pop(2,:)', expval_ind_pop(3,:)');
-title(['rho:' num2str(rho) ', pval:' num2str(pval)])
-xlabel('vision'); ylabel('eye speed');
-axis equal square;
-subplot(132);
-plot(expval_ind_pop(3,:), expval_ind_pop(4,:),'.');
-[rho, pval] = corr(expval_ind_pop(3,:)', expval_ind_pop(4,:)');
-title(['rho:' num2str(rho) ', pval:' num2str(pval)])
-xlabel('eye speed'); ylabel('eye position');
-axis equal square;
-subplot(133);
-plot(expval_ind_pop(4,:), expval_ind_pop(2,:),'.');
-[rho, pval] = corr(expval_ind_pop(4,:)', expval_ind_pop(2,:)');
-title(['rho:' num2str(rho) ', pval:' num2str(pval)])
-xlabel('eye position'); ylabel('vision');
-axis equal square;
-screen2png(['expval_relation_' animal]);
+fig = showScatterTriplets(expval_ind_pop(2:4,:), ...
+    param.predictorNames, [-4 20], selectedIDs);
+screen2png(['expval_all_a' animal]);
+
+fig = showScatterTriplets(100*expval_ind_pop(2:4,:)./expval_ind_pop(1,:), ...
+    param.predictorNames, [-100 200], selectedIDs);
+screen2png(['expval_all_r' animal]);
 
 %% explained variance between kernels
+fig = showScatterTriplets(expval_tgt_pop(2:4,:), ...
+    param.predictorNames, []);%, selectedIDs);
+screen2png(['expval_tgt_a_' animal]);close;
 
+fig = showScatterTriplets(100*expval_tgt_pop(2:4,:)./expval_tgt_pop(1,:), ...
+    param.predictorNames, [-100 200]);%, selectedIDs);
+screen2png(['expval_tgt_r_' animal]);close;
 
-figure('position',[0 0 1200 800]);
-valueRange = [-100 200];
-for ii = 1:3
-    switch ii
-        case 1
-            v = [2 3];
-        case 2
-            v = [2 1];
-        case 3
-            v = [1 3];
-    end
-    
-    subplot(1,3,ii);
-    xvalues = 100*expval_tgt_pop(v(1)+1,:)./expval_tgt_pop(1,:);
-    xvalues(xvalues<valueRange(1))=valueRange(1);
-    xvalues(xvalues>valueRange(2))=valueRange(2);
-    yvalues = 100*expval_tgt_pop(v(2)+1,:)./expval_tgt_pop(1,:);
-    yvalues(yvalues<valueRange(1))=valueRange(1);
-    yvalues(yvalues>valueRange(2))=valueRange(2);
-    plot(xvalues, yvalues,'k.'); hold on;
-    plot(xvalues(selectedIDs), yvalues(selectedIDs),'o');
-    [rho, pval] = corr(expval_tgt_pop(v(1)+1,:)', expval_tgt_pop(v(2)+1,:)');
-    title(['rho:' num2str(rho) ', pval:' num2str(pval)])
-    xlabel(param.predictorNames{v(1)}); ylabel(param.predictorNames{v(2)});
-    axis equal square;
-    xlim(valueRange);ylim(valueRange);
-    set(gca,'tickdir','out');
-end
-savePaperFigure(gcf,['expval_tgt_relation_' animal]);
+%% correlation on avg response between kernels
+% fig = showScatterTriplets(corr_tgt_pop(2:4,:), ...
+%     param.predictorNames, [], selectedIDs);
+% screen2png(['corr_tgt_a_' animal]);close;
+% 
+% fig = showScatterTriplets(100*corr_tgt_pop(2:4,:)./corr_tgt_pop(1,:), ...
+%     param.predictorNames, [-20 100], selectedIDs);
+% screen2png(['corr_tgt_r_' animal]);close;
+
+%% explained variance on avg response between kernels
+fig = showScatterTriplets(expval_avgtgt_pop(2:4,:), ...
+    param.predictorNames, [], selectedIDs);
+screen2png(['expval_avgtgt_a_' animal]);close;
+
+fig = showScatterTriplets(100*expval_avgtgt_pop(2:4,:)./expval_avgtgt_pop(1,:), ...
+    param.predictorNames, [-200 100], selectedIDs);
+screen2png(['expval_avgtgt_r_' animal]);close;
+
+%% correlation on avg response between kernels
+fig = showScatterTriplets(corr_avgtgt_pop(2:4,:), ...
+    param.predictorNames, [], selectedIDs);
+screen2png(['corr_avgtgt_a_' animal]);close;
+
+fig = showScatterTriplets(100*corr_avgtgt_pop(2:4,:)./corr_avgtgt_pop(1,:), ...
+    param.predictorNames, [-20 100], selectedIDs);
+screen2png(['corr_avgtgt_r_' animal]);close;
 
 
 %% show average kernel before centering

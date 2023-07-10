@@ -7,7 +7,6 @@ f = figure('position',[0 0 1000 500]);
 subplot(1,2,1);
 plot(t_r, y_r(:,1), 'color',[.5 .5 .5]);hold on
 plot(t_r, y_r(:,2), 'linewidth',2);
-%xlim([1935 1966]);
 xlim([100 200])
 legend('recorded','fitted');
 xlabel('time [s]'); ylabel('firing rate [Hz]');
