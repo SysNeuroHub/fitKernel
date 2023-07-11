@@ -200,9 +200,9 @@ ylabel(['tOnset (success), n=' num2str(numel(theseTrials))]);
 [~,ch]=fileparts(dd.path);
 tname = [dd.subject ' ' dd.date ' ' ch];
 if allTr
-    title([tname ' resp to all directions']);
+    title(['resp to all directions']);
 else
-    title([tname 'resp to' num2str(param.cardinalDir(prefDirIdx)) 'deg']);
+    title(['resp to' num2str(param.cardinalDir(prefDirIdx)) 'deg']);
 end
 axis tight;
 xlim([-0.1 0.5]);

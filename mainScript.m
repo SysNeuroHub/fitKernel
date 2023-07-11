@@ -22,12 +22,12 @@ end
 
 %% recorded data
 animal = 'hugo';% 'andy' 'ollie'
-for yyy = 1:3
+for yyy = 1
     switch yyy
         case 1
             year = '2021';
         case 2
-            year = '2021';
+            year = '2022';
         case 3
             year = '2023';
     end
@@ -44,7 +44,7 @@ for yyy = 1:3
     % to obtain index of specified month&date&channel
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','01','*_ch25*')))));
-    
+    thisdata = [459:1118];
     if isempty(thisdata)
         thisdata = 1:length(channels);
     end
