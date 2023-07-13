@@ -22,6 +22,12 @@ end
 
 %% recorded data
 animal = 'hugo';% 'andy' 'ollie'
+
+%NG as of 13/7/22
+% '/mnt/MBI/Monash Data/Joanita/2022/cuesaccade_data/01January/27/saved_oephysdata/hugo_oephysdata_ch17.mat'
+ % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch25.mat'
+ % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch27.mat'
+
 for yyy = 1
     switch yyy
         case 1
