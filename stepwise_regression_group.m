@@ -1,4 +1,4 @@
-function [selected_groups, selected_cols] = stepwise_regression_group(X, y, groups, groupNames, initial_cols, threshold_in, threshold_out)
+function [selected_groups, selected_cols] = stepwise_regression_group(X, y, groups, groupNames, initial_cols)
     % Perform stepwise regression at a group level.
     %
     % Arguments:
@@ -12,7 +12,13 @@ function [selected_groups, selected_cols] = stepwise_regression_group(X, y, grou
     %
     % Returns:
     % selected_cols -- row vector, final selected column indices
+    %
+    % 12/7/2023 created
+    % 13/7/2023 added option for fitting algorithm
     
+    option = 'ridge'; %fitlm
+    ridgeParams = 100;
+
     if nargin < 4
         error('Please provide groups and groupNames.');
     end
@@ -24,10 +30,7 @@ function [selected_groups, selected_cols] = stepwise_regression_group(X, y, grou
     if nargin < 6
         threshold_Rsqadj = 0;
     end
-    
-    if nargin < 7
-        threshold_out = 0.10;
-    end
+  
     
     % Create a mapping from column index to group index
     group_mapping = zeros(1, size(X, 2));
@@ -62,10 +65,18 @@ function [selected_groups, selected_cols] = stepwise_regression_group(X, y, grou
             
             X_subset = [X(:, selected_cols), X(:, group_cols)];
             X_subset = [ones(size(X_subset, 1), 1), X_subset];
-            model = fitlm(X_subset, y);
-            %pval = model.Coefficients.pValue(end);
-            Rsqadj = model.Rsquared.Adjusted;
             
+            switch option
+                case 'fitlm'
+                    model = fitlm(X_subset, y);
+                    Rsqadj = model.Rsquared.Adjusted;
+                case 'ridge'
+                    b = rReg(X_subset, y, ridgeParams, 1); %from ridgeXs.m
+                    yHat = X_subset*b(2:end)+b(1);
+                    nPredictors = numel(b);
+                    [Rsqadj] = getRsqadj(y, yHat, nPredictors);
+            end
+
             if Rsqadj > best_Rsqadj
                 best_Rsqadj = Rsqadj;
                 best_group_idx = group_idx;
@@ -90,8 +101,17 @@ function [selected_groups, selected_cols] = stepwise_regression_group(X, y, grou
            
             X_subset = [X(:, setxor(selected_cols, group_cols))];
             X_subset = [ones(size(X_subset, 1), 1), X_subset];
-            model = fitlm(X_subset, y);
-            Rsqadj = model.Rsquared.Adjusted;
+            
+            switch option
+                case 'fitlm'
+                    model = fitlm(X_subset, y);
+                    Rsqadj = model.Rsquared.Adjusted;
+                case 'ridge'
+                    b = rReg(X_subset, y, ridgeParams, 1); %from ridgeXs.m
+                    yHat = X_subset*b(2:end)+b(1);
+                    nPredictors = numel(b);
+                    [Rsqadj] = getRsqadj(y, yHat, nPredictors);
+            end
             
             if Rsqadj > best_Rsqadj
                 best_Rsqadj = Rsqadj;

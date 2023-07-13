@@ -16,6 +16,11 @@ function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, .
 % predicted: predicted trace by all kernels
 % predicted_each: predicted traces by each kernel
 % sum(predicted_each) ~= predicted because static nonlinearity was applied differently
+%
+% 13/7/23 added option=5 (rReg)
+
+sparse = 1; %whether to use sparse matrix in compileSparseDesignMatrix
+useGPU = 1;
 
 if nargin < 11
     option = 4;
@@ -120,8 +125,10 @@ for ifold = 1:KFolds
     
     %If your design matrix is not very sparse (less than 10% sparse, for example),
     %it's better to conver the design matrix to a full (dense) matrix for speed.
-    dm.X = full(dm.X);
-    
+    if sparse
+        dm.X = full(dm.X);
+    end
+
     % rho = 1; % ridge parameter (play around with this to see how it effects fitting. Use cross validation on the training set to set it properly)
     % dm.addBiasColumn('right'); % augment with column of ones
     dm = buildGLM.addBiasColumn(dm);
@@ -138,7 +145,7 @@ for ifold = 1:KFolds
     switch option
         case 1
             % option1: simple least squares
-            dmXg = gpuArray(dm.X);
+            dmXg = gpuArray([dm.X]);
             yg = gpuArray(y);
             w(:,ifold) = dmXg' * dmXg \ dmXg' * yg;
             
@@ -178,6 +185,9 @@ for ifold = 1:KFolds
             end
             
             %wvar = diag(inv(hessian));
+        case 5 %ridge regression used in 2022
+            w(:,ifold)= rReg(dm.X(:,2:end), y, ridgeParam, useGPU);
+            
     end
     
     %% Simulate from model for test data
@@ -187,8 +197,9 @@ for ifold = 1:KFolds
     dm_pred = buildGLM.addBiasColumn(dm_pred);
     
     switch option
-        case 1
+        case {1,5}
             yPred_xv = dm_pred.X*w(:,ifold);
+            %yPred_xv  = dm_pred.X*w(2:end,ifold)+w(1,ifold);
         case {2,3,4}
             yPred_xv = exp(dm_pred.X*w(:,ifold)); %for option3
     end
@@ -220,7 +231,7 @@ for ifold = 1:KFolds
         switch option
             case {2,3,4}
                 yPred_xv_sub = exp(dm_pred_sub.X*w(widx,ifold)+w(1,ifold)); %for option3
-            case 1
+            case {1,5}
                 yPred_xv_sub = dm_pred_sub.X*w(widx,ifold)+w(1,ifold);
         end
         if ~useSptrain

@@ -1,6 +1,25 @@
-rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
-%saveServer = 'E:/tmp/cuesaccade_data';
-saveServer = 'Z:\Shared\Daisuke\cuesaccade_data';
+% rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
+% %saveServer = 'E:/tmp/cuesaccade_data';
+% saveServer = 'Z:\Shared\Daisuke\cuesaccade_data';
+
+switch getenv('COMPUTERNAME')
+
+    case 'MU00175834'
+        addpath(genpath('C:/Users/dshi0006/git'))
+        saveServer = 'E:/tmp/cuesaccade_data';
+        %saveFigFolder = [saveServer, '/20220722'];
+        %mkdir(saveFigFolder);
+        rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
+
+    case 'MU00011697'
+        saveServer = '~/Documents/cuesaccade_data';
+        rootFolder = '/mnt/MBI/Monash Data/Joanita/';
+
+    case 'MU00108396'
+        addpath(genpath('/home/localadmin/Documents/MATLAB'));
+        saveFolder = '/mnt/syncitium/Daisuke/cuesaccade_data';
+        rootFolder = '/mnt/physio/Monash Data/Joanita/2021/cuesaccade_data/';
+end
 
 load(fullfile(saveServer,'param20230405.mat'),'param');
 
@@ -9,14 +28,13 @@ theseIDs = {'hugo/2021/09September/01/25',... %vision driven
     'hugo/2022/03March/10/20',... %eye speed driven
     'hugo/2022/07July/29/19'}; %eye position driven
 
-Rsq = nan(numel(theseIDs),3);
 Rsqadj = nan(numel(theseIDs),3);
-SSE = nan(numel(theseIDs),3);
-SSR = nan(numel(theseIDs),3);
-SST = nan(numel(theseIDs),3);
+%SSE = nan(numel(theseIDs),3);
+%SSR = nan(numel(theseIDs),3);
+%SST = nan(numel(theseIDs),3);
 rr = [];
 for ii = 1:numel(theseIDs)
-    
+
     aaa = split(theseIDs{ii},'/');
     animal = aaa{1};
     year = aaa{2};
@@ -26,29 +44,29 @@ for ii = 1:numel(theseIDs)
 
     saveFigFolder = fullfile(saveServer, '20230710',year,animal);
     mkdir(saveFigFolder);
-    
-     datech = [months filesep dates filesep channels];
-     saveSuffix = [animal replace(datech,filesep,'_') ];%'_cue'];
+
+    datech = [months filesep dates filesep channels];
+    saveSuffix = [animal replace(datech,filesep,'_') ];%'_cue'];
 
     saveFolder = fullfile(saveServer, year, animal);%17/6/23
     saveName = fullfile(saveFolder, [saveSuffix '.mat']);
-    
+
     load(saveName, 'PSTH_f');%,'predicted_all', 'predicted','kernelInfo'...
-        %,'t_r','param','t_cat','dd');
+    %,'t_r','param','t_cat','dd');
     %psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
-    
+
     thisDate = [months '_' dates];
     eyeName = fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']);
     load(eyeName,'catEvTimes','startSaccNoTask','saccDirNoTask');
 
     load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), ...
         'predictorInfo');
-                
-     %loadName = getCuesaccadeName(rootFolder, theseIDs{ii});
-     %load(loadName,'dd');
-     
+
+    %loadName = getCuesaccadeName(rootFolder, theseIDs{ii});
+    %load(loadName,'dd');
+
     %y_r = cat(2,PSTH_f,predicted_all, predicted);
-    
+
     %% fitlm using different groups of variables
 
     groups = [];
@@ -57,7 +75,7 @@ for ii = 1:numel(theseIDs)
         groups{iii} = groups{iii-1}(end)+(1:predictorInfo.npredVars(iii));
     end
 
-    %% 
+    %%
     lagRanges = []; %lag ranges for all variables
     for igroup = 1:size(param.lagRange,1)
         lagRanges = cat(1, lagRanges, repmat(param.lagRange(igroup,:),[predictorInfo.npredVars(igroup) 1]));
@@ -67,29 +85,27 @@ for ii = 1:numel(theseIDs)
         predictorInfo.predictors_r, lagRanges, ...
         predictorInfo.npredVars, ...
         param.predictorNames);
-    
+
     selected_groups{ii} = stepwise_regression_group(X,y,groups_wtlag, groupNames_wtlag);
 
-    
+
     for jj = 1:3
         switch jj
             case 1 %full model
                 tgtGroups = 1:5;
             case 2 %omit eye speed
-                tgtGroups = setxor(1:5, 2); 
+                tgtGroups = setxor(1:5, 2);
             case 3 %omit eye position
-                tgtGroups = setxor(1:5, 3); 
+                tgtGroups = setxor(1:5, 3);
         end
-        
-        [mdl, Rsqadjusted,rr,r0] = fitSubset(PSTH_f, predictorInfo, tgtGroups, param);
-        
+
+        [Rsqadjusted,rr,r0] = fitSubset(PSTH_f, predictorInfo, tgtGroups, param);
+
         %% stats
-        Rsq(ii,jj) = mdl.Rsquared.Ordinary;
-        Rsqadj(ii,jj) = mdl.Rsquared.Adjusted;
-        
-        SSE(ii,jj) = mdl.SSE;
-        SSR(ii,jj) = mdl.SSR;
-        SST(ii,jj) = mdl.SST;
+        Rsqadj(ii,jj) = Rsqadjusted;%mdl.Rsquared.Adjusted;
+        % SSE(ii,jj) = mdl.SSE;
+        % SSR(ii,jj) = mdl.SSR;
+        % SST(ii,jj) = mdl.SST;
     end
 end
 for kk = 1:5

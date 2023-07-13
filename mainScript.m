@@ -1,3 +1,4 @@
+setenv('COMPUTERNAME', 'MU00011697');
 switch getenv('COMPUTERNAME')
     
     case 'MU00175834'
@@ -10,6 +11,7 @@ switch getenv('COMPUTERNAME')
     case 'MU00011697'
         saveServer = '~/Documents/cuesaccade_data';
         rootFolder = '/mnt/MBI/Monash Data/Joanita/';
+        addpath(genpath('~/Documents/git'));
         
     case 'MU00108396'
         addpath(genpath('/home/localadmin/Documents/MATLAB'));
@@ -22,23 +24,25 @@ end
 
 %% recorded data
 animal = 'hugo';% 'andy' 'ollie'
+% fitoption = 1; %'linear'
+fitoption = 5; %linear_rReg', as of 13/7/2023
 
 %NG as of 13/7/22
 % '/mnt/MBI/Monash Data/Joanita/2022/cuesaccade_data/01January/27/saved_oephysdata/hugo_oephysdata_ch17.mat'
  % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch25.mat'
  % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch27.mat'
 
-for yyy = 1
+parfor yyy = 1:3
     switch yyy
         case 1
-            year = '2021';
-        case 2
+            year = '2021'; %DONE upto21 
+        case 2 
             year = '2022';
         case 3
             year = '2023';
     end
     
-    saveFigFolder = fullfile(saveServer, '20230710',year,animal);
+    saveFigFolder = fullfile(saveServer, '20230713',year,animal);
     mkdir(saveFigFolder);
     
     
@@ -50,7 +54,7 @@ for yyy = 1
     % to obtain index of specified month&date&channel
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','01','*_ch25*')))));
-    thisdata = [459:1118];
+    thisdata = [];
     if isempty(thisdata)
         thisdata = 1:length(channels);
     end
@@ -61,7 +65,9 @@ for yyy = 1
     % low number of successful trials
     
     % parameters
-    load(fullfile(saveServer,'param20230405.mat'),'param');
+    n=load(fullfile(saveServer,'param20230405.mat'),'param');
+    param =n.param;
+    n=[];
     ncDirs = length(param.cardinalDir);
     %param.lagRange(2,:)=[-1 0.5];
     
@@ -75,10 +81,10 @@ for yyy = 1
             datech = [months{idata} filesep dates{idata} filesep num2str(channels{idata})];
             disp(datech);
             
-            saveSuffix = [animal replace(datech,filesep,'_') '_linear'];%'_cue'];
+            saveSuffix = [animal replace(datech,filesep,'_') '_linear_rReg'];%'_cue'];
             
             thisDate = [months{idata} '_' dates{idata}];
-            % if sum(strcmp(thisDate, {'06June_06','06June_11','06June_09'}))>0
+             % if sum(strcmp(thisDate, {'06June_06','06June_11','06June_09'}))>0
             %     %june11  Sample points must be unique.
             %     %june09
             %     %june06 weird blank period in time around 500-600s
@@ -89,23 +95,28 @@ for yyy = 1
                 mkdir(saveFolder);
             end
             saveName = fullfile(saveFolder, [saveSuffix '.mat']);
+            predictorInfoName = fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']);
+           
+            EE = load(loadNames{idata},'ephysdata','dd');
+            dd = EE.dd;
             
-            load(loadNames{idata},'ephysdata','dd');
-            
-            spk_all = ephysdata.spikes.spk;
+            spk_all = EE.ephysdata.spikes.spk;
+            EE = [];
             if ~isempty(spk_all)
                 %% concatenate across trials
                 [spk_all_cat, t_cat] = concatenate_spk(spk_all,  dd.eye);
-                clear spk_all
+                %clear spk_all
                 mFiringRate = length(spk_all_cat)/(t_cat(end)-t_cat(1)); %spks/s
             else
                 mFiringRate = 0;
             end
-            clear ephysdata
+            %clear ephysdata
             
             if mFiringRate < 5
                 disp(['skipped as mFiringRate<5']);
-                save(saveName,'mFiringRate');
+                %save(saveName,'mFiringRate');
+                m=matfile(saveName,'writable',true);
+                m.FiringRate = mFiringRate;
                 continue;
             end
             
@@ -140,41 +151,68 @@ for yyy = 1
                 %             save(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']), 'startSaccNoTask', 'endSaccNoTask', ...
                 %                 'saccDirNoTask', 'dirIndexNoTask','-append');
                 
-                save(eyeName,'eyeData_rmotl_cat','catEvTimes',...
-                    'onsets_cat','meta_cat','blinks','outliers','t_tr',...
-                    'startSaccNoTask', 'endSaccNoTask', ...
-                    'saccDirNoTask', 'dirIndexNoTask');
+
+                % save(eyeName,'eyeData_rmotl_cat','catEvTimes',...
+                %     'onsets_cat','meta_cat','blinks','outliers','t_tr',...
+                %     'startSaccNoTask', 'endSaccNoTask', ...
+                %     'saccDirNoTask', 'dirIndexNoTask');
+                m=matfile(eyeName,'writable',true);
+                m.eyeData_rmotl_cat = eyeData_rmotl_cat;
+                m.catEvTimes = catEvTimes;
+                m.onsets_cat = onsets_cat;
+                m.meta_cat = meta_cat;
+                m.blinks = blinks;
+                m.outliers=outliers;
+                m.t_tr=t_tr;
+                m.startSaccNoTask=startSaccNoTask;
+                m.endSaccNoTask=endSaccNoTask;
+                m.saccDirNoTask=saccDirNoTask;
+                m.dirIndexNoTask=dirIndexNoTask;
                 close all
                 
                 %% prepare predictor variables after downsampling
                 t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
                 predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
-                save(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
+                %save(predictorInfoName, 'predictorInfo');
+                m=matfile(predictorInfoName,'writable',true);
+                m.predictorInfo=predictorInfo;
             else
                 disp('loading eye/predictor data');
                 %load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
-                load(eyeName,'eyeData_rmotl_cat','catEvTimes',...
+                n=load(eyeName,'eyeData_rmotl_cat','catEvTimes',...
                     'onsets_cat','meta_cat','blinks','outliers','t_tr',...
                     'startSaccNoTask', 'endSaccNoTask', ...
                     'saccDirNoTask', 'dirIndexNoTask');
+                eyeData_rmotl_cat = n.eyeData_rmotl_cat;
+                catEvTimes = n.catEvTimes;
+                onsets_cat=n.onsets_cat;
+                meta_cat=n.meta_cat;
+                blinks=n.blinks;
+                outliers=n.outliers;
+                t_tr=n.t_tr;
+                startSaccNoTask=n.startSaccNoTask;
+                endSaccNoTask=n.endSaccNoTask;
+                saccDirNoTask=n.saccDirNoTask;
+                dirIndexNoTask=n.dirIndexNoTask;
+                n=[];
+
                 t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
-                predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
-                save(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
-                load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
-                
-                %dds = getCueSaccadeSmall(dd); %NG
+                %predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
+                n=load(predictorInfoName, 'predictorInfo');
+                predictorInfo = n.predictorInfo;
+                n=[];
+                %load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
             end
             
             
             if fitIt
                 %% obtain kernels!
                 disp('fit kernels')
-                option = 1;%4
                 [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
                 [predicted_all, predicted, PSTH_f, kernelInfo] = fitPSTH_cv(spk_all_cat, ...
                     predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
                     predictorInfo.npredVars,param.psth_sigma, param.kernelInterval, ...
-                    param.lagRange, param.ridgeParams, trIdx_r,option);
+                    param.lagRange, param.ridgeParams, trIdx_r,fitoption);
                 
                 % load(saveName, 'predicted_all','predicted','PSTH_f','kernelInfo');
                 
@@ -240,14 +278,25 @@ for yyy = 1
                 
                 %% save results
                 
-                save(saveName, 'PSTH_f','predicted_all', 'predicted','kernelInfo'...
-                    ,'t_r','cellclassInfo','param','mFiringRate','t_cat','dd');
+                % save(saveName, 'PSTH_f','predicted_all', 'predicted','kernelInfo'...
+                %     ,'t_r','cellclassInfo','param','mFiringRate','t_cat','dd');
                 % 'avgfOnsetResp', 'avgCueResp', 'winSamps_fc', ...
                 % 'avgTOnsetByCue','winSamps_sacc', 'singleSaccResp', 'sortedSaccLabels',...
                 %);
                 %'pspec_psth','pspec_parea','faxis_psth','faxis_parea');
                 %         clear spk_all dd kernel kernel_x kernel_y psth_all mDir seDir mDir_pred seDir_pred
-                
+                m=matfile(saveName,'writable',true);
+                m.PSTH_f = PSTH_f;
+                m.predicted_all = predicted_all;
+                m.predicted = predicted;
+                m.kernelInfo = kernelInfo;
+                m.t_r = t_r;
+                m.cellclassInfo = cellclassInfo;
+                m.param=param;
+                m.mFiringRate=mFiringRate;
+                m.t_cat=t_cat;
+                m.dd=dd;
+
                 %previousDate = thisDate;
             end
             
