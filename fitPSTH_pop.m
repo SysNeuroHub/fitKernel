@@ -31,6 +31,7 @@ expval_avgtgt_pop = [];
 ntargetTrials_pop = [];
 ntotTrials_pop = [];
 id_pop = [];
+Rsqadj_pop = [];
 for yy = 1:3
     switch yy
         case 1
@@ -90,12 +91,34 @@ for yy = 1:3
                     'predictorInfo');
                 load(eyeName,'eyeData_rmotl_cat','catEvTimes');
                 
-                if ~isfield(S,'dds')
-                    load(loadNames{idata},'dd'); %slow to read
-                    dds = getCueSaccadeSmall(dd);
-                    save(saveName, 'dds','-append');
-                    S.dds = dd;
+                %                 if ~isfield(S,'dds')
+                %                     load(loadNames{idata},'dd'); %slow to read
+                %                     dds = getCueSaccadeSmall(dd);
+                %                     save(saveName, 'dds','-append');
+                %                    S.dds = dd;
+                %                 end
+                dd = S.dds;
+                
+                
+                %% Rsq adj of subjset of variables
+                nsub=3;
+                Rsqadj = zeros(nsub,1);
+                for jj = 1:nsub
+                    switch jj
+                        case 1 %full model
+                            tgtGroups = 1:5;
+                        case 2 %omit eye speed
+                            tgtGroups = setxor(1:5, 2);
+                        case 3 %omit eye position
+                            tgtGroups = setxor(1:5, 3);
+                    end
+                    
+                    [mdl, Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
+                        tgtGroups, param);
+                    
+                    Rsqadj(jj) = mdl.Rsquared.Adjusted;
                 end
+                Rsqadj_pop = [Rsqadj_pop Rsqadj];
                 
                 %% response to target
                 PtonsetResp_pop = [PtonsetResp_pop S.cellclassInfo.PtonsetResp];
