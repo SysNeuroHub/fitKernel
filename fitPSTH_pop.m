@@ -1,13 +1,11 @@
+%% get ready
 addpath(genpath('C:\Users\dshi0006\git'))
-% load('C:\Users\dshi0006\Downloads\hugo_oephysdata_ch23.mat', ...
-%     'ch','dd','ephysdata');
+setenv('COMPUTERNAME', 'MU00011697');
+[saveServer, rootFolder] = getReady();
 
-%saveFolder = '\\storage.erc.monash.edu\shares\R-MNHS-Syncitium\Shared\Daisuke\cuesaccade_data';
-saveServer = 'Z:\Shared\Daisuke\cuesaccade_data';
 
 %% recorded data
 animal = 'hugo';
-rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
 dataType = 0;%0: each channel, 1: all channels per day
 
 load(fullfile(saveServer,'param20230405.mat'),'param');
@@ -113,10 +111,10 @@ for yy = 1:3
                             tgtGroups = setxor(1:5, 3);
                     end
                     
-                    [mdl, Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
+                    [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
                         tgtGroups, param);
                     
-                    Rsqadj(jj) = mdl.Rsquared.Adjusted;
+                    Rsqadj(jj) = Rsqadjusted;
                 end
                 Rsqadj_pop = [Rsqadj_pop Rsqadj];
                 
@@ -169,10 +167,10 @@ end
 
 % save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
 kernel_pop = squeeze(kernel_pop);
-save(['fitPSTH_pop20230706' animal],'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
+save(['fitPSTH_pop20230713' animal],'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
     'corrcoef_pred_spk_pop','id_pop','ntotTrials_pop','ntargetTrials_pop','param',...
     'PsaccResp_pop','PtonsetResp_pop','expval_ind_pop','expval_tgt_pop','tlags',...
-    'corr_avgtgt_pop','expval_avgtgt_pop');
+    'corr_avgtgt_pop','expval_avgtgt_pop','Rsqadj_pop');
 
 %% apply inclusion critetia
 % [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
