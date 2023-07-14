@@ -1,7 +1,9 @@
 %% get ready
-addpath(genpath('C:\Users\dshi0006\git'))
-setenv('COMPUTERNAME', 'MU00011697');
+%addpath(genpath('C:\Users\dshi0006\git'))
+%setenv('COMPUTERNAME', 'MU00011697');
 [saveServer, rootFolder] = getReady();
+
+
 
 
 %% recorded data
@@ -30,7 +32,7 @@ ntargetTrials_pop = [];
 ntotTrials_pop = [];
 id_pop = [];
 Rsqadj_pop = [];
-for yy = 1:3
+for yy = 3
     switch yy
         case 1
             year = '2021';
@@ -167,7 +169,7 @@ end
 
 % save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
 kernel_pop = squeeze(kernel_pop);
-save(['fitPSTH_pop20230713' animal],'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
+save(fullfile(saveServer,['fitPSTH_pop20230713' animal]),'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
     'corrcoef_pred_spk_pop','id_pop','ntotTrials_pop','ntargetTrials_pop','param',...
     'PsaccResp_pop','PtonsetResp_pop','expval_ind_pop','expval_tgt_pop','tlags',...
     'corr_avgtgt_pop','expval_avgtgt_pop','Rsqadj_pop');
@@ -187,29 +189,47 @@ expval_avgtgt_pop = expval_avgtgt_pop(:,okunits);
 corr_avgtgt_pop = corr_avgtgt_pop(:,okunits);
 id_pop = id_pop(okunits);
 mFiringRate_pop = mFiringRate_pop(okunits);
+Rsqadj_pop = Rsqadj_pop(:,okunits);
 
 
 %% selected units
 % theseIDs = {'hugo/2021/09September/01/25',...
 %     'hugo/2021/11November/16/6',...
 %     'hugo/2021/12December/14/13'};
-theseIDs = {'hugo/2021/09September/01/25',...
-    'hugo/2021/11November/02/18',...
-    'hugo/2022/07July/29/19'};
+% theseIDs = {'hugo/2021/09September/01/25',...
+%     'hugo/2021/11November/02/18',...
+%     'hugo/2022/07July/29/19'};
+theseIDs = {'hugo/2022/03March/10/20',... %eye speed driven
+    'hugo/2022/07July/29/19'}; %eye position driven
+
 [~, selectedIDs] = intersect(id_pop, theseIDs);
 
 %% histogram of individual explained variance
+figure('position',[ 1120         454         787         500]);
 for ii = 1:size(expval_ind_pop,1)
-    ax(ii) = subplot(size(expval_ind_pop,1),1,ii);
-    histogram(expval_ind_pop(ii,:),[0:1:20]);
+    ax(ii) = subplot(size(expval_ind_pop,1),2,2*ii-1);
+    histogram(expval_ind_pop(ii,:),[-10:1:20]);
     if ii==1
         ylabel('all');
+        title('expval ind pop');
     else
         ylabel(param.predictorNames{ii-1});
+    end
+    
+    ax(ii) = subplot(size(expval_ind_pop,1),2,2*ii);
+    histogram(expval_tgt_pop(ii,:),[-10:1:30]);
+    if ii==1
+        title('expval tgt pop');
     end
 end
 xlabel('Explained variance [%]')
 savePaperFigure(gcf,['expval_' animal]);
+
+%% scatter plot of 
+fig = showScatterTriplets(Rsqadj_pop, ...
+    {'full mdl','wo eye speed','wo eye pos'}, [0 .5], selectedIDs);
+squareplots;
+screen2png(['Rsqadj_' animal]);
 
 %% scatter plot of individual explained variances
 fig = showScatterTriplets(expval_ind_pop(2:4,:), ...

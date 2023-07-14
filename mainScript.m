@@ -5,7 +5,7 @@ setenv('COMPUTERNAME', 'MU00011697');
 %mkdir(saveFigFolder);
 
 %% recorded data
-animal = 'hugo';% 'andy' 'ollie'
+animal = 'ollie';% 'andy' 'ollie'
 % fitoption = 1; %'linear'
 fitoption = 5; %linear_rReg', as of 13/7/2023
 
@@ -14,7 +14,7 @@ fitoption = 5; %linear_rReg', as of 13/7/2023
  % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch25.mat'
  % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch27.mat'
 
-parfor yyy = 1:3
+for yyy = 3
     switch yyy
         case 1
             year = '2021'; %DONE upto21 
