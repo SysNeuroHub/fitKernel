@@ -5,7 +5,7 @@ setenv('COMPUTERNAME', 'MU00011697');
 %mkdir(saveFigFolder);
 
 %% recorded data
-animal = 'hugo';% 'andy' 'ollie'
+animal = 'ollie';% 'andy' 'ollie'
 % fitoption = 1; %'linear'
 fitoption = 5; %linear_rReg', as of 13/7/2023
 
@@ -14,7 +14,7 @@ fitoption = 5; %linear_rReg', as of 13/7/2023
  % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch25.mat'
  % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch27.mat'
 
-parfor yyy = 1:3
+for yyy = 3
     switch yyy
         case 1
             year = '2021'; %DONE upto21 
@@ -22,7 +22,7 @@ parfor yyy = 1:3
             year = '2022';
         case 3
             year = '2023';
-    end
+    end 
     
     saveFigFolder = fullfile(saveServer, '20230713',year,animal);
     mkdir(saveFigFolder);
@@ -34,9 +34,10 @@ parfor yyy = 1:3
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
     
     % to obtain index of specified month&date&channel
-    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','01','*_ch25*')))));
-    thisdata = [];
+    thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','04April','21','*_ch26*')))));
+    %thisdata = [551:551+283];
+    thisdata=[315:706];
     if isempty(thisdata)
         thisdata = 1:length(channels);
     end

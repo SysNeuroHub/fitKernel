@@ -1,3 +1,7 @@
+%%TODO
+%retry loading when failed. sometimes fail to load a data in that case
+%previous data is substituted by mistake
+
 %% get ready
 addpath(genpath('C:\Users\dshi0006\git'))
 setenv('COMPUTERNAME', 'MU00011697');
@@ -5,7 +9,7 @@ setenv('COMPUTERNAME', 'MU00011697');
 
 
 %% recorded data
-animal = 'hugo';
+animal = 'ollie';
 dataType = 0;%0: each channel, 1: all channels per day
 
 load(fullfile(saveServer,'param20230405.mat'),'param');
@@ -30,7 +34,8 @@ ntargetTrials_pop = [];
 ntotTrials_pop = [];
 id_pop = [];
 Rsqadj_pop = [];
-for yy = 1:3
+ng =[]; jjj=0;
+for yy = 3
     switch yy
         case 1
             year = '2021';
@@ -58,7 +63,7 @@ for yy = 1:3
         thisid = [animal '/' year '/' datech];
         disp(thisid);
         
-        saveSuffix = [animal replace(datech,'/','_')];
+        saveSuffix = [animal replace(datech,'/','_') '_linear_rReg'];
         
         thisDate = [months{idata} '_' dates{idata}];
         
@@ -68,10 +73,16 @@ for yy = 1:3
         if exist(saveName, 'file')
             
             %datech_pop{idata} = datech;
+            try
             S = load(saveName, 'PSTH_f','predicted_all', 'predicted', ...
                 'kernelInfo','t_r','cellclassInfo','param','mFiringRate','t_cat',...
-                'dds');
-            
+                'dd');
+            catch err
+                ng{jjj+1} = thisid;
+                jjj=jjj+1;
+                continue;
+            end
+
             if isfield(S,'kernelInfo')
                 mFiringRate_pop = cat(2,mFiringRate_pop,S.mFiringRate);
                 kernel_pop = cat(3,kernel_pop,S.kernelInfo.kernel);
@@ -89,13 +100,7 @@ for yy = 1:3
                     'predictorInfo');
                 load(eyeName,'eyeData_rmotl_cat','catEvTimes');
                 
-                %                 if ~isfield(S,'dds')
-                %                     load(loadNames{idata},'dd'); %slow to read
-                %                     dds = getCueSaccadeSmall(dd);
-                %                     save(saveName, 'dds','-append');
-                %                    S.dds = dd;
-                %                 end
-                dd = S.dds;
+                dd = S.dd;
                 
                 
                 %% Rsq adj of subjset of variables
@@ -110,10 +115,10 @@ for yy = 1:3
                         case 3 %omit eye position
                             tgtGroups = setxor(1:5, 3);
                     end
-                    
+
                     [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
                         tgtGroups, param);
-                    
+
                     Rsqadj(jj) = Rsqadjusted;
                 end
                 Rsqadj_pop = [Rsqadj_pop Rsqadj];

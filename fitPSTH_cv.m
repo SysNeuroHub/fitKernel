@@ -20,7 +20,7 @@ function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, .
 % 13/7/23 added option=5 (rReg)
 
 sparse = 1; %whether to use sparse matrix in compileSparseDesignMatrix
-useGPU = 1;
+useGPU = 0;
 
 if nargin < 11
     option = 4;
