@@ -1,20 +1,21 @@
-setenv('COMPUTERNAME', 'MU00011697');
+%setenv('COMPUTERNAME', 'MU00011697');
 [saveServer, rootFolder] = getReady();
+saveServer = 'Z:\Shared\Daisuke\cuesaccade_data';
 
 %saveFigFolder = [saveFolder, '/20230504'];
 %mkdir(saveFigFolder);
 
 %% recorded data
-animal = 'ollie';% 'andy' 'ollie'
+animal = 'hugo';% 'andy' 'ollie'
 % fitoption = 1; %'linear'
 fitoption = 5; %linear_rReg', as of 13/7/2023
 
 %NG as of 13/7/22
 % '/mnt/MBI/Monash Data/Joanita/2022/cuesaccade_data/01January/27/saved_oephysdata/hugo_oephysdata_ch17.mat'
- % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch25.mat'
- % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch27.mat'
+% '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch25.mat'
+% '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch27.mat'
 
-for yyy = 3
+for yyy = 1
     switch yyy
         case 1
             year = '2021'; %DONE upto21 
@@ -35,9 +36,7 @@ for yyy = 3
     
     % to obtain index of specified month&date&channel
     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','04April','21','*_ch26*')))));
-    %thisdata = [551:551+283];
-    thisdata=[315:706];
+        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','13','*_ch21*')))));
     if isempty(thisdata)
         thisdata = 1:length(channels);
     end
@@ -160,6 +159,10 @@ for yyy = 3
                 m=matfile(predictorInfoName,'writable',true);
                 m.predictorInfo=predictorInfo;
             else
+%                 if exist(saveName,'file')
+%                     continue;
+%                 end
+                
                 disp('loading eye/predictor data');
                 %load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
                 n=load(eyeName,'eyeData_rmotl_cat','catEvTimes',...
@@ -221,6 +224,7 @@ for yyy = 3
                 [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
                     startSaccNoTask, saccDirNoTask, param, [-0.5 0.5]);
                 cellclassInfo.datech = datech;
+                savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
                 screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
                 close(f);
                 

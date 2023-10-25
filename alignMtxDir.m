@@ -7,6 +7,8 @@ function [centeredDir, centeredMtx, prefDir, pvalue] = ...
 % INPUTS:
 %     mtx: [time x directions (x channels)]
 %     tgtTidx: time index to compute preferred direction
+% OUTPUTS:
+%     prefDir: direction in [deg]
 
 if nargin < 4
     prefDirOption = 1;
@@ -42,14 +44,19 @@ for idata = 1:size(mtx,3)
     resp = mean(mtx(tgtTidx,:,idata),1);
     switch prefDirOption
         case 0
-            [~,prefDir(idata)] = max(resp);
+            [~,prefBin] = max(resp);
+            prefDir(idata) = cardinalDir(prefBin);
         case 1
             [fitPars, fitErr] ...
                 = fitoriWrapped(cardinalDir, resp,...
                 [], [nan nan 0 min(resp) nan],'',20, []);
             prefDir(idata) = fitPars(1);
+            [~,prefBin] = min(abs(prefDir(idata) - cardinalDir));
+        case 2
+             prefDir(idata) = 180/pi*circ_mean(cardinalDir'*pi/180, resp');
+             [~,prefBin] = min(abs(prefDir(idata) - cardinalDir));
     end
-    centeredMtx(:,:,idata) = circshift(mtx(:,:,idata), centralBin - round(prefDir(idata)), 2);
+    centeredMtx(:,:,idata) = circshift(mtx(:,:,idata), centralBin - prefBin, 2);
     
     if nargout>=4
         pvalue(idata) =  dirDotProdTest(cardinalDir'*pi/180, resp');

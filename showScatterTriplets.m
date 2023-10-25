@@ -43,7 +43,8 @@ for ii = 1:3
     end
     plot(xvalues, yvalues,'k.'); hold on;
     if ~isempty(selectedIDs)
-        scatter(xvalues(selectedIDs), yvalues(selectedIDs),[],1:numel(selectedIDs));
+        c = autumn(numel(selectedIDs));
+        scatter(xvalues(selectedIDs), yvalues(selectedIDs),10,c,'filled');
     end
     title(['rho:' num2str(rho) ', pval:' num2str(pval)])
     xlabel(names{v(1)}); ylabel(names{v(2)});
