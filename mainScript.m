@@ -10,12 +10,16 @@ animal = 'hugo';% 'andy' 'ollie'
 % fitoption = 1; %'linear'
 fitoption = 5; %linear_rReg', as of 13/7/2023
 
+%not yet processed
+%ollie 2023
+%huge 2023 after Feb
+
 %NG as of 13/7/22
 % '/mnt/MBI/Monash Data/Joanita/2022/cuesaccade_data/01January/27/saved_oephysdata/hugo_oephysdata_ch17.mat'
 % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch25.mat'
 % '/mnt/MBI/Monash Data/Joanita/2021/cuesaccade_data/09September/22/saved_oephysdata/hugo_oephysdata_ch27.mat'
 
-for yyy = 1
+for yyy = 3
     switch yyy
         case 1
             year = '2021'; %DONE upto21 
@@ -36,7 +40,7 @@ for yyy = 1
     
     % to obtain index of specified month&date&channel
     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','13','*_ch21*')))));
+        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','02February','22','*_ch22*')))));
     if isempty(thisdata)
         thisdata = 1:length(channels);
     end
