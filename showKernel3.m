@@ -1,5 +1,10 @@
-function [fig, kernel_avg,prefdir, prefdirPval] = showKernel3(kernel_pop, tlags, cardinalDir, centering, tgtRange)
+function [fig, kernel_avg,prefdir, prefdirPval] = showKernel3(kernel_pop, ...
+    tlags, cardinalDir, centering, tgtRange)
 % fig = showKernel3(kernel_pop, tlags, cardinalDir, centering)
+
+prefDirOption = 0;%
+%very slow in option=1
+%something is not right in option=2 
 
 [ncol, nrow] = size(kernel_pop);
 nTrials = size(kernel_pop{1,1},2);
@@ -16,7 +21,7 @@ for col = 1:5
         tgtTimes = intersect(find(tlags{col}(:,1)>tgtRange(col,1)), ...
             find(tlags{col}(:,1)<tgtRange(col,2)));
         [directions, allmatrix_c, prefdir{col}, prefdirPval{col}]  = ...
-            alignMtxDir(allmatrix, tgtTimes, cardinalDir, 1);
+            alignMtxDir(allmatrix, tgtTimes, cardinalDir, prefDirOption );
         kernel_avg{col} = squeeze(mean(allmatrix_c,3));        
     else
         if ~centering

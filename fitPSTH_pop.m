@@ -15,6 +15,7 @@ param.mfiringRateTh = 5;
 param.expvalTh = 3;%0;
 param.ntargetTrTh = 200;
 param.ptonsetRespTh = 0.05;
+param.ampTh = 0.5;%1; %for detecting preffered direction on 18/7/23
 
 %alldata = [];
 mFiringRate_pop = [];
@@ -32,7 +33,7 @@ ntargetTrials_pop = [];
 ntotTrials_pop = [];
 id_pop = [];
 Rsqadj_pop = [];
-for yy = 3
+for yy = 1:3
     switch yy
         case 1
             year = '2021';
@@ -65,7 +66,7 @@ for yy = 3
         thisDate = [months{idata} '_' dates{idata}];
         
         saveFolder = fullfile(saveServer, year,animal);%17/6/23
-        saveName = fullfile(saveFolder, [saveSuffix '.mat']);
+        saveName = fullfile(saveFolder, [saveSuffix '_linear_rReg.mat']);
         
         if exist(saveName, 'file')
             
@@ -101,24 +102,24 @@ for yy = 3
                 
                 
                 %% Rsq adj of subjset of variables
-                nsub=3;
-                Rsqadj = zeros(nsub,1);
-                for jj = 1:nsub
-                    switch jj
-                        case 1 %full model
-                            tgtGroups = 1:5;
-                        case 2 %omit eye speed
-                            tgtGroups = setxor(1:5, 2);
-                        case 3 %omit eye position
-                            tgtGroups = setxor(1:5, 3);
-                    end
-                    
-                    [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
-                        tgtGroups, param);
-                    
-                    Rsqadj(jj) = Rsqadjusted;
-                end
-                Rsqadj_pop = [Rsqadj_pop Rsqadj];
+%                 nsub=3;
+%                 Rsqadj = zeros(nsub,1);
+%                 for jj = 1:nsub
+%                     switch jj
+%                         case 1 %full model
+%                             tgtGroups = 1:5;
+%                         case 2 %omit eye speed
+%                             tgtGroups = setxor(1:5, 2);
+%                         case 3 %omit eye position
+%                             tgtGroups = setxor(1:5, 3);
+%                     end
+%                     
+%                     [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
+%                         tgtGroups, param);
+%                     
+%                     Rsqadj(jj) = Rsqadjusted;
+%                 end
+%                 Rsqadj_pop = [Rsqadj_pop Rsqadj];
                 
                 %% response to target
                 PtonsetResp_pop = [PtonsetResp_pop S.cellclassInfo.PtonsetResp];
@@ -169,7 +170,7 @@ end
 
 % save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
 kernel_pop = squeeze(kernel_pop);
-save(fullfile(saveServer,['fitPSTH_pop20230713' animal]),'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
+save(fullfile(saveServer,['fitPSTH_pop20230717' animal]),'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
     'corrcoef_pred_spk_pop','id_pop','ntotTrials_pop','ntargetTrials_pop','param',...
     'PsaccResp_pop','PtonsetResp_pop','expval_ind_pop','expval_tgt_pop','tlags',...
     'corr_avgtgt_pop','expval_avgtgt_pop','Rsqadj_pop');
@@ -181,6 +182,12 @@ save(fullfile(saveServer,['fitPSTH_pop20230713' animal]),'mFiringRate_pop','kern
 %     = inclusionCriteria(mFiringRate_pop, expval_tgt_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
 [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
     = inclusionCriteria(mFiringRate_pop, expval_ind_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
+
+%% hack exclude redundant data
+[~, mfiringRate_u] = unique(mFiringRate_pop);
+[~, expval_u] = unique(expval_ind_pop(1,:));
+okunits_u = intersect(mfiringRate_u, expval_u);
+okunits = intersect(okunits, okunits_u);
 
 kernel_pop = kernel_pop(:,okunits);
 expval_ind_pop = expval_ind_pop(:,okunits);
@@ -199,10 +206,19 @@ Rsqadj_pop = Rsqadj_pop(:,okunits);
 % theseIDs = {'hugo/2021/09September/01/25',...
 %     'hugo/2021/11November/02/18',...
 %     'hugo/2022/07July/29/19'};
-theseIDs = {'hugo/2022/03March/10/20',... %eye speed driven
-    'hugo/2022/07July/29/19'}; %eye position driven
+% theseIDs = {'hugo/2022/03March/10/20',... %eye speed driven
+%     'hugo/2022/07July/29/19'}; %eye position driven
+theseIDs = {'hugo/2021/08August/25/27',... %vision
+    'hugo/2022/07July/26/19',... %eye speed
+   'hugo/2022/08August/05/2'} %integrator OK
+%    'hugo/2022/08August/15/5'}
+%     'hugo/2021/12December/13/13'}; %integrator ... too law exp var
+%    'hugo/2021/12December/09/8'}; %integrator ... too law exp var
+%    'hugo/2021/12December/14/13'};%integrator ... too law exp var
+%     'hugo/2021/09September/01/25',... %NG did not meet incl critaria
 
 [~, selectedIDs] = intersect(id_pop, theseIDs);
+id_pop(selectedIDs)
 
 %% histogram of individual explained variance
 figure('position',[ 1120         454         787         500]);
@@ -225,11 +241,11 @@ end
 xlabel('Explained variance [%]')
 savePaperFigure(gcf,['expval_' animal]);
 
-%% scatter plot of 
-fig = showScatterTriplets(Rsqadj_pop, ...
-    {'full mdl','wo eye speed','wo eye pos'}, [0 .5], selectedIDs);
+%% scatter plot of Rsquare adjusted
+fig = showScatterTriplets(Rsqadj_pop([2 1 3],:), ...
+    {'wo eye speed','full mdl','wo eye pos'}, [0 .5]);
 squareplots;
-screen2png(['Rsqadj_' animal]);
+savePaperFigure(gcf,['Rsqadj_' animal]);
 
 %% scatter plot of individual explained variances
 fig = showScatterTriplets(expval_ind_pop(2:4,:), ...
@@ -242,12 +258,13 @@ screen2png(['expval_all_r' animal]);
 
 %% explained variance between kernels
 fig = showScatterTriplets(expval_tgt_pop(2:4,:), ...
-    param.predictorNames, []);%, selectedIDs);
+    param.predictorNames, [-10 35], selectedIDs);
 screen2png(['expval_tgt_a_' animal]);close;
 
 fig = showScatterTriplets(100*expval_tgt_pop(2:4,:)./expval_tgt_pop(1,:), ...
-    param.predictorNames, [-100 200]);%, selectedIDs);
-screen2png(['expval_tgt_r_' animal]);close;
+    param.predictorNames, [-50 150], selectedIDs);
+squareplots
+savePaperFigure(gcf,['expval_tgt_r_' animal]);close;
 
 %% correlation on avg response between kernels
 % fig = showScatterTriplets(corr_tgt_pop(2:4,:), ...
@@ -289,27 +306,78 @@ savePaperFigure(f,['avgKernel_centered_' animal]);
 
 
 %% preferred direction across 3 kernels
-%plot3(prefdir{1},prefdir{2},prefdir{3},'.');
-subplot(131);
-%sigUnits = (prefdirPval{1}<0.05) & (prefdirPval{2}<0.05); %EMPTY
-plot(prefdir{1}, prefdir{2},'.');
-%plot(prefdir{1}(sigUnits), prefdir{2}(sigUnits),'b.');
-[rho, pval] = circ_corrcc(prefdir{1}*pi/180,prefdir{2}*pi/180);
-title(['rho:' num2str(rho) ', pval:' num2str(pval)])
-xlabel('vision'); ylabel('eye speed');
-axis equal square;
-subplot(132);
-plot(prefdir{2},prefdir{3},'.');
-[rho, pval] = circ_corrcc(prefdir{2}*pi/180,prefdir{3}*pi/180);
-title(['rho:' num2str(rho) ', pval:' num2str(pval)])
-xlabel('eye speed'); ylabel('eye position');
-axis equal square;
-subplot(133);
-plot(prefdir{3},prefdir{1},'.');
-[rho, pval] = circ_corrcc(prefdir{3}*pi/180,prefdir{1}*pi/180);
-title(['rho:' num2str(rho) ', pval:' num2str(pval)])
-xlabel('eye position'); ylabel('vision');
-axis equal square;
+prefDir = [];
+amp = [];
+for col = 1:3
+    nrow = size(kernel_pop,2);
+    allmatrix = reshape(zeros(size(kernel_pop{col,1})),[],1);
+    for row = 1:nrow
+        allmatrix(:,row) = reshape(kernel_pop{col,row},1,[]);
+    end
+    orisize = size(kernel_pop{col,1});
+    allmatrix = reshape(allmatrix, orisize(1), orisize(2),[]);
+    
+    tgtTimes = intersect(find(tlags{col}(:,1)>tgtRange(col,1)), ...
+        find(tlags{col}(:,1)<tgtRange(col,2)));
+    
+    for idata = 1:size(allmatrix,3)
+        resp = mean(allmatrix(tgtTimes,:,idata),1)';
+        prefDir(idata, col) = 180/pi*circ_mean(param.cardinalDir'*pi/180, resp);
+        amp(idata, col) =  circ_r(param.cardinalDir'*pi/180, resp);
+    end
+end
+tuned = amp>param.ampTh;
+
+figure('position',[ 680         485        1181         493]);
+for ii = 1:3
+    switch ii
+        case 1
+            v = [1 2];
+        case 2
+            v = [1 3];
+        case 3
+            v = [2 3];
+    end
+    doubleTuned = find(tuned(:,v(1))+tuned(:,v(2))==2);
+    subplot(2,3,ii);
+    plot(prefDir(:,v(1)), prefDir(:,v(2)), '.','color',[.7 .7 .7]);hold on
+    plot(prefDir(doubleTuned,v(1)), prefDir(doubleTuned,v(2)), 'b.');
+    squareplot;
+    [rho, pval] = circ_corrcc(prefDir(doubleTuned,v(1))*pi/180, prefDir(doubleTuned,v(2))*pi/180);
+    title(['rho:' num2str(rho) ', pval:' num2str(pval)]);
+    xlabel(param.predictorNames{v(1)});
+    ylabel(param.predictorNames{v(2)});
+    subplot(2,3,ii+3)
+    histogram(prefDir(:,v(1)) - prefDir(:,v(2)),-180:5:180, 'facecolor',[.7 .7 .7]); hold on;
+    histogram(prefDir(doubleTuned,v(1)) - prefDir(doubleTuned,v(2)), -180:5:180,  'facecolor', 'b');
+    vline(0);
+    xlabel([param.predictorNames{v(1)} '-' param.predictorNames{v(2)}]);
+    pval = circ_medtest(prefDir(doubleTuned,v(1)) - prefDir(doubleTuned,v(2)),0);
+    title(['pval:' num2str(pval)]);
+end
+savePaperFigure(gcf,['tuning_pop_' animal]);
+
+% %plot3(prefdir{1},prefdir{2},prefdir{3},'.');
+% subplot(131);
+% %sigUnits = (prefdirPval{1}<0.05) & (prefdirPval{2}<0.05); %EMPTY
+% plot(prefdir{1}, prefdir{2},'.');
+% %plot(prefdir{1}(sigUnits), prefdir{2}(sigUnits),'b.');
+% [rho, pval] = circ_corrcc(prefdir{1}*pi/180,prefdir{2}*pi/180);
+% title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+% xlabel('vision'); ylabel('eye speed');
+% axis equal square;
+% subplot(132);
+% plot(prefdir{2},prefdir{3},'.');
+% [rho, pval] = circ_corrcc(prefdir{2}*pi/180,prefdir{3}*pi/180);
+% title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+% xlabel('eye speed'); ylabel('eye position');
+% axis equal square;
+% subplot(133);
+% plot(prefdir{3},prefdir{1},'.');
+% [rho, pval] = circ_corrcc(prefdir{3}*pi/180,prefdir{1}*pi/180);
+% title(['rho:' num2str(rho) ', pval:' num2str(pval)])
+% xlabel('eye position'); ylabel('vision');
+% axis equal square;
 
 screen2png(['prefDirCorr_' animal]);
 % circular correlation

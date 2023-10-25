@@ -1,10 +1,11 @@
 function [saveServer, rootFolder] = getReady()
+%[saveServer, rootFolder] = getReady()
 
 switch getenv('COMPUTERNAME')
     
     case 'MU00175834'
         addpath(genpath('C:/Users/dshi0006/git'))
-        saveServer = 'E:/tmp/cuesaccade_data';
+        saveServer = 'Z:\Shared\Daisuke\cuesaccade_data';%'E:/tmp/cuesaccade_data';
         %saveFigFolder = [saveServer, '/20220722'];
         %mkdir(saveFigFolder);
         rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
