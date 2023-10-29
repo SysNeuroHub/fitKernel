@@ -2,13 +2,12 @@
 %addpath(genpath('C:\Users\dshi0006\git'))
 %setenv('COMPUTERNAME', 'MU00011697');
 [saveServer, rootFolder] = getReady();
-
-
-
+saveSuffix_p = 'fitPSTH_pop20231026';
 
 %% recorded data
 animal = 'hugo';
 dataType = 0;%0: each channel, 1: all channels per day
+tWin = [0 0.5];%[s]
 
 load(fullfile(saveServer,'param20230405.mat'),'param');
 param.mfiringRateTh = 5;
@@ -33,7 +32,9 @@ ntargetTrials_pop = [];
 ntotTrials_pop = [];
 id_pop = [];
 Rsqadj_pop = [];
-for yy = 1:3
+gainInfo_pop = [];
+errorIDs= cell(1);
+for yy = 3
     switch yy
         case 1
             year = '2021';
@@ -71,9 +72,14 @@ for yy = 1:3
         if exist(saveName, 'file')
             
             %datech_pop{idata} = datech;
+            try
             S = load(saveName, 'PSTH_f','predicted_all', 'predicted', ...
                 'kernelInfo','t_r','cellclassInfo','param','mFiringRate','t_cat',...
                 'dds');
+            catch err
+                errorIDs{numel(errorIDs)+1} = thisid;
+                continue;
+            end
             
             if isfield(S,'kernelInfo')
                 mFiringRate_pop = cat(2,mFiringRate_pop,S.mFiringRate);
@@ -92,34 +98,47 @@ for yy = 1:3
                     'predictorInfo');
                 load(eyeName,'eyeData_rmotl_cat','catEvTimes');
                 
-                %                 if ~isfield(S,'dds')
-                %                     load(loadNames{idata},'dd'); %slow to read
-                %                     dds = getCueSaccadeSmall(dd);
-                %                     save(saveName, 'dds','-append');
-                %                    S.dds = dd;
-                %                 end
+                if ~isfield(S,'dds')
+                    load(loadNames{idata},'dd'); %slow to read
+                    dds = getCueSaccadeSmall(dd);
+                    save(saveName, 'dds','-append');
+                    S.dds = dd;
+                end
                 dd = S.dds;
                 
                 
-                %% Rsq adj of subjset of variables
-%                 nsub=3;
-%                 Rsqadj = zeros(nsub,1);
-%                 for jj = 1:nsub
-%                     switch jj
-%                         case 1 %full model
-%                             tgtGroups = 1:5;
-%                         case 2 %omit eye speed
-%                             tgtGroups = setxor(1:5, 2);
-%                         case 3 %omit eye position
-%                             tgtGroups = setxor(1:5, 3);
-%                     end
-%                     
-%                     [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
-%                         tgtGroups, param);
-%                     
-%                     Rsqadj(jj) = Rsqadjusted;
-%                 end
-%                 Rsqadj_pop = [Rsqadj_pop Rsqadj];
+                %% Rsq adj of subjset of variables 
+                nsub=4;
+                Rsqadj = zeros(nsub,1);
+                for jj = 1:nsub
+                    switch jj
+                        case 1 %full model
+                            tgtGroups = 1:5;
+                        case 2 %omit vision %added 26/10/2023
+                            tgtGroups = setxor(1:5, 1);
+                        case 3 %omit eye speed
+                            tgtGroups = setxor(1:5, 2);
+                        case 4 %omit eye position
+                            tgtGroups = setxor(1:5, 3);
+                    end
+                    [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
+                        tgtGroups, param);%, idxTgtOnsets);
+                    
+                    Rsqadj(jj) = Rsqadjusted;
+                end
+                Rsqadj_pop = [Rsqadj_pop Rsqadj];
+
+                %                 %Rsq_adjusted computed from pre-target
+                %                 periods - NG. can be < 0
+                %                 nPredictors_all = sum(cellfun(@numel, S.kernelInfo.kernel));
+                %                 [Rsqadjusted_tgt(1,1)] = getRsqadj_tgt(S.PSTH_f, S.predicted_all, ...
+                %                         catEvTimes, S.t_r, tWin, nPredictors_all);
+                %                 for jj = 1:3
+                %                     nPredictors = numel(S.kernelInfo.kernel{jj});
+                %                     [Rsqadjusted_tgt(1,jj+1)] = getRsqadj_tgt(S.PSTH_f, S.predicted(:,jj), ...
+                %                         catEvTimes, S.t_r, tWin, nPredictors);
+                %                 end
+                %                 Rsqadj_tgt_pop = [Rsqadj_tgt_pop Rsqadjusted_tgt];
                 
                 %% response to target
                 PtonsetResp_pop = [PtonsetResp_pop S.cellclassInfo.PtonsetResp];
@@ -138,18 +157,18 @@ for yy = 1:3
                 expval_ind_pop = [expval_ind_pop expval];
                 
                 %% explained variance for target response
-                expval_tgt(1,1) = getExpVal_tgt(S.PSTH_f, S.predicted_all, catEvTimes, S.t_r, [0 0.5]);
-                expval_tgt(2:6,1) = getExpVal_tgt(S.PSTH_f, S.predicted, catEvTimes, S.t_r, [0 0.5]);
+                expval_tgt(1,1) = getExpVal_tgt(S.PSTH_f, S.predicted_all, catEvTimes, S.t_r, tWin);
+                expval_tgt(2:6,1) = getExpVal_tgt(S.PSTH_f, S.predicted, catEvTimes, S.t_r, tWin);
                
                 expval_tgt_pop = [expval_tgt_pop expval_tgt];
                 
                 %% explained variance for target response averaged across trials
-                [expval_avgtgt(1,1), corr_avgtgt(1,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted_all, ...
-                    catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);                
-                [expval_avgtgt(2:6,1), corr_avgtgt(2:6,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted, ...
-                    catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);
-                expval_avgtgt_pop = [expval_avgtgt_pop expval_avgtgt];
-                corr_avgtgt_pop = [corr_avgtgt_pop corr_avgtgt];
+%                 [expval_avgtgt(1,1), corr_avgtgt(1,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted_all, ...
+%                     catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);                
+%                 [expval_avgtgt(2:6,1), corr_avgtgt(2:6,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted, ...
+%                     catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);
+%                 expval_avgtgt_pop = [expval_avgtgt_pop expval_avgtgt];
+%                 corr_avgtgt_pop = [corr_avgtgt_pop corr_avgtgt];
 
                 %% number of target trials
                 ntargetTrials_pop = [ntargetTrials_pop sum(~isnan(catEvTimes.tOnset))];
@@ -157,6 +176,14 @@ for yy = 1:3
                 %% number of total trials
                 ntotTrials_pop = [ntotTrials_pop numel(catEvTimes.tOnset)];
                 
+                %% compute gain
+                figTWin = [-0.5 0.5];
+                onlySuccess = 0;
+                respWin = [0.05 0.35]; %[s]
+                y_r = cat(2,S.PSTH_f,S.predicted_all);
+                gainInfo = getGainInfo(S.t_r, y_r, param.cardinalDir, catEvTimes, ...
+                    dd, figTWin, onlySuccess, respWin);
+                gainInfo_pop = [gainInfo_pop gainInfo];
                 
                 %retrieve just once
                 tlags = S.kernelInfo.tlags;
@@ -170,10 +197,10 @@ end
 
 % save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
 kernel_pop = squeeze(kernel_pop);
-save(fullfile(saveServer,['fitPSTH_pop20230717' animal]),'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
+save(fullfile(saveServer,saveSuffix_p,[saveSuffix_p animal]),'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
     'corrcoef_pred_spk_pop','id_pop','ntotTrials_pop','ntargetTrials_pop','param',...
     'PsaccResp_pop','PtonsetResp_pop','expval_ind_pop','expval_tgt_pop','tlags',...
-    'corr_avgtgt_pop','expval_avgtgt_pop','Rsqadj_pop');
+    'corr_avgtgt_pop','expval_avgtgt_pop','Rsqadj_pop','gainInfo_pop');
 
 %% apply inclusion critetia
 % [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
@@ -192,8 +219,8 @@ okunits = intersect(okunits, okunits_u);
 kernel_pop = kernel_pop(:,okunits);
 expval_ind_pop = expval_ind_pop(:,okunits);
 expval_tgt_pop = expval_tgt_pop(:,okunits);
-expval_avgtgt_pop = expval_avgtgt_pop(:,okunits);
-corr_avgtgt_pop = corr_avgtgt_pop(:,okunits);
+%expval_avgtgt_pop = expval_avgtgt_pop(:,okunits);
+%corr_avgtgt_pop = corr_avgtgt_pop(:,okunits);
 id_pop = id_pop(okunits);
 mFiringRate_pop = mFiringRate_pop(okunits);
 Rsqadj_pop = Rsqadj_pop(:,okunits);
@@ -242,29 +269,36 @@ xlabel('Explained variance [%]')
 savePaperFigure(gcf,['expval_' animal]);
 
 %% scatter plot of Rsquare adjusted
-fig = showScatterTriplets(Rsqadj_pop([2 1 3],:), ...
-    {'wo eye speed','full mdl','wo eye pos'}, [0 .5]);
+% fig = showScatterTriplets(Rsqadj_pop([2 1 3],:), ...
+%     {'wo eye speed','full mdl','wo eye pos'}, [0 .5]);
+fig = showScatterTriplets(Rsqadj_pop([2 3 4],:), ...
+    {'wo vision','wo eye spd','wo eye pos'}, [0 .5]);
 squareplots;
-savePaperFigure(gcf,['Rsqadj_' animal]);
+savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['Rsqadj_' animal]));
+
+fig = showScatterTriplets(Rsqadj_pop([2 3 4],:)./Rsqadj_pop([1],:), ...
+    {'wo vision','wo eye spd','wo eye pos'});
+squareplots;
+savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['Rsqadj_' animal '_relativeToFullMdl']));
 
 %% scatter plot of individual explained variances
 fig = showScatterTriplets(expval_ind_pop(2:4,:), ...
     param.predictorNames, [-4 20], selectedIDs);
-screen2png(['expval_all_a' animal]);
+screen2png(fullfile(saveServer,saveSuffix_p,['expval_all_a' animal]));
 
 fig = showScatterTriplets(100*expval_ind_pop(2:4,:)./expval_ind_pop(1,:), ...
     param.predictorNames, [-100 200], selectedIDs);
-screen2png(['expval_all_r' animal]);
+screen2png(fullfile(saveServer,saveSuffix_p,['expval_all_r' animal]));
 
 %% explained variance between kernels
 fig = showScatterTriplets(expval_tgt_pop(2:4,:), ...
     param.predictorNames, [-10 35], selectedIDs);
-screen2png(['expval_tgt_a_' animal]);close;
+screen2png(fullfile(saveServer,saveSuffix_p,['expval_tgt_a_' animal]));close;
 
 fig = showScatterTriplets(100*expval_tgt_pop(2:4,:)./expval_tgt_pop(1,:), ...
     param.predictorNames, [-50 150], selectedIDs);
 squareplots
-savePaperFigure(gcf,['expval_tgt_r_' animal]);close;
+savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['expval_tgt_r_' animal]));close;
 
 %% correlation on avg response between kernels
 % fig = showScatterTriplets(corr_tgt_pop(2:4,:), ...
@@ -278,31 +312,31 @@ savePaperFigure(gcf,['expval_tgt_r_' animal]);close;
 %% explained variance on avg response between kernels
 fig = showScatterTriplets(expval_avgtgt_pop(2:4,:), ...
     param.predictorNames, [], selectedIDs);
-screen2png(['expval_avgtgt_a_' animal]);close;
+screen2png(fullfile(saveServer,saveSuffix_p,['expval_avgtgt_a_' animal]));close;
 
 fig = showScatterTriplets(100*expval_avgtgt_pop(2:4,:)./expval_avgtgt_pop(1,:), ...
     param.predictorNames, [-200 100], selectedIDs);
-screen2png(['expval_avgtgt_r_' animal]);close;
+screen2png(fullfile(saveServer,saveSuffix_p,['expval_avgtgt_r_' animal]));close;
 
 %% correlation on avg response between kernels
 fig = showScatterTriplets(corr_avgtgt_pop(2:4,:), ...
     param.predictorNames, [], selectedIDs);
-screen2png(['corr_avgtgt_a_' animal]);close;
+screen2png(fullfile(saveServer,saveSuffix_p,['corr_avgtgt_a_' animal]));close;
 
 fig = showScatterTriplets(100*corr_avgtgt_pop(2:4,:)./corr_avgtgt_pop(1,:), ...
     param.predictorNames, [-20 100], selectedIDs);
-screen2png(['corr_avgtgt_r_' animal]);close;
+screen2png(fullfile(saveServer,saveSuffix_p,['corr_avgtgt_r_' animal]));close;
 
 
 %% show average kernel before centering
 [f, kernel_avg] = showKernel3(kernel_pop, tlags, param.cardinalDir, 0);
-savePaperFigure(f,['avgKernel_' animal]);
+savePaperFigure(f,fullfile(saveServer,saveSuffix_p,['avgKernel_' animal]));
 
 
 %% centerring by preferred direction
 tgtRange = [0.05 0.15; 0.03 0.25; -0.1 0.1];
 [f, kernel_centered_avg] = showKernel3(kernel_pop, tlags, param.cardinalDir, 1, tgtRange);
-savePaperFigure(f,['avgKernel_centered_' animal]);
+savePaperFigure(f,fullfile(saveServer,saveSuffix_p,['avgKernel_centered_' animal]));
 
 
 %% preferred direction across 3 kernels
@@ -355,7 +389,7 @@ for ii = 1:3
     pval = circ_medtest(prefDir(doubleTuned,v(1)) - prefDir(doubleTuned,v(2)),0);
     title(['pval:' num2str(pval)]);
 end
-savePaperFigure(gcf,['tuning_pop_' animal]);
+savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 
 % %plot3(prefdir{1},prefdir{2},prefdir{3},'.');
 % subplot(131);
@@ -378,73 +412,72 @@ savePaperFigure(gcf,['tuning_pop_' animal]);
 % title(['rho:' num2str(rho) ', pval:' num2str(pval)])
 % xlabel('eye position'); ylabel('vision');
 % axis equal square;
-
-screen2png(['prefDirCorr_' animal]);
+%screen2png(['prefDirCorr_' animal]);
 % circular correlation
 
 
 %% pupil dilation/constriction
-pupilLabels = {'dilation st','constriction st'};
-psthNames_pupil = cat(2,{'psth','alpha','alphaAmp','predicted_all'},param.predictorNames ,{'pdiam'});
-nChannels = size(avgPupilResp_pop,4);
-mPupilResp = squeeze(mean(avgPupilResp_pop,4));
-sePupilResp = 1/sqrt(nChannels)*squeeze(std(avgPupilResp_pop,[],4));
-nvars = size(avgPupilResp_pop,2);
-figure('position',[0 0 1000 1000]);
-ax=[];
-for ivar = 1:nvars
-    ax(ivar)=subplot(5, 2, ivar);
-    %imagesc(winSamps, param.cardinalDir, squeeze(avgDlResp(:,ivar,:)));
-    errorbar(repmat(winSamps_sacc',[1 length(pupilLabels)]), ...
-        squeeze(mPupilResp(:,ivar,:))',squeeze(sePupilResp(:,ivar,:))');
-    
-    %set(gca, 'ytick',1:4,'yticklabel',pupilLabels);
-    %xlabel('time from pupil onset [s]');
-    title(psthNames_pupil{ivar});
-    xlim([-0.3 0.3]);
-    vline(0);
-end
-%linksubaxes('y',ax(1:nvars-1));
-legend(pupilLabels);
-marginplots;
-screen2png('pupilOn_pop');
+% pupilLabels = {'dilation st','constriction st'};
+% psthNames_pupil = cat(2,{'psth','alpha','alphaAmp','predicted_all'},param.predictorNames ,{'pdiam'});
+% nChannels = size(avgPupilResp_pop,4);
+% mPupilResp = squeeze(mean(avgPupilResp_pop,4));
+% sePupilResp = 1/sqrt(nChannels)*squeeze(std(avgPupilResp_pop,[],4));
+% nvars = size(avgPupilResp_pop,2);
+% figure('position',[0 0 1000 1000]);
+% ax=[];
+% for ivar = 1:nvars
+%     ax(ivar)=subplot(5, 2, ivar);
+%     %imagesc(winSamps, param.cardinalDir, squeeze(avgDlResp(:,ivar,:)));
+%     errorbar(repmat(winSamps_sacc',[1 length(pupilLabels)]), ...
+%         squeeze(mPupilResp(:,ivar,:))',squeeze(sePupilResp(:,ivar,:))');
+%     
+%     %set(gca, 'ytick',1:4,'yticklabel',pupilLabels);
+%     %xlabel('time from pupil onset [s]');
+%     title(psthNames_pupil{ivar});
+%     xlim([-0.3 0.3]);
+%     vline(0);
+% end
+% %linksubaxes('y',ax(1:nvars-1));
+% legend(pupilLabels);
+% marginplots;
+% screen2png('pupilOn_pop');
 
 %% saccade resp. recorded vs predicted
-psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
-avgSacc = permute(squeeze(nanmean(avgSaccResp_pop,4)),[3 1 2]);
-crange = prctile(avgSacc(:),[1 99]);
-for ipred = 1:size(avgSacc,3)
-    subplot(7,1,ipred);
-    imagesc(winSamps_sacc, param.cardinalDir, squeeze(avgSacc(:,:,ipred))');
-    ylabel(psthNames{ipred})
-    %caxis(crange);
-    vline(0);
-    mcolorbar(gca,.5);
-end
-xlabel('time from saccade onset [s]');
-screen2png('Sacc_pop');
-savePaperFigure(gcf,'Sacc_pop');
-
-
-%% saccade resp aligned to preferred saccde direction. recorded vs predicted
-tgtTimes = intersect(find(winSamps>0.03), find(winSamps<0.25));
-psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
-pavgSaccResp = permute(avgSaccResp_pop, [3 1 4 2]);
-[centeredDir, centeredData_sacc]  = alignMtxDir(pavgSaccResp, tgtTimes, param.cardinalDir);
-%[time x direction x channels x predictors]
-avgCentSacc = squeeze(nanmean(centeredData_sacc,3));
-crange = prctile(avgCentSacc(:),[1 99]);
-for ipred = 1:size(avgCentSacc,3)
-    subplot(6,1,ipred);
-    imagesc(winSamps, centeredDir, squeeze(avgCentSacc(:,:,ipred))');
-    ylabel(psthNames{ipred})
-    caxis(crange);
-    vline(0);
-    mcolorbar(gca,.5);
-end
-xlabel('time from saccade onset [s]');
-screen2png('centeredSacc_pop');
-savePaperFigure(gcf,'centeredSacc_pop');
+% psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
+% avgSacc = permute(squeeze(nanmean(avgSaccResp_pop,4)),[3 1 2]);
+% crange = prctile(avgSacc(:),[1 99]);
+% for ipred = 1:size(avgSacc,3)
+%     subplot(7,1,ipred);
+%     imagesc(winSamps_sacc, param.cardinalDir, squeeze(avgSacc(:,:,ipred))');
+%     ylabel(psthNames{ipred})
+%     %caxis(crange);
+%     vline(0);
+%     mcolorbar(gca,.5);
+% end
+% xlabel('time from saccade onset [s]');
+% screen2png('Sacc_pop');
+% savePaperFigure(gcf,'Sacc_pop');
+% 
+% 
+% %% saccade resp aligned to preferred saccde direction. recorded vs predicted
+% tgtTimes = intersect(find(winSamps>0.03), find(winSamps<0.25));
+% psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
+% pavgSaccResp = permute(avgSaccResp_pop, [3 1 4 2]);
+% [centeredDir, centeredData_sacc]  = alignMtxDir(pavgSaccResp, tgtTimes, param.cardinalDir);
+% %[time x direction x channels x predictors]
+% avgCentSacc = squeeze(nanmean(centeredData_sacc,3));
+% crange = prctile(avgCentSacc(:),[1 99]);
+% for ipred = 1:size(avgCentSacc,3)
+%     subplot(6,1,ipred);
+%     imagesc(winSamps, centeredDir, squeeze(avgCentSacc(:,:,ipred))');
+%     ylabel(psthNames{ipred})
+%     caxis(crange);
+%     vline(0);
+%     mcolorbar(gca,.5);
+% end
+% xlabel('time from saccade onset [s]');
+% screen2png('centeredSacc_pop');
+% savePaperFigure(gcf,'centeredSacc_pop');
 
 % 
 % %% target resp aligned to preferred target direction
