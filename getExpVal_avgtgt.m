@@ -4,14 +4,9 @@ function [expval_tgt, corr_tgt] = getExpVal_avgtgt(PSTH_f, predicted, ...
 %     catEvTimes, t_r, tWin, cardinalDir, dd)
 
 %% explained variance for target response
-idxTgtOnsets = [];
 onsetTimes = catEvTimes.tOnset;
 validEvents = find(~isnan(onsetTimes));
 onsetTimes = onsetTimes(validEvents);
-for ievent = 1:numel(onsetTimes)
-    idxTgtOnsets = cat(1, idxTgtOnsets, ...
-        find((t_r>=onsetTimes(ievent)+tWin(1)) .* (t_r<onsetTimes(ievent)+tWin(2))));
-end
 
 tgtDir = getTgtDir(dd.targetloc(validEvents), cardinalDir);
 

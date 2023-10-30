@@ -1,8 +1,16 @@
-function [Rsqadjusted,rr,r0] = fitSubset(PSTH_f, predictorInfo, tgtGroups, param)
+function [Rsqadjusted,rr,r0] = fitSubset(PSTH_f, predictorInfo, tgtGroups, ...
+    param, useGPU, tidxForRsqAdj)
 %[Rsqadjusted,rr,r0] = fitSubset(PSTH_f, predictorInfo, tgtGroups, param)
 
+if nargin < 5
+    useGPU = 0;
+end
+if nargin < 6
+    tidxForRsqAdj = 1:numel(PSTH_f);
+end
+
 fitMethod = 'ridge';
-useGPU = 0;
+% useGPU = 0;
 
 groups = [];
 groups{1} = 1:predictorInfo.npredVars(1);
@@ -38,8 +46,8 @@ switch fitMethod
         rr = reshape(beta,nLags,nVar);
         r0 = mdl.Coefficients.Estimate(1);
 
-        Rsqadjusted = mdl.Rsquared.Adjusted;
-
+        %Rsqadjusted = mdl.Rsquared.Adjusted; %FIXME 
+        
     case 'ridge'
             b = rReg(X, y, param.ridgeParams, useGPU); %from ridgeXs.m
 
@@ -56,5 +64,5 @@ switch fitMethod
          % param.lagRange(tgtVars,:), param.ridgeParam);
           
          nPredictors = numel(rr)+1;
-         [Rsqadjusted] = getRsqadj(y, yHat, nPredictors);
+         [Rsqadjusted] = getRsqadj(y(tidxForRsqAdj), yHat(tidxForRsqAdj), nPredictors);
 end

@@ -1,6 +1,10 @@
 function [AdjR2, TSS, RSS] = getRsqadj(y, yHat, p)
+%[AdjR2, TSS, RSS] = getRsqadj(y, yHat, p)
+%
 %https://au.mathworks.com/help/stats/coefficient-of-determination-r-squared.html
 %
+% y: observed trace
+% yHat: predicted trace
 % p: number of predictors
 
 %[n, p] = size(X); % Number of samples and features
