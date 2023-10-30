@@ -18,6 +18,7 @@ function [selected_groups, selected_cols] = stepwise_regression_group(X, y, grou
     
     option = 'ridge'; %fitlm
     ridgeParams = 100;
+    useGPU = 0;
 
     if nargin < 4
         error('Please provide groups and groupNames.');
@@ -71,7 +72,7 @@ function [selected_groups, selected_cols] = stepwise_regression_group(X, y, grou
                     model = fitlm(X_subset, y);
                     Rsqadj = model.Rsquared.Adjusted;
                 case 'ridge'
-                    b = rReg(X_subset, y, ridgeParams, 1); %from ridgeXs.m
+                    b = rReg(X_subset, y, ridgeParams, useGPU); %from ridgeXs.m
                     yHat = X_subset*b(2:end)+b(1);
                     nPredictors = numel(b);
                     [Rsqadj] = getRsqadj(y, yHat, nPredictors);
@@ -107,7 +108,7 @@ function [selected_groups, selected_cols] = stepwise_regression_group(X, y, grou
                     model = fitlm(X_subset, y);
                     Rsqadj = model.Rsquared.Adjusted;
                 case 'ridge'
-                    b = rReg(X_subset, y, ridgeParams, 1); %from ridgeXs.m
+                    b = rReg(X_subset, y, ridgeParams, useGPU); %from ridgeXs.m
                     yHat = X_subset*b(2:end)+b(1);
                     nPredictors = numel(b);
                     [Rsqadj] = getRsqadj(y, yHat, nPredictors);

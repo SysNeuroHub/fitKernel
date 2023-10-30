@@ -1,25 +1,4 @@
-% rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
-% %saveServer = 'E:/tmp/cuesaccade_data';
-% saveServer = 'Z:\Shared\Daisuke\cuesaccade_data';
-
-switch getenv('COMPUTERNAME')
-
-    case 'MU00175834'
-        addpath(genpath('C:/Users/dshi0006/git'))
-        saveServer = 'E:/tmp/cuesaccade_data';
-        %saveFigFolder = [saveServer, '/20220722'];
-        %mkdir(saveFigFolder);
-        rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
-
-    case 'MU00011697'
-        saveServer = '~/Documents/cuesaccade_data';
-        rootFolder = '/mnt/MBI/Monash Data/Joanita/';
-
-    case 'MU00108396'
-        addpath(genpath('/home/localadmin/Documents/MATLAB'));
-        saveFolder = '/mnt/syncitium/Daisuke/cuesaccade_data';
-        rootFolder = '/mnt/physio/Monash Data/Joanita/2021/cuesaccade_data/';
-end
+[saveServer, rootFolder] = getReady();
 
 load(fullfile(saveServer,'param20230405.mat'),'param');
 
@@ -28,7 +7,7 @@ theseIDs = {'hugo/2021/09September/01/25',... %vision driven
     'hugo/2022/03March/10/20',... %eye speed driven
     'hugo/2022/07July/29/19'}; %eye position driven
 
-Rsqadj = nan(numel(theseIDs),3);
+Rsqadj = nan(numel(theseIDs),4);
 %SSE = nan(numel(theseIDs),3);
 %SSR = nan(numel(theseIDs),3);
 %SST = nan(numel(theseIDs),3);
@@ -42,7 +21,7 @@ for ii = 1:numel(theseIDs)
     dates = aaa{4};
     channels = aaa{5};
 
-    saveFigFolder = fullfile(saveServer, '20230710',year,animal);
+    saveFigFolder = fullfile(saveServer, '20230713',year,animal);
     mkdir(saveFigFolder);
 
     datech = [months filesep dates filesep channels];
@@ -89,7 +68,7 @@ for ii = 1:numel(theseIDs)
     selected_groups{ii} = stepwise_regression_group(X,y,groups_wtlag, groupNames_wtlag);
 
 
-    for jj = 1:3
+    for jj = 1:4
         switch jj
             case 1 %full model
                 tgtGroups = 1:5;
@@ -97,6 +76,8 @@ for ii = 1:numel(theseIDs)
                 tgtGroups = setxor(1:5, 2);
             case 3 %omit eye position
                 tgtGroups = setxor(1:5, 3);
+            case 4 %omit vision %25/10/2023
+                tgtGroups = setxor(1:5, 1);
         end
 
         [Rsqadjusted,rr,r0] = fitSubset(PSTH_f, predictorInfo, tgtGroups, param);
@@ -108,23 +89,31 @@ for ii = 1:numel(theseIDs)
         % SST(ii,jj) = mdl.SST;
     end
 end
-for kk = 1:5
-    subplot(2,3,kk)
-    switch kk
-        case 1
-            thisimage = Rsq; tname = 'Rsquare';
-        case 2
-            thisimage = Rsqadj; tname = 'Rsquare adjusted';
-        case 3
-            thisimage = SSE;  tname = 'SSE';
-        case 4
-            thisimage = SSR;  tname = 'SSR';
-        case 5
-            thisimage = SST;  tname = 'SST';
-    end
-    imagesc(thisimage); colorbar;
-    set(gca,'ytick',1:3,'yticklabel',theseIDs)
-    set(gca,'xtick',1:3,'xticklabel',{'full mdl','wo es','wo ep'})
-    title(tname);
-end
-screen2png('modelComparison_test')
+% for kk = 1:5
+%     subplot(2,3,kk)
+%     switch kk
+%         case 1
+%             thisimage = Rsq; tname = 'Rsquare';
+%         case 2
+%             thisimage = Rsqadj; tname = 'Rsquare adjusted';
+%         case 3
+%             thisimage = SSE;  tname = 'SSE';
+%         case 4
+%             thisimage = SSR;  tname = 'SSR';
+%         case 5
+%             thisimage = SST;  tname = 'SST';
+%     end
+%     imagesc(thisimage); colorbar;
+%     set(gca,'ytick',1:3,'yticklabel',theseIDs)
+%     set(gca,'xtick',1:3,'xticklabel',{'full mdl','wo es','wo ep'})
+%     title(tname);
+% end
+% screen2png('modelComparison_test')
+
+%modality w smallest value = driven by that modality
+imagesc(Rsqadj(:,2:4)./Rsqadj(:,1));
+set(gca,'Yticklabel',{'vision','eyespeed','eyeposition'});
+set(gca,'XTickLabel',{'eyespeed','eyeposition', 'vision'});
+
+%need to limit the analysis window to peristim onset
+%otherwise the vision kernel's explanatory power is weak

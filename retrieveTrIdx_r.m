@@ -15,6 +15,9 @@ catidx = 1;
 trIdx = [];
 trIdx_re = [];
 for itr = 1:numel(t_tr)
+    if isempty(t_tr{itr})
+        break;
+    end
     trIdx{itr} = catidx:catidx+numel(t_tr{itr})-1;
     catidx = catidx + numel(trIdx{itr});
     
@@ -25,6 +28,9 @@ end
 
 trIdx_r{1} = (1:trIdx_re(1))';
 for itr = 2:numel(t_tr)
+     if isempty(t_tr{itr})
+        break;
+    end
     trIdx_r{itr} = (trIdx_re(itr-1)+1:trIdx_re(itr))';
 end
 

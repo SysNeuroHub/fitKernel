@@ -57,6 +57,7 @@ Functions for analysis/visualization
 * (pupilFigure): figure of single-trial traces of pupil position/area and spikes triggered at specified type of events 
 * (showPspec_parea_psth NOT CHECKED)
 * (showDirTuning: NOT COMPLETED) : preferred direction of spikes at specified time window 
+* modelComparison_test.m : compute Rsquare_adjusted across all the units with getRsqadj.m. Used for JNSS2023
 
 Utility functions
 * filtPSTH: (a)causally filtered spike trace

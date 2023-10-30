@@ -11,6 +11,9 @@ cardinalDist = [0 45 90 135 180];
     
 
 for icue = 1:2
+    % icue==1 > without cue
+    % icue==2 > with cue
+    
     validEvents = intersect(find(~isnan(onset)), find(dd.cueOn==icue-1));
     %< this condition only includes all trials irrespective of the trial outcome
 
@@ -36,7 +39,7 @@ for icue = 1:2
      
 end
 
-%% get gain
+%% get gain, by way of dividing observed signal with predicted by kernels
 gain_dir = squeeze(avgTonsetByCue(:,1,:,:)./avgTonsetByCue(:,2,:,:));
 gain_dist = squeeze(avgTonsetByCue_distCue(:,1,:,:)./avgTonsetByCue_distCue(:,2,:,:));
 

@@ -1,21 +1,22 @@
 function [choiceOutcome,succLoc, succDist] = getChoiceOutcome(dd, distTh)
-% [choiceOutcome,succLoc, succDist] = getChoiceOutcome(dd, cardinalDir, distTh)
-% choiceOutcome
+% [choiceOutcome,succLoc, succDist] = getChoiceOutcome(dd, cardinalDir, distTh, validEvents)
+% choiceOutcome: 1=succade to target location, 2=succade to wrong location, 3=did not saccade
 % succLoc: location of the 1st succade after target onset [deg]
 % succDist: distance of the 1st succade
 
-if nargin < 2
+nTrials = numel(dd.started);
+
+if nargin < 2 || isempty(distTh)
     distTh = 3; %[deg]
     %Jo: always 5deg
 end
 
 [outcomes, cOnsetTimes] = getChoice(dd);
 
-nTrials = numel(dd.started);
 succLoc = nan(nTrials,1);
 succDist = nan(nTrials,1);
 for itrial = 1:nTrials
-   
+   try
     %cOnsetTime = dd.cOnset(itrial); %only success trials
     cOnsetTime = cOnsetTimes(itrial);
     
@@ -27,6 +28,8 @@ for itrial = 1:nTrials
         succLoc(itrial) = eyeRad * 180/pi;%cardinalDir(minDirIdx); %direction of the saccade
         succDist(itrial) = sqrt(dd.eye(itrial).y(tidx).^2+dd.eye(itrial).x(tidx).^2); %saccade distance 
     end
+   catch err
+   end
 end
      
 successTr = find(dd.successTrials==1);

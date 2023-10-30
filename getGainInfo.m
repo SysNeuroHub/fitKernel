@@ -4,7 +4,7 @@ cueDir = 0; %deg
 [gain_dir, gain_distCue, winSamps_tonsetByCue, avgTonsetByCue] = getGainsByDist(t_r, ...
     y_r(:,1:2), cardinalDir, catEvTimes, dd, figTWin, onlySuccess, cueDir);
 
-%avgTonsetByCue: direction x observed/mdl x time x w/wo cue
+%avgTonsetByCue: direction x observed/mdl x time x wo/w cue
 %prefDir = getPrefDir();
 [~,respWinIdx(1)] = min(abs(winSamps_tonsetByCue - respWin(1)));
 [~,respWinIdx(2)] = min(abs(winSamps_tonsetByCue - respWin(2)));

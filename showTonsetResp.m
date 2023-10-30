@@ -29,6 +29,7 @@ eyeposIdx = find(strcmp(psthNames, 'eyeposition'));
 %% triggered by tOnsets
 %validEvents = intersect(find(~isnan(onset)), find(dd.cueOn==icue-1));
 validEvents = intersect(find(~isnan(catEvTimes.tOnset)), find(dd.successTrials));
+validEvents = intersect(validEvents, find(catEvTimes.tOnset + param.figTWin(2) < max(t_r)));
 %only use trials when the choices were registered.
 %this is a temporary fix as my current algorithm assumes stimuli were NOT
 %presented, causing no visual response in the model
@@ -120,7 +121,7 @@ PsaccResp = dirDotProdTest(saccDirNoTask(nonanEvents)'/180*pi, ...
 
 
 %% triggered by tOnset without saccade
-[choiceOutcome,succLoc, succDist] = getChoiceOutcome(dd);
+[choiceOutcome] = getChoiceOutcome(dd);
 %validEvents = intersect(find(~isnan(catEvTimes.tOnset)), find(dd.successTrials==0));
 %validEvents = intersect(find(~isnan(dd.tOnset)), find(dd.successTrials==0));
 validEvents = find(choiceOutcome == 3);

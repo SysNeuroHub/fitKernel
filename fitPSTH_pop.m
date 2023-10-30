@@ -9,7 +9,7 @@
 saveSuffix_p = 'fitPSTH_pop20231026';
 
 %% recorded data
-animal = 'ollie';
+animal = 'o';
 dataType = 0;%0: each channel, 1: all channels per day
 tWin = [0 0.5];%[s]
 
@@ -50,7 +50,7 @@ for yy = 3
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
     
     % to obtain index of specified month&date&channel
-    %find(1-cellfun(@isempty, regexp(loadNames, regexptranslate('wildcard','12December\09\*_ch32.mat'))))
+    thisChannel = find(1-cellfun(@isempty, regexp(loadNames, regexptranslate('wildcard','08August\25\*_ch27.mat'))))
     
     %% omit data
     % no saccade response
@@ -61,7 +61,7 @@ for yy = 3
     %dataByYear = [];%struct(length(channels),1);
     %datech_pop = nan(length(channels),1);
     %corrcoef_pred_spk_pop = nan(length(channels),1);
-    for idata = 1:length(channels)
+    for idata = thisChannel %1:length(channels)
         datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
         thisid = [animal '/' year '/' datech];
         disp(thisid);
