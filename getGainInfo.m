@@ -1,8 +1,9 @@
 function gainInfo = getGainInfo(t_r, y_r, cardinalDir, catEvTimes, dd, figTWin, onlySuccess, respWin)
+%gainInfo = getGainInfo(t_r, y_r, cardinalDir, catEvTimes, dd, figTWin, onlySuccess, respWin)
 
 cueDir = 0; %deg
-[gain_dir, gain_distCue, winSamps_tonsetByCue, avgTonsetByCue] = getGainsByDist(t_r, ...
-    y_r(:,1:2), cardinalDir, catEvTimes, dd, figTWin, onlySuccess, cueDir);
+[gain_dir, gain_distCue, winSamps_tonsetByCue, avgTonsetByCue, nTrials, avgTonsetByCue_dist, nTrials_dist] ...
+    = getGainsByDist(t_r,  y_r(:,1:2), cardinalDir, catEvTimes, dd, figTWin, onlySuccess, cueDir);
 
 %avgTonsetByCue: direction x observed/mdl x time x wo/w cue
 %prefDir = getPrefDir();
@@ -27,4 +28,8 @@ gainInfo.gain_distCue = gain_distCue;
 gainInfo.gain_distPref = gain_distPref;
 gainInfo.cardinalDir = cardinalDir;
 gainInfo.cardinalDist = [0 45 90 135 180];
+gainInfo.nTrials = nTrials; %added 2/11/2023
+gainInfo.avgTonseByCue_dist = avgTonsetByCue_dist; %added 2/11/2023
+gainInfo.nTrials_dist = nTrials_dist; %added 2/11/2023
+
 end

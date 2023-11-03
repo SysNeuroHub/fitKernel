@@ -1,5 +1,8 @@
 function [fig, pval, rho] = showScatterTriplets(values, names, valueRange, selectedIDs, corrType)
 %fig = showScatterTriplets(values, names, valueRange, selectedIDs)
+% INPUTS:
+% values: [3 x points]
+% names: {3x1}
 %
 %fig = showScatterTriplets(values, names, valueRange, selectedIDs, 'circular')
 % computes circular correlation. For this values should be degree not radian

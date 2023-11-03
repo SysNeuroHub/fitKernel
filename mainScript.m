@@ -7,13 +7,13 @@ set(0,'DefaultFigureVisible','off');
 animal = 'hugo';%'ollie';%'andy';% 'andy' '
 % fitoption = 1; %'linear'
 fitoption = 5; %linear_rReg', as of 13/7/2023
-useGPU = 1;
+useGPU = 0;
 dataType = 0;%0: each channel, 1: all channels per day
-fitIt = 1;
+fitIt = 0;
 splitPredictor = 1; %whether to split predictors by cue. 28/10/2023
 
 
-for yyy = 2%1:3
+for yyy = 1
     switch yyy
         case 1
             year = '2021'; 
@@ -30,12 +30,13 @@ for yyy = 2%1:3
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
     
     % to obtain index of specified month&date&channel
-    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','02February','08','*_ch18')))));
-    thisdata = [];
+    thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','14','*_ch4')))));
+    %thisdata = [ ];
+
     if isempty(thisdata)
         thisdata = 1:length(channels);
-    end
+        end
     
     %% omit data
     % no saccade response
@@ -43,7 +44,7 @@ for yyy = 2%1:3
     % low number of successful trials
     
     % parameters
-    n=load(fullfile(saveServer,'param20230405.mat'),'param');
+    n=load(fullfile(saveServer,'param20230405_copy.mat'),'param');
     param =n.param;
     n=[];
     ncDirs = length(param.cardinalDir);
@@ -53,7 +54,7 @@ for yyy = 2%1:3
     
     ng = [];
     previousDate = [];
-    for idata = thisdata(49:end)
+    for idata = thisdata
 
         n=load(fullfile(saveServer,'param20230405.mat'),'param');
         param =n.param;
@@ -78,7 +79,13 @@ for yyy = 2%1:3
                 mkdir(saveFolder);
             end
             saveName = fullfile(saveFolder, [saveSuffix '.mat']);
-            delete(saveName); %TEMP
+            %delete(saveName); %TEMP
+            
+            % saveName_splt = [saveName(1:end-4) '_splitPredictor.mat'];
+            %    if exist(saveName_splt,'file')
+            %        continue;
+            %    end
+
             predictorInfoName = fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']);
            
             EE = load(loadNames{idata},'ephysdata','dd');
@@ -195,9 +202,10 @@ for yyy = 2%1:3
             
 
             if splitPredictor
+                
                 [predictorInfo, param] = splitPredictorByCue(predictorInfo, dd, onsets_cat, param);
 
-                disp('fit kernels')
+                disp('fit kernels');
                 [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
                 [predicted_all, predicted, PSTH_f, kernelInfo] = fitPSTH_cv(spk_all_cat, ...
                     predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
@@ -220,7 +228,7 @@ for yyy = 2%1:3
                 close(f);
 
                 %% save results
-                mm_s=matfile([saveName '_splitPredictor'],'writable',true);
+                mm_s=matfile(saveName_splt,'writable',true);
                 mm_s.PSTH_f = PSTH_f;
                 mm_s.predicted_all = predicted_all;
                 mm_s.predicted = predicted;
@@ -230,6 +238,7 @@ for yyy = 2%1:3
                 mm_s.predictorInfo = predictorInfo;
 
                 clear mm_s predictorInfo param kernelInfo predicted predicted_all PSTH_f;
+               
             end
 
             

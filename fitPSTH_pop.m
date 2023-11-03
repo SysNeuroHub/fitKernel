@@ -1,24 +1,17 @@
 %%TODO
-%retry loading when failed. sometimes fail to load a data in that case
-%previous data is substituted by mistake
+%load data
+%align number of rows of population data
 
 %% get ready
-%addpath(genpath('C:\Users\dshi0006\git'))
-%setenv('COMPUTERNAME', 'MU00011697');
 [saveServer, rootFolder] = getReady();
-saveSuffix_p = 'fitPSTH_pop20231026';
+saveSuffix_p = 'fitPSTH_pop20231102';
 
 %% recorded data
-animal = 'o';
+animal = 'hugo';
 dataType = 0;%0: each channel, 1: all channels per day
 tWin = [0 0.5];%[s]
 
-load(fullfile(saveServer,'param20230405.mat'),'param');
-param.mfiringRateTh = 5;
-param.expvalTh = 3;%0;
-param.ntargetTrTh = 200;
-param.ptonsetRespTh = 0.05;
-param.ampTh = 0.5;%1; %for detecting preffered direction on 18/7/23
+load(fullfile(saveServer,'param20231102.mat'),'param');
 
 %alldata = [];
 mFiringRate_pop = [];
@@ -38,7 +31,7 @@ id_pop = [];
 Rsqadj_pop = [];
 gainInfo_pop = [];
 errorIDs= cell(1);
-for yy = 3
+for yy = 1:3
     switch yy
         case 1
             year = '2021';
@@ -48,150 +41,151 @@ for yy = 3
             year = '2023';
     end
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
-    
+
     % to obtain index of specified month&date&channel
-    thisChannel = find(1-cellfun(@isempty, regexp(loadNames, regexptranslate('wildcard','08August\25\*_ch27.mat'))))
-    
+   % thisChannel = find(1-cellfun(@isempty, regexp(loadNames, regexptranslate('wildcard','08August\25\*_ch27.mat'))))
+
     %% omit data
     % no saccade response
     % low spontaneous firing
     % low number of successful trials
-    
+
     nData = length(channels);
     %dataByYear = [];%struct(length(channels),1);
     %datech_pop = nan(length(channels),1);
     %corrcoef_pred_spk_pop = nan(length(channels),1);
-    for idata = thisChannel %1:length(channels)
+    for idata = 1:length(channels)
         datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
         thisid = [animal '/' year '/' datech];
         disp(thisid);
-        
+
         saveSuffix = [animal replace(datech,'/','_') '_linear_rReg'];
-        
+
         thisDate = [months{idata} '_' dates{idata}];
-        
+
         saveFolder = fullfile(saveServer, year,animal);%17/6/23
-        saveName = fullfile(saveFolder, [saveSuffix '_linear_rReg.mat']);
-        
+        saveName = fullfile(saveFolder, [saveSuffix '.mat']);
+
         if exist(saveName, 'file')
-            
+
             %datech_pop{idata} = datech;
             try
-            S = load(saveName, 'PSTH_f','predicted_all', 'predicted', ...
-                'kernelInfo','t_r','cellclassInfo','param','mFiringRate','t_cat',...
-                'dds');
+                S = load(saveName, 'PSTH_f','predicted_all', 'predicted', ...
+                    'kernelInfo','t_r','cellclassInfo','param','mFiringRate','t_cat',...
+                    'dds');
+
+
+                if isfield(S,'kernelInfo')
+                    mFiringRate_pop = cat(2,mFiringRate_pop,S.mFiringRate);
+                    kernel_pop = cat(3,kernel_pop,S.kernelInfo.kernel);
+                    expval_pop = cat(2,expval_pop,S.kernelInfo.expval);
+                    corrcoef_pop = cat(2,corrcoef_pop,S.kernelInfo.corrcoef);
+
+                    R = corrcoef(S.PSTH_f, S.predicted_all);
+                    corrcoef_pred_spk_pop = cat(2, corrcoef_pred_spk_pop, R(1,2));
+                    %id_pop = cat(2,id_pop, thisid);
+                    id_pop{numel(id_pop)+1} = thisid;
+
+                    eyeName = fullfile(saveFolder,[
+                        'eyeCat_' animal thisDate '.mat']);
+                    load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), ...
+                        'predictorInfo');
+                    load(eyeName,'eyeData_rmotl_cat','catEvTimes');
+
+                    if ~isfield(S,'dds')
+                        load(loadNames{idata},'dd'); %slow to read
+                        dds = getCueSaccadeSmall(dd);
+                        save(saveName, 'dds','-append');
+                        S.dds = dd;
+                    end
+                    dd = S.dds;
+
+
+                    %% Rsq adj of subjset of variables
+                    nsub=4;
+                    Rsqadj = zeros(nsub,1);
+                    for jj = 1:nsub
+                        switch jj
+                            case 1 %full model
+                                tgtGroups = 1:5;
+                            case 2 %omit vision %added 26/10/2023
+                                tgtGroups = setxor(1:5, 1);
+                            case 3 %omit eye speed
+                                tgtGroups = setxor(1:5, 2);
+                            case 4 %omit eye position
+                                tgtGroups = setxor(1:5, 3);
+                        end
+                        [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
+                            tgtGroups, param);%, idxTgtOnsets);
+
+                        Rsqadj(jj) = Rsqadjusted;
+                    end
+                    Rsqadj_pop = [Rsqadj_pop Rsqadj];
+
+                    %                 %Rsq_adjusted computed from pre-target
+                    %                 periods - NG. can be < 0
+                    %                 nPredictors_all = sum(cellfun(@numel, S.kernelInfo.kernel));
+                    %                 [Rsqadjusted_tgt(1,1)] = getRsqadj_tgt(S.PSTH_f, S.predicted_all, ...
+                    %                         catEvTimes, S.t_r, tWin, nPredictors_all);
+                    %                 for jj = 1:3
+                    %                     nPredictors = numel(S.kernelInfo.kernel{jj});
+                    %                     [Rsqadjusted_tgt(1,jj+1)] = getRsqadj_tgt(S.PSTH_f, S.predicted(:,jj), ...
+                    %                         catEvTimes, S.t_r, tWin, nPredictors);
+                    %                 end
+                    %                 Rsqadj_tgt_pop = [Rsqadj_tgt_pop Rsqadjusted_tgt];
+
+                    %% response to target
+                    PtonsetResp_pop = [PtonsetResp_pop S.cellclassInfo.PtonsetResp];
+
+                    %% response to saccade
+                    PsaccResp_pop = [PsaccResp_pop S.cellclassInfo.PsaccResp];
+
+                    %% explained variance per kernel
+                    expval = zeros(size(S.predicted,2)+1,1);
+                    expval(1,1) = getExpVal(S.PSTH_f-mean(S.PSTH_f), ...
+                        S.predicted_all-mean(S.predicted_all));
+                    for ivar = 1:size(S.predicted,2)
+                        expval(ivar+1,1) = getExpVal(S.PSTH_f-mean(S.PSTH_f), ...
+                            S.predicted(:,ivar)-mean(S.predicted(:,ivar)));
+                    end
+                    expval_ind_pop = [expval_ind_pop expval];
+
+                    %% explained variance for target response
+                    expval_tgt(1,1) = getExpVal_tgt(S.PSTH_f, S.predicted_all, catEvTimes, S.t_r, tWin);
+                    expval_tgt(2:6,1) = getExpVal_tgt(S.PSTH_f, S.predicted, catEvTimes, S.t_r, tWin);
+
+                    expval_tgt_pop = [expval_tgt_pop expval_tgt];
+
+                    %% explained variance for target response averaged across trials
+                    %                 [expval_avgtgt(1,1), corr_avgtgt(1,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted_all, ...
+                    %                     catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);
+                    %                 [expval_avgtgt(2:6,1), corr_avgtgt(2:6,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted, ...
+                    %                     catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);
+                    %                 expval_avgtgt_pop = [expval_avgtgt_pop expval_avgtgt];
+                    %                 corr_avgtgt_pop = [corr_avgtgt_pop corr_avgtgt];
+
+                    %% number of target trials
+                    ntargetTrials_pop = [ntargetTrials_pop sum(~isnan(catEvTimes.tOnset))];
+
+                    %% number of total trials
+                    ntotTrials_pop = [ntotTrials_pop numel(catEvTimes.tOnset)];
+
+                    %% compute gain
+                    figTWin = [-0.5 0.5];
+                    onlySuccess = 0;
+                    respWin = [0.05 0.35]; %[s]
+                    y_r = cat(2,S.PSTH_f,S.predicted_all);
+                    gainInfo = getGainInfo(S.t_r, y_r, param.cardinalDir, catEvTimes, ...
+                        dd, figTWin, onlySuccess, respWin);
+                    gainInfo_pop = [gainInfo_pop gainInfo];
+
+                    %retrieve just once
+                    tlags = S.kernelInfo.tlags;
+                    clear S
+                end
             catch err
                 errorIDs{numel(errorIDs)+1} = thisid;
                 continue;
-            end
-            
-            if isfield(S,'kernelInfo')
-                mFiringRate_pop = cat(2,mFiringRate_pop,S.mFiringRate);
-                kernel_pop = cat(3,kernel_pop,S.kernelInfo.kernel);
-                expval_pop = cat(2,expval_pop,S.kernelInfo.expval);
-                corrcoef_pop = cat(2,corrcoef_pop,S.kernelInfo.corrcoef);
-                
-                R = corrcoef(S.PSTH_f, S.predicted_all);
-                corrcoef_pred_spk_pop = cat(2, corrcoef_pred_spk_pop, R(1,2));
-                %id_pop = cat(2,id_pop, thisid);
-                id_pop{numel(id_pop)+1} = thisid;
-                
-                eyeName = fullfile(saveFolder,[
-                    'eyeCat_' animal thisDate '.mat']);
-                load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), ...
-                    'predictorInfo');
-                load(eyeName,'eyeData_rmotl_cat','catEvTimes');
-                
-                if ~isfield(S,'dds')
-                    load(loadNames{idata},'dd'); %slow to read
-                    dds = getCueSaccadeSmall(dd);
-                    save(saveName, 'dds','-append');
-                    S.dds = dd;
-                end
-                dd = S.dds;
-                
-                
-                %% Rsq adj of subjset of variables 
-                nsub=4;
-                Rsqadj = zeros(nsub,1);
-                for jj = 1:nsub
-                    switch jj
-                        case 1 %full model
-                            tgtGroups = 1:5;
-                        case 2 %omit vision %added 26/10/2023
-                            tgtGroups = setxor(1:5, 1);
-                        case 3 %omit eye speed
-                            tgtGroups = setxor(1:5, 2);
-                        case 4 %omit eye position
-                            tgtGroups = setxor(1:5, 3);
-                    end
-                    [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
-                        tgtGroups, param);%, idxTgtOnsets);
-                    
-                    Rsqadj(jj) = Rsqadjusted;
-                end
-                Rsqadj_pop = [Rsqadj_pop Rsqadj];
-
-                %                 %Rsq_adjusted computed from pre-target
-                %                 periods - NG. can be < 0
-                %                 nPredictors_all = sum(cellfun(@numel, S.kernelInfo.kernel));
-                %                 [Rsqadjusted_tgt(1,1)] = getRsqadj_tgt(S.PSTH_f, S.predicted_all, ...
-                %                         catEvTimes, S.t_r, tWin, nPredictors_all);
-                %                 for jj = 1:3
-                %                     nPredictors = numel(S.kernelInfo.kernel{jj});
-                %                     [Rsqadjusted_tgt(1,jj+1)] = getRsqadj_tgt(S.PSTH_f, S.predicted(:,jj), ...
-                %                         catEvTimes, S.t_r, tWin, nPredictors);
-                %                 end
-                %                 Rsqadj_tgt_pop = [Rsqadj_tgt_pop Rsqadjusted_tgt];
-                
-                %% response to target
-                PtonsetResp_pop = [PtonsetResp_pop S.cellclassInfo.PtonsetResp];
-                
-                %% response to saccade
-                PsaccResp_pop = [PsaccResp_pop S.cellclassInfo.PsaccResp];
-                
-                %% explained variance per kernel
-                expval = zeros(size(S.predicted,2)+1,1);
-                expval(1,1) = getExpVal(S.PSTH_f-mean(S.PSTH_f), ...
-                    S.predicted_all-mean(S.predicted_all));
-                for ivar = 1:size(S.predicted,2)
-                    expval(ivar+1,1) = getExpVal(S.PSTH_f-mean(S.PSTH_f), ...
-                        S.predicted(:,ivar)-mean(S.predicted(:,ivar)));
-                end
-                expval_ind_pop = [expval_ind_pop expval];
-                
-                %% explained variance for target response
-                expval_tgt(1,1) = getExpVal_tgt(S.PSTH_f, S.predicted_all, catEvTimes, S.t_r, tWin);
-                expval_tgt(2:6,1) = getExpVal_tgt(S.PSTH_f, S.predicted, catEvTimes, S.t_r, tWin);
-               
-                expval_tgt_pop = [expval_tgt_pop expval_tgt];
-                
-                %% explained variance for target response averaged across trials
-%                 [expval_avgtgt(1,1), corr_avgtgt(1,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted_all, ...
-%                     catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);                
-%                 [expval_avgtgt(2:6,1), corr_avgtgt(2:6,1)] = getExpVal_avgtgt(S.PSTH_f, S.predicted, ...
-%                     catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);
-%                 expval_avgtgt_pop = [expval_avgtgt_pop expval_avgtgt];
-%                 corr_avgtgt_pop = [corr_avgtgt_pop corr_avgtgt];
-
-                %% number of target trials
-                ntargetTrials_pop = [ntargetTrials_pop sum(~isnan(catEvTimes.tOnset))];
-                
-                %% number of total trials
-                ntotTrials_pop = [ntotTrials_pop numel(catEvTimes.tOnset)];
-                
-                %% compute gain
-                figTWin = [-0.5 0.5];
-                onlySuccess = 0;
-                respWin = [0.05 0.35]; %[s]
-                y_r = cat(2,S.PSTH_f,S.predicted_all);
-                gainInfo = getGainInfo(S.t_r, y_r, param.cardinalDir, catEvTimes, ...
-                    dd, figTWin, onlySuccess, respWin);
-                gainInfo_pop = [gainInfo_pop gainInfo];
-                
-                %retrieve just once
-                tlags = S.kernelInfo.tlags;
-                clear S
             end
         end
     end
@@ -241,7 +235,7 @@ Rsqadj_pop = Rsqadj_pop(:,okunits);
 %     'hugo/2022/07July/29/19'}; %eye position driven
 theseIDs = {'hugo/2021/08August/25/27',... %vision
     'hugo/2022/07July/26/19',... %eye speed
-   'hugo/2022/08August/05/2'} %integrator OK
+    'hugo/2022/08August/05/2'} %integrator OK
 %    'hugo/2022/08August/15/5'}
 %     'hugo/2021/12December/13/13'}; %integrator ... too law exp var
 %    'hugo/2021/12December/09/8'}; %integrator ... too law exp var
@@ -262,7 +256,7 @@ for ii = 1:size(expval_ind_pop,1)
     else
         ylabel(param.predictorNames{ii-1});
     end
-    
+
     ax(ii) = subplot(size(expval_ind_pop,1),2,2*ii);
     histogram(expval_tgt_pop(ii,:),[-10:1:30]);
     if ii==1
@@ -308,7 +302,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['expval_tgt_r_' animal]));
 % fig = showScatterTriplets(corr_tgt_pop(2:4,:), ...
 %     param.predictorNames, [], selectedIDs);
 % screen2png(['corr_tgt_a_' animal]);close;
-% 
+%
 % fig = showScatterTriplets(100*corr_tgt_pop(2:4,:)./corr_tgt_pop(1,:), ...
 %     param.predictorNames, [-20 100], selectedIDs);
 % screen2png(['corr_tgt_r_' animal]);close;
@@ -344,26 +338,7 @@ savePaperFigure(f,fullfile(saveServer,saveSuffix_p,['avgKernel_centered_' animal
 
 
 %% preferred direction across 3 kernels
-prefDir = [];
-amp = [];
-for col = 1:3
-    nrow = size(kernel_pop,2);
-    allmatrix = reshape(zeros(size(kernel_pop{col,1})),[],1);
-    for row = 1:nrow
-        allmatrix(:,row) = reshape(kernel_pop{col,row},1,[]);
-    end
-    orisize = size(kernel_pop{col,1});
-    allmatrix = reshape(allmatrix, orisize(1), orisize(2),[]);
-    
-    tgtTimes = intersect(find(tlags{col}(:,1)>tgtRange(col,1)), ...
-        find(tlags{col}(:,1)<tgtRange(col,2)));
-    
-    for idata = 1:size(allmatrix,3)
-        resp = mean(allmatrix(tgtTimes,:,idata),1)';
-        prefDir(idata, col) = 180/pi*circ_mean(param.cardinalDir'*pi/180, resp);
-        amp(idata, col) =  circ_r(param.cardinalDir'*pi/180, resp);
-    end
-end
+ [prefDir, amp] = getKernelPrefDirAmp(kernel_pop, tlags, tgtRange, param.cardinalDir);
 tuned = amp>param.ampTh;
 
 figure('position',[ 680         485        1181         493]);
@@ -434,7 +409,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 %     %imagesc(winSamps, param.cardinalDir, squeeze(avgDlResp(:,ivar,:)));
 %     errorbar(repmat(winSamps_sacc',[1 length(pupilLabels)]), ...
 %         squeeze(mPupilResp(:,ivar,:))',squeeze(sePupilResp(:,ivar,:))');
-%     
+%
 %     %set(gca, 'ytick',1:4,'yticklabel',pupilLabels);
 %     %xlabel('time from pupil onset [s]');
 %     title(psthNames_pupil{ivar});
@@ -461,8 +436,8 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % xlabel('time from saccade onset [s]');
 % screen2png('Sacc_pop');
 % savePaperFigure(gcf,'Sacc_pop');
-% 
-% 
+%
+%
 % %% saccade resp aligned to preferred saccde direction. recorded vs predicted
 % tgtTimes = intersect(find(winSamps>0.03), find(winSamps<0.25));
 % psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
@@ -483,7 +458,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % screen2png('centeredSacc_pop');
 % savePaperFigure(gcf,'centeredSacc_pop');
 
-% 
+%
 % %% target resp aligned to preferred target direction
 % pavgTgtResp = permute(avgTgtResp_pop, [3 1 4 2]);
 % [centeredDir, centeredData_tgt]  = alignMtxDir(pavgTgtResp, tgtTimes, param.cardinalDir);
@@ -501,15 +476,15 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % xlabel('time from target onset [s]');
 % screen2png('centeredTgt_pop');
 % savePaperFigure(gcf,'centeredTgt_pop');
-% 
-% 
+%
+%
 % %% kernel aligned to preferred direction
 % %centerBin = 4;
 % %centeredDir = 180/pi*circ_dist(pi/180*param.cardinalDir, pi/180*param.cardinalDir(centerBin));
 % [centeredDir, centeredData_vis]  = alignMtxDir(kernel_pop(:,1:8,:), tgtTimes, param.cardinalDir);
 % [~, centeredData_eye]  = alignMtxDir(kernel_pop(:,9:16,:), tgtTimes, param.cardinalDir);
-% 
-% 
+%
+%
 % figure('position',[680   276   846   702]);
 % subplot(221);
 % thisImage = mean(centeredData_vis,3)';
@@ -521,7 +496,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % set(gca,'ytick', centeredDir);
 % xlabel('time from target onset [s]');
 % ylabel('relative target direction [deg]');
-% 
+%
 % subplot(223);
 % thisImage = mean(centeredData_eye,3)';
 % imagesc(kerneltlags, centeredDir, thisImage);
@@ -532,7 +507,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % set(gca,'ytick',centeredDir);
 % xlabel('time from eye movement [s]');
 % ylabel('relative eye direction [deg]');
-% 
+%
 % subplot(424);
 % plot(kerneltlags, squeeze(kernel_pop(:,17,:)), 'color',[.5 .5 .5]);
 % hold on;
@@ -540,7 +515,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % xlabel('time from pupil dilation [s]');
 % axis tight
 % vline(0);
-% 
+%
 % subplot(422);
 % plot(kerneltlags, squeeze(kernel_pop(:,18,:)), 'color',[.5 .5 .5]);
 % hold on;
@@ -548,7 +523,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % xlabel('time from blink onset [s]');
 % axis tight
 % vline(0);
-% 
+%
 % subplot(426);
 % plot(kerneltlags, squeeze(kernel_pop(:,19,:)), 'color',[.5 .5 .5]);
 % hold on;
@@ -556,7 +531,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % xlabel('time from reward on [s]');
 % axis tight
 % vline(0);
-% 
+%
 % subplot(428);
 % plot(kerneltlags, squeeze(kernel_pop(:,20,:)), 'color',[.5 .5 .5]);
 % hold on;
@@ -564,7 +539,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % xlabel('time from punish onset [s]');
 % axis tight
 % vline(0);
-% 
+%
 % screen2png('centeredkernel_pop');
 % savePaperFigure(gcf,'centeredkernel_pop');
 
@@ -577,7 +552,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 % ylabel('explained variance [%]');
 % axis square;
 % marginplot;
-% 
+%
 % subplot(212);
 % plot(mFiringRate_pop, corrcoef_pop, '.');
 % xlabel('mean firing rate [Hz]');
@@ -625,7 +600,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 %
 % screen2png('cmean_var_pop');
 
-% %% alpha power 
+% %% alpha power
 % corrbins = -1:.04:1;
 % for ifreq = 1:4
 %     subplot(4,2,2*ifreq-1);
@@ -633,7 +608,7 @@ savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animal]));
 %     [~,Pspk(ifreq)]=ttest(corrcoef_parea_spk_pop(ifreq,:));
 %     vline(0);
 %     title(['ttest p:' num2str(Pspk(ifreq))]);
-%     
+%
 %     subplot(4,2,2*ifreq);
 %     histogram(corrcoef_parea_alpha_pop(ifreq,:), corrbins);
 %     [~,Palpha(ifreq)]=ttest(corrcoef_parea_alpha_pop(ifreq,:));
