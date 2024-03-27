@@ -4,10 +4,12 @@ load(fullfile(saveServer,'param20230405.mat'),'param');
 animal = 'hugo';%'ollie';%'andy';% 'andy' '
 tgtModality = 'all';%'eyeSpeed';
 
+dataDir = '/mnt/syncitium/Daisuke/cuesaccade_data/figPSTH_pop20231026hugo/';
+
 
 %% load gain info <> avg tgt resp [HACK]
-load('/mnt/syncitium/Daisuke/cuesaccade_data/figPSTH_pop20231026hugo/fitPSTH_pop20231026hugo.mat',...
-    'gainInfo_pop','id_pop','kernel_pop');
+load(fullfile(dataDir,'fitPSTH_pop20231026hugo.mat'),...
+    'gainInfo_pop','id_pop','kernel_pop','tlags');
 
 %preferred direction & amplitude of each kernel modality
 tgtRange = [0.05 0.15; 0.03 0.25; -0.1 0.1];
@@ -16,13 +18,16 @@ prefDirOption = 0;
 
 
 %% load kernel info from tgt units
-gainKernelName = '/mnt/syncitium/Daisuke/cuesaccade_data/figPSTH_pop20231026hugo/gainkernel_splt_all.mat';
+gainKernelName = fullfile(dataDir,'gainkernel_splt_all.mat');
 if exist(gainKernelName, 'file')
     load(gainKernelName);
 else
     id_all = cell(1);
     kernel_splt_all = cell(1,10);
     prefDir_all = [];
+    latency_bhv_all = cell(1);
+    latency_neuro_all = cell(1);
+    latency_r_all = [];
     iii=1;
     for yyy = 1:3
         switch yyy
@@ -42,11 +47,13 @@ else
             saveFolder = fullfile(saveServer, year,animal);%17/6/23
             saveSuffix = [animal replace(datech,filesep,'_') '_linear_rReg'];
             saveName_splt = fullfile(saveFolder, [saveSuffix '_splitPredictor.mat']);
-            if exist(saveName_splt,'file')
+            saveName = fullfile(saveFolder, [saveSuffix '.mat']);
+
+            if exist(saveName_splt,'file') && exist(saveName, 'file')
                 try
                     thisKernelInfo = load(saveName_splt, 'kernelInfo');
                     kernel_splt_all(iii,1:10) = thisKernelInfo.kernelInfo.kernel;
-                    prefDir_kernel(iii)
+                    %prefDir_kernel(iii)
 
                     thisid = [animal '/' year '/' datech];
 
@@ -56,6 +63,13 @@ else
                         avgResp_all(:,:,:,iii) = squeeze(gainInfo_pop(thisIDidx).avgTonsetByCue(:,1,:,:));
                         prefDir_all(iii) = gainInfo_pop(thisIDidx).prefDir;
                     end
+
+                    %% load latency
+                    load(saveName,'latency_bhv','latency_neuro','latency_r');
+                    latency_bhv_all{iii} = latency_bhv;
+                    latency_neuro_all{iii} = latency_neuro;
+                    latency_r_all(iii) = latency_r;
+
 
                     id_all{iii} = thisid;
                     iii = iii+1;
@@ -67,17 +81,18 @@ else
         end
     end
     winSamps = gainInfo_pop(1).winSamps;
-    save(gainKernelName, 'kernel_splt_all','avgResp_all','prefDir_all','id_all','winSamps');
+    save(gainKernelName, 'kernel_splt_all','avgResp_all','prefDir_all','id_all','winSamps',...
+        'latency_bhv_all','latency_neuro_all','latency_r_all');
 end
 
 %% exclude NG units
-load('pickUnitsByClass.mat','funcClass');
-
+load(fullfile(dataDir,'pickUnitsByClass.mat'),"funcClass",'nUnits');
 
 %% tgt units
-highAmp = false;
+highAmp = true;
 if highAmp
     suffix = '_highAmp';
+    param.ampTh = .5;
 else
     suffix = '';
 end
@@ -90,7 +105,7 @@ for itgtModality = 1:3
         case 3
             tgtModality = 'eyePosition';
     end
-    for iprefDir =1:8
+    for iprefDir =1%:8
 
         prefDir_q = quantizeDir(kernelPrefDir(:,itgtModality), param.cardinalDir);
         if ~highAmp
@@ -129,7 +144,7 @@ for itgtModality = 1:3
         ax3(2)=subplot(322);
         boundedline(winSamps, squeeze(mResp(dir180,:,2)), squeeze(seResp(dir180,:,2)),'k','transparency',.5);
         boundedline(winSamps, squeeze(mResp(dir0,:,2)), squeeze(seResp(dir0,:,2)),'transparency',.5);
-        title('w cue');legend('180deg','0deg','location','northwest');
+        title('w cue'); %legend('180deg','0deg','location','northwest');
         linkaxes(ax3); grid on;
 
         %% show avg response to tgt stim before centering
@@ -168,6 +183,31 @@ for itgtModality = 1:3
         screen2png(['avgResp_' animal '_' tgtModality 'kernel_prefDir' num2str(param.cardinalDir(iprefDir)) ...
             suffix]);
         close all;
+
+        %% latency
+        latency_neuro_selected = latency_neuro_all(tgtIDidx);
+        latency_neuro_selected = cat(1, latency_neuro_selected{:});
+        latency_bhv_selected = latency_bhv_all(tgtIDidx);
+        latency_bhv_selected = cat(1, latency_bhv_selected{:});
+        latency_r_selected = latency_r_all(tgtIDidx);
+
+        figure('visible','on')
+        subplot(121);
+        hist3([latency_bhv_selected latency_neuro_selected],'CDataMode','auto','FaceColor','interp',...
+            'linestyle','none','edges',{0:.02:.5 0:.02:.5});
+        xlabel('behavioural latency'); ylabel('neural latency');
+        view(2);
+        axis square tight;
+        set(gca,'tickdir','out');
+
+        subplot(122);
+        histogram(latency_r_selected,'BinEdges',-0.7:0.1:0.7); axis square tight;        
+        vline(0); set(gca,'tickdir','out');
+        xlabel('latency correlation'); ylabel('# units');
+        screen2png(['latency_selected_' tgtModality num2str(param.cardinalDir(iprefDir)) ...
+            suffix '.png']);
+        close all;
+
     end
 end
 
