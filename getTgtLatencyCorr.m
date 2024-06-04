@@ -1,4 +1,6 @@
 function [latency_neuro, latency_bhv, r, f, fneuro] = getTgtLatencyCorr(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd)
+% [latency_neuro, latency_bhv, r, f, fneuro] = getTgtLatencyCorr(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd)
+% computes neural and behavioural latencies with or without cue
 
 [latency_neuro, validEvents,~,~,fneuro] = getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd);
 
