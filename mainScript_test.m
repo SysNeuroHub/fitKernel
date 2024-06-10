@@ -18,7 +18,7 @@ for yyy = 2
             year = '2023';
     end
 
-    saveFigFolder = fullfile(saveServer, '20230713',year,animal);
+    saveFigFolder = fullfile(saveServer, '20240604',year,animal);
     mkdir(saveFigFolder);
 
 
@@ -35,7 +35,7 @@ for yyy = 2
 
 
     % parameters
-    n=load(fullfile(saveServer,'param20230405_copy.mat'),'param');
+    n=load(fullfile(saveServer,'param20230405.mat'),'param');
     param =n.param;
     n=[];
     ncDirs = length(param.cardinalDir);
@@ -63,12 +63,12 @@ for yyy = 2
             saveFolder = fullfile(saveServer, year,animal);%17/6/23
             saveName = fullfile(saveFolder, [saveSuffix '.mat']);
 
-            load(saveName,'mFiringRate');
+            load(saveName,'mFiringRate'); %FIXME
             if mFiringRate < 5
                 clear mFiringRate
                 continue;
             end
-            load(saveName,'PSTH_f','t_r');
+            load(saveName,'PSTH_f','t_r'); %FIXME
 
             load(loadNames{idata}, 'dd');
 
@@ -79,8 +79,8 @@ for yyy = 2
             
             [latency_neuro, latency_bhv, latency_r, fig_latency, fig_neurolatency] = getTgtLatencyCorr(PSTH_f, t_r, onsets_cat, ...
                 catEvTimes, tWin_t, Thresh, param, dd);
-            screen2png([saveName(1:end-4) '_latency.png'], fig_latency);
-            screen2png([saveName(1:end-4) '_neurolatency.png'], fig_neurolatency);
+            screen2png(fullfile(saveFigFolder,[saveName(1:end-4) '_latency.png']), fig_latency);
+            screen2png(fullfile(saveFigFolder,[saveName(1:end-4) '_neurolatency.png']), fig_neurolatency);
             close(fig_latency);
             close(fig_neurolatency);
             save(saveName,'latency_bhv','latency_neuro','latency_r', '-append');

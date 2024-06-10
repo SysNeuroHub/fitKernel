@@ -65,11 +65,12 @@ else
                     end
 
                     %% load latency
-                    load(saveName,'latency_bhv','latency_neuro','latency_r');
+                    load(saveName,'latency_bhv','latency_neuro','latency_r','mdiffCueTgtOnset','stddiffCueTgtOnset');
                     latency_bhv_all{iii} = latency_bhv;
                     latency_neuro_all{iii} = latency_neuro;
                     latency_r_all(iii) = latency_r;
-
+                    mdiffCueTgtOnset_all(iii) = mdiffCueTgtOnset;
+                    stddiffCueTgtOnset_all(iii) = stddiffCueTgtOnset;
 
                     id_all{iii} = thisid;
                     iii = iii+1;
@@ -82,7 +83,7 @@ else
     end
     winSamps = gainInfo_pop(1).winSamps;
     save(gainKernelName, 'kernel_splt_all','avgResp_all','prefDir_all','id_all','winSamps',...
-        'latency_bhv_all','latency_neuro_all','latency_r_all');
+        'latency_bhv_all','latency_neuro_all','latency_r_all','mdiffCueTgtOnset_all','stddiffCueTgtOnset_all');
 end
 
 %% exclude NG units
@@ -125,12 +126,16 @@ for itgtModality = 1:3
 
         avgResp_selected = avgResp_all(:,:,:,tgtIDidx);
         prefDir_selected = prefDir_all(tgtIDidx);
-
+        mdiffOnset_selected = mdiffCueTgtOnset_all(tgtIDidx);
+        stddiffOnset_selected = stddiffCueTgtOnset_all(tgtIDidx);
 
 
         %% show individual resp
         mResp = squeeze(mean(avgResp_selected,4));
         seResp = squeeze(ste(avgResp_selected,4));
+
+        mdiffOnset = mean(mdiffOnset_selected);
+        stddiffOnset_selected = mean(stddiffOnset_selected);
 
         dir0 = 1;
         dir180 = 5;
@@ -144,6 +149,7 @@ for itgtModality = 1:3
         ax3(2)=subplot(322);
         boundedline(winSamps, squeeze(mResp(dir180,:,2)), squeeze(seResp(dir180,:,2)),'k','transparency',.5);
         boundedline(winSamps, squeeze(mResp(dir0,:,2)), squeeze(seResp(dir0,:,2)),'transparency',.5);
+        vline(-mdiffOnset);
         title('w cue'); %legend('180deg','0deg','location','northwest');
         linkaxes(ax3); grid on;
 
@@ -153,6 +159,7 @@ for itgtModality = 1:3
             imagesc(winSamps, param.cardinalDir, squeeze(mean(avgResp_selected(:,:,icue,:),4)));
             hline;vline;
             if icue==1
+                vline(-mdiffOnset);
                 ylabel('target direction');
                 title('wo cue');
             elseif icue==2
@@ -174,6 +181,7 @@ for itgtModality = 1:3
             imagesc(winSamps, dirAxis, squeeze(nanmean(avgResp_selected_centered(:,:,icue,:),4)));
             hline;vline;
             if icue==1
+                vline(-mdiffOnset);
                 ylabel('centered direction');
             end
         end
@@ -184,29 +192,29 @@ for itgtModality = 1:3
             suffix]);
         close all;
 
-        %% latency
-        latency_neuro_selected = latency_neuro_all(tgtIDidx);
-        latency_neuro_selected = cat(1, latency_neuro_selected{:});
-        latency_bhv_selected = latency_bhv_all(tgtIDidx);
-        latency_bhv_selected = cat(1, latency_bhv_selected{:});
-        latency_r_selected = latency_r_all(tgtIDidx);
-
-        figure('visible','on')
-        subplot(121);
-        hist3([latency_bhv_selected latency_neuro_selected],'CDataMode','auto','FaceColor','interp',...
-            'linestyle','none','edges',{0:.02:.5 0:.02:.5});
-        xlabel('behavioural latency'); ylabel('neural latency');
-        view(2);
-        axis square tight;
-        set(gca,'tickdir','out');
-
-        subplot(122);
-        histogram(latency_r_selected,'BinEdges',-0.7:0.1:0.7); axis square tight;        
-        vline(0); set(gca,'tickdir','out');
-        xlabel('latency correlation'); ylabel('# units');
-        screen2png(['latency_selected_' tgtModality num2str(param.cardinalDir(iprefDir)) ...
-            suffix '.png']);
-        close all;
+        % %% latency
+        % latency_neuro_selected = latency_neuro_all(tgtIDidx);
+        % latency_neuro_selected = cat(1, latency_neuro_selected{:});
+        % latency_bhv_selected = latency_bhv_all(tgtIDidx);
+        % latency_bhv_selected = cat(1, latency_bhv_selected{:});
+        % latency_r_selected = latency_r_all(tgtIDidx);
+        % 
+        % figure('visible','on')
+        % subplot(121);
+        % hist3([latency_bhv_selected latency_neuro_selected],'CDataMode','auto','FaceColor','interp',...
+        %     'linestyle','none','edges',{0:.02:.5 0:.02:.5});
+        % xlabel('behavioural latency'); ylabel('neural latency');
+        % view(2);
+        % axis square tight;
+        % set(gca,'tickdir','out');
+        % 
+        % subplot(122);
+        % histogram(latency_r_selected,'BinEdges',-0.7:0.1:0.7); axis square tight;        
+        % vline(0); set(gca,'tickdir','out');
+        % xlabel('latency correlation'); ylabel('# units');
+        % screen2png(['latency_selected_' tgtModality num2str(param.cardinalDir(iprefDir)) ...
+        %     suffix '.png']);
+        % close all;
 
     end
 end

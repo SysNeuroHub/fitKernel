@@ -11,10 +11,12 @@ switch getenv('COMPUTERNAME')
         rootFolder = '//storage.erc.monash.edu.au/shares/R-MNHS-Physio/SysNeuroData/Monash Data/Joanita/';
         
     case 'MU00011697' %quetzal linux machine
-        addpath(genpath('/home/daisuke/Documents/git'));
+        %addpath(genpath('/home/daisuke/Documents/git'));
+        rmpath(genpath('/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/matlab/'))
         rmpath(genpath('/home/daisuke/Documents/git/dsbox/chronux_2_11/'));
         %saveServer = '~/Documents/cuesaccade_data';
-        saveServer = '/mnt/syncitium/Daisuke/cuesaccade_data';
+        %saveServer = '/mnt/syncitium/Daisuke/cuesaccade_data';
+        saveServer = '/media/daisuke/cuesaccade_data';
         rootFolder = '/mnt/MBI/Monash Data/Joanita/';
         
     case 'MU00108396'

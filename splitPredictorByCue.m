@@ -1,4 +1,8 @@
 function [predictorInfo_split, param_split] = splitPredictorByCue(predictorInfo, dd, onsets_cat, param)
+% split predictor into trials with cue and trials without cue for fitting
+% each with cue / without cue conditions separately
+%
+% 5/6/24: NEED FIX woCue condition includes outside trials
 
 [rewardTimes, punishTimes] = getRewardTimes(dd);
 trialEndTimes = sort([rewardTimes punishTimes]);

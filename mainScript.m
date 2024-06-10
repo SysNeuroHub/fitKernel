@@ -10,8 +10,8 @@ fitoption = 5; %linear_rReg', as of 13/7/2023
 useGPU = 0;
 dataType = 0;%0: each channel, 1: all channels per day
 fitIt = 0;
-splitPredictor = 1; %whether to split predictors by cue. 28/10/2023
-
+%splitPredictor = 1; %whether to split predictors by cue. 28/10/2023
+limPredictor = 1; %whether to limit predictors by behaviour 5/6/2024
 
 for yyy = 1
     switch yyy
@@ -23,28 +23,34 @@ for yyy = 1
             year = '2023';
     end 
     
-    saveFigFolder = fullfile(saveServer, '20230713',year,animal);
+    saveFigFolder = fullfile(saveServer, '20240604',year,animal);
     mkdir(saveFigFolder);
     
     
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
     
     % to obtain index of specified month&date&channel
-    thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','14','*_ch4')))));
-    %thisdata = [ ];
+    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','14','*_ch4')))));
+    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19')))));
+    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    %         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27')))));
+    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','05','*_ch2')))));
+    thisdata = [ ];
 
     if isempty(thisdata)
         thisdata = 1:length(channels);
-        end
-    
+    end
+
     %% omit data
     % no saccade response
     % low spontaneous firing
     % low number of successful trials
     
     % parameters
-    n=load(fullfile(saveServer,'param20230405_copy.mat'),'param');
+    n=load(fullfile(saveServer,'param20230405.mat'),'param');
     param =n.param;
     n=[];
     ncDirs = length(param.cardinalDir);
@@ -111,7 +117,7 @@ for yyy = 1
                 m.FiringRate = mFiringRate;
                 continue;
             end
-            
+            clear mFiringRate
             
             %% prepare behavioral data (common across channels per day)
             eyeName = fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']);
@@ -200,50 +206,66 @@ for yyy = 1
                 %load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
             end
             
-
-            if splitPredictor
-                
-                [predictorInfo, param] = splitPredictorByCue(predictorInfo, dd, onsets_cat, param);
-
-                disp('fit kernels');
-                [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
-                [predicted_all, predicted, PSTH_f, kernelInfo] = fitPSTH_cv(spk_all_cat, ...
-                    predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
-                    predictorInfo.npredVars,param.psth_sigma, param.kernelInterval, ...
-                    param.lagRange, param.ridgeParams, trIdx_r,fitoption,useGPU);
-
-                y_r = cat(2,PSTH_f,predicted_all, predicted);
-
-                %% figure for kernel fitting
-                f = showKernel(t_r, y_r, kernelInfo, param.cardinalDir);
-                screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix '_wocue']), f);
-                close(f);
-
-                y_r_wcue = cat(2,PSTH_f,predicted_all, predicted(:,6:10));
-                kernelInfo_wcue = kernelInfo;
-                kernelInfo_wcue.kernel = kernelInfo.kernel(6:10);
-                kernelInfo_wcue.tlags = kernelInfo.tlags(6:10);
-                f = showKernel(t_r, y_r_wcue, kernelInfo_wcue, param.cardinalDir);
-                screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix '_wcue']), f);
-                close(f);
-
-                %% save results
-                mm_s=matfile(saveName_splt,'writable',true);
-                mm_s.PSTH_f = PSTH_f;
-                mm_s.predicted_all = predicted_all;
-                mm_s.predicted = predicted;
-                mm_s.kernelInfo = kernelInfo;
-                mm_s.t_r = t_r;
-                mm_s.param=param;
-                mm_s.predictorInfo = predictorInfo;
-
-                clear mm_s predictorInfo param kernelInfo predicted predicted_all PSTH_f;
-               
-            end
-
             
             %% remove trials with too short duration 28/10/23
             [t_tr, catEvTimes, validTrials] = trimInvalids(t_tr, catEvTimes);
+
+
+            if limPredictor            
+                %[predictorInfo, param] = splitPredictorByCue(predictorInfo, dd, onsets_cat, param);
+                for limOption = 1:2
+                    if limOption==1
+                        figSuffix = 'onlySuccess';
+                    elseif limOption==2
+                        figSuffix = 'woSuccess';
+                    end
+                     saveName_splt = fullfile(saveFolder, [saveSuffix '_' figSuffix '.mat']);
+
+                     [predictorInfo_lim, param_lim] = limitPredictor(predictorInfo, dd, onsets_cat, param, limOption);
+                
+                    disp('fit kernels');
+                    [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
+                    [~, ~, PSTH_f, kernelInfo] = fitPSTH_cv(spk_all_cat, ...
+                        predictorInfo_lim.t_r, param.predictorNames,   predictorInfo_lim.predictors_r, ...
+                        predictorInfo_lim.npredVars,param.psth_sigma, param.kernelInterval, ...
+                        param.lagRange, param.ridgeParams, trIdx_r,fitoption,useGPU);
+
+                    %% predict ALL conditions using the estimated kernel
+                    [predicted, predicted_each] = predictPSTH_cv(spk_all_cat, ...
+                        predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
+                        predictorInfo.npredVars, param.psth_sigma, param.kernelInterval, ...
+                        param.lagRange,  trIdx_r, fitoption, kernelInfo);
+
+                    y_r = cat(2,PSTH_f,predicted, predicted_each);
+
+                    %% figure for kernel fitting
+                    f = showKernel(t_r, y_r, kernelInfo, param_lim.cardinalDir);
+                    screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix '_' figSuffix]), f);
+                    close(f);
+
+
+                    %% Figure for target onset response (only to preferred direction)
+                    [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
+                        startSaccNoTask, saccDirNoTask, param_lim, [-0.5 0.5]);
+                    cellclassInfo.datech = datech;
+                    screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_' figSuffix]), f);
+                    close(f);
+
+                    %% save results
+                    mm_s=matfile(saveName_splt,'writable',true);
+                    mm_s.PSTH_f = PSTH_f;
+                    mm_s.predicted_all = predicted;
+                    mm_s.predicted = predicted_each;
+                    mm_s.kernelInfo = kernelInfo;
+                    mm_s.t_r = t_r;
+                    mm_s.param=param_lim;
+                    mm_s.predictorInfo = predictorInfo_lim;
+
+                    clear mm_s 
+                end
+
+                clear predictorInfo param kernelInfo predicted predicted_all PSTH_f;
+            end
 
 
             if fitIt && ~splitPredictor

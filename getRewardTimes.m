@@ -1,5 +1,5 @@
 function [rewardTimes, punishTimes, successTimes, trialOutcome] = getRewardTimes(dd)
-%[rewardTimes, successTimes] = getRewardTimes(dd)
+%[rewardTimes, unishTimes, successTimes, trialOutcome] = getRewardTimes(dd)
 %returns times of reward delivery detected as item2delivered
 %
 %cf. concatenate_eye.m

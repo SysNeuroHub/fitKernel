@@ -1,6 +1,6 @@
-function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, ...
+function [predicted, predicted_each] = predictPSTH_cv(spk_cat, ...
     t_r, predictorNames, predictors_r, npredVars, sigma, kernelInterval, ...
-    lagRange, ridgeParam, trIdx_r, option,useGPU)
+    lagRange, trIdx_r, option, kernelInfo)
 %[predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, ...
 %    t_r, predictorNames, predictors_r, npredVars, sigma, kernelInterval, ...
 %    lagRange, ridgeParam, trIdx_r, option, useGPU)
@@ -33,11 +33,8 @@ useSptrain = 0;
 unitOfTime = 's';
 uniqueID = 1;
 KFolds = 5;
-kernelInfo.basisType = 'raised cosine';
 detrend = 1; %22/7/22
-%nBasisFunctions = 20;
-%offset = -25; %slide the kernel window back in time
-
+w = kernelInfo.cv.kernel;
 
 if size(lagRange,1) == 1
     lagRange = repmat(lagRange, [numel(npredVars) 1]);
@@ -115,14 +112,13 @@ end
 
 xvFolds = regression.xvalidationIdx(numel(trIdx_r), KFolds, false, true);
 
-w = [];
 predicted = zeros(numel(t_r),1);
 predicted_each = zeros(numel(t_r), numel(npredVars));
 expval = zeros(1,KFolds);
 mse = zeros(1,KFolds);
 R = zeros(1,KFolds);
 for ifold = 1:KFolds
-    disp(['fitPSTH_cv:' num2str(ifold) '/' num2str(KFolds)]);
+    disp(['predictPSTH_cv:' num2str(ifold) '/' num2str(KFolds)]);
     dm = buildGLM.compileSparseDesignMatrix(dspec, xvFolds{ifold,1});
     
     %If your design matrix is not very sparse (less than 10% sparse, for example),
@@ -143,54 +139,6 @@ for ifold = 1:KFolds
         y = buildGLM.getResponseVariable(expt, 'spfilt', dm.trialIndices);
     end
     
-    %% Doing the actual regression
-    switch option
-        case 1
-            % option1: simple least squares
-            dmXg = gpuArray([dm.X]);
-            yg = gpuArray(y);
-            w(:,ifold) = dmXg' * dmXg \ dmXg' * yg;
-            
-            %w(:,ifold) = dm.X' * dm.X \ dm.X' * y;
-            
-        case 2
-            % option2: Maximum likelihood estimation using glmfit
-            [w(:,ifold), dev, stats] = glmfit(dm.X, y, 'poisson', 'link', 'log');
-            
-        case 3
-            % option3: ridge regression with static nonlinearity
-            dspec.model.regressionMode='RIDGEFIXED';
-            dspec.model.nlfun = @expfun;
-            ndx = []; %glmspike.m
-            M = regression.doRegressionPoisson(dm.X, y, dspec, ndx, dt_r, ridgeParam); %from Yate's classy neuroGLM: SLOW
-            w(:,ifold) = M.khat;
-            
-        case 4
-            %option4: from neuroGLM/tutorial.m
-            wInit = dm.X \ y;
-            
-            %% Use matRegress for Poisson regression
-            % it requires `fminunc` from MATLAB's optimization toolbox
-            %addpath('C:\Users\dshi0006\git\neuroGLM\matRegress')
-            
-            fnlin = @nlfuns.exp; % inverse link function (a.k.a. nonlinearity)
-            lfunc = @(w)(glms.neglog.poisson(w, dm.X, y, fnlin)); % cost/loss function
-            
-            opts = optimoptions(@fminunc, 'Algorithm', 'trust-region', ...
-                'GradObj', 'on', 'Hessian','on');%,'UseParallel',true);
-            
-            try
-                [wml, nlogli, exitflag, ostruct, grad, hessian] = fminunc(lfunc, wInit, opts);
-                w(:,ifold) = wml;
-            catch err
-                w(:,ifold) = wInit;
-            end
-            
-            %wvar = diag(inv(hessian));
-        case 5 %ridge regression used in 2022
-            w(:,ifold)= rReg(dm.X(:,2:end), y, ridgeParam, useGPU);
-            
-    end
     
     %% Simulate from model for test data
     % dmTest = buildGLM.compileSparseDesignMatrix(dspec, testTrialIndices);
@@ -230,6 +178,7 @@ for ifold = 1:KFolds
         
         widx = (1:nBasisFunctions(ivar)*npredVars(ivar))+head;
         head = max(widx);
+
         switch option
             case {2,3,4}
                 yPred_xv_sub = exp(dm_pred_sub.X*w(widx,ifold)+w(1,ifold)); %for option3
@@ -255,18 +204,18 @@ r0 = mw(1);% intercept
 % dm = buildGLM.addBiasColumn(dm);
 % yPred = exp(dm.X*mw);
 
-for ivar = 1:numel(npredVars)
-    kernelInfo.kernel{ivar} = ws.(predictorNames{ivar}).data;
-    kernelInfo.tlags{ivar} = ws.(predictorNames{ivar}).tr;
-end
-kernelInfo.intercept = r0;
-kernelInfo.fs = 1/dt_r;
-kernelInfo.ridgeParam = ridgeParam;
-kernelInfo.mse = mean(mse);
-kernelInfo.expval = mean(expval);
-kernelInfo.corrcoef = mean(R);
-kernelInfo.cv.kernel = w;
-kernelInfo.cv.mse = mse;
-kernelInfo.cv.corrcoef = R;
-kernelInfo.cv.expval = expval;
+% for ivar = 1:numel(npredVars)
+%     kernelInfo.kernel{ivar} = ws.(predictorNames{ivar}).data;
+%     kernelInfo.tlags{ivar} = ws.(predictorNames{ivar}).tr;
+% end
+% kernelInfo.intercept = r0;
+% kernelInfo.fs = 1/dt_r;
+% kernelInfo.ridgeParam = ridgeParam;
+% kernelInfo.mse = mean(mse);
+% kernelInfo.expval = mean(expval);
+% kernelInfo.corrcoef = mean(R);
+% kernelInfo.cv.kernel = w;
+% kernelInfo.cv.mse = mse;
+% kernelInfo.cv.corrcoef = R;
+% kernelInfo.cv.expval = expval;
 
