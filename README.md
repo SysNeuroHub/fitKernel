@@ -61,6 +61,7 @@ Functions for analysis/visualization
 * getExpVal: computes explained variance of a given period. Called in fitPSTH_cv
 * getExpVal_tgt: computes explained variance after the target stimuli. Called in fitPSTH_pop
 * getExpVal_avgtgt: Called in fitPSTH_pop
+* inclusionCriteria: Called in fitPSTH_pop
 
 Utility functions
 * filtPSTH: (a)causally filtered spike trace
