@@ -1,7 +1,11 @@
 function [f, avgfOnsetResp, avgCueResp, winSamps] = showFixCueOnsetResp(t_r, ...
-    y_r, catEvTimes, dd, psthNames, figTWin)
+    y_r, catEvTimes, dd, psthNames, figTWin, diff_at_zero)
 % f = showFixCueOnsetResp(t_r, y_r, catEvTimes, dd, predictorNames, respWin)
 % respWin = [-0.5 1];
+
+if nargin < 7
+    diff_at_zero = 0;
+end
 
 nRespTypes = size(y_r,2);
 
@@ -25,6 +29,11 @@ if numel(uniqueLabels)==1
     avgfOnsetResp = avgfOnsetResp_c;
 end
 
+if diff_at_zero
+    [~,zeroidx] = min(abs(winSamps - 0));
+    avgfOnsetResp = avgfOnsetResp - avgfOnsetResp(:,:,zeroidx);
+end
+
 crange = prctile(avgfOnsetResp(:),[0 100]);
 f = figure('position',[0 0 1000 500]);
 for icue = 1:2
@@ -45,7 +54,7 @@ for icue = 1:2
         end
     end
     vline(0);
-    xlabel('Time from fOnset [s]');
+    xlabel('Time from fixation behaviour Onset [s]');
     title(['fixOn ' condName ': ' num2str(sum(dd.cueOn(validTrials)==icue-1)) ' trials']);
     if nRespTypes == 1
         ylim(gca,crange);
@@ -69,6 +78,11 @@ if ~isempty(validEvents)
     [avgCueResp, winSamps] ...
         = eventLockedAvg(y_r', t_r, cueOnset, ones(numel(cueOnset),1), figTWin);%param.figTWin);
     
+    if diff_at_zero
+        [~,zeroidx] = min(abs(winSamps - 0));
+        avgCueResp = avgCueResp - avgCueResp(:,:,zeroidx);
+    end
+
     subplot(1,3,3);
     if nRespTypes ==1
         plot(winSamps, squeeze(avgCueResp));

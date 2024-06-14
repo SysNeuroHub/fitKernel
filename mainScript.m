@@ -12,8 +12,9 @@ dataType = 0;%0: each channel, 1: all channels per day
 fitIt = 0;
 %splitPredictor = 1; %whether to split predictors by cue. 28/10/2023
 limPredictor = 1; %whether to limit predictors by behaviour 5/6/2024
+kfolds = 5; %12/6/24
 
-for yyy = 1
+for yyy = 2
     switch yyy
         case 1
             year = '2021'; 
@@ -23,26 +24,29 @@ for yyy = 1
             year = '2023';
     end 
     
-    saveFigFolder = fullfile(saveServer, '20240604',year,animal);
-    mkdir(saveFigFolder);
-    
+    saveFigFolder = fullfile(saveServer, '20240612',year,animal);
+    if ~exist(saveFigFolder, 'dir')
+        mkdir(saveFigFolder);
+    end
     
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
     
     % to obtain index of specified month&date&channel
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','14','*_ch4')))));
-    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19')))));
+    thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19')))));
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27')))));
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','05','*_ch2')))));
-    thisdata = [ ];
+    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','03March','23','*_ch29')))));
+    %thisdata = [ ];
 
-    if isempty(thisdata)
-        thisdata = 1:length(channels);
-    end
+    % if isempty(thisdata)
+    %     thisdata = 1:length(channels);
+    % end
 
     %% omit data
     % no saccade response
@@ -50,7 +54,7 @@ for yyy = 1
     % low number of successful trials
     
     % parameters
-    n=load(fullfile(saveServer,'param20230405.mat'),'param');
+    n=load(fullfile(saveServer,'param20240611.mat'),'param');
     param =n.param;
     n=[];
     ncDirs = length(param.cardinalDir);
@@ -62,7 +66,7 @@ for yyy = 1
     previousDate = [];
     for idata = thisdata
 
-        n=load(fullfile(saveServer,'param20230405.mat'),'param');
+        n=load(fullfile(saveServer,'param20240611.mat'),'param');
         param =n.param;
         n=[];
 
@@ -92,11 +96,18 @@ for yyy = 1
             %        continue;
             %    end
 
-            predictorInfoName = fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']);
-           
+            
             EE = load(loadNames{idata},'ephysdata','dd');
             dd = EE.dd;
             
+            %% prepare predictor variables after downsampling
+            %predictorInfoName = fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']);
+            % predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
+            % save(predictorInfoName, 'predictorInfo');
+            % m=matfile(predictorInfoName,'writable',true);
+            % m.predictorInfo=predictorInfo;
+
+
             spk_all = EE.ephysdata.spikes.spk;
             EE = [];
             if ~isempty(spk_all)
@@ -115,9 +126,10 @@ for yyy = 1
                 %save(saveName,'mFiringRate');
                 m=matfile(saveName,'writable',true);
                 m.FiringRate = mFiringRate;
-                continue;
+                clear mFiringRate
+            continue;
             end
-            clear mFiringRate
+            
             
             %% prepare behavioral data (common across channels per day)
             eyeName = fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']);
@@ -168,12 +180,7 @@ for yyy = 1
                 m.dirIndexNoTask=dirIndexNoTask;
                 close all
                 
-                %% prepare predictor variables after downsampling
-                t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
-                predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
-                %save(predictorInfoName, 'predictorInfo');
-                m=matfile(predictorInfoName,'writable',true);
-                m.predictorInfo=predictorInfo;
+         
             else
 %                 if exist(saveName,'file')
 %                     continue;
@@ -198,22 +205,36 @@ for yyy = 1
                 dirIndexNoTask=n.dirIndexNoTask;
                 n=[];
 
-                t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
-                %predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
-                n=load(predictorInfoName, 'predictorInfo');
-                predictorInfo = n.predictorInfo;
-                n=[];
+                % t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
+                % %predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
+                % n=load(predictorInfoName, 'predictorInfo');
+                % predictorInfo = n.predictorInfo;
+                % n=[];
                 %load(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']));
             end
             
             
+
+       %% prepare predictor variables after downsampling
+       t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
+       predictorInfoName = fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']);
+       % if exist(predictorInfoName, 'file')
+       %     n=load(predictorInfoName, 'predictorInfo');
+       %     predictorInfo = n.predictorInfo;
+       %     n=[];
+       % else
+           predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
+           save(predictorInfoName, 'predictorInfo');
+       % end
+
+
             %% remove trials with too short duration 28/10/23
             [t_tr, catEvTimes, validTrials] = trimInvalids(t_tr, catEvTimes);
 
 
             if limPredictor            
                 %[predictorInfo, param] = splitPredictorByCue(predictorInfo, dd, onsets_cat, param);
-                for limOption = 1:2
+                for limOption =1:2
                     if limOption==1
                         figSuffix = 'onlySuccess';
                     elseif limOption==2
@@ -222,22 +243,28 @@ for yyy = 1
                      saveName_splt = fullfile(saveFolder, [saveSuffix '_' figSuffix '.mat']);
 
                      [predictorInfo_lim, param_lim] = limitPredictor(predictorInfo, dd, onsets_cat, param, limOption);
-                
+                     predictorInfoName_lim = fullfile(saveFolder,['predictorInfo_' animal thisDate '_' figSuffix '.mat']);
+                     %save(predictorInfoName_lim, 'predictorInfo');
+                     m_lim=matfile(predictorInfoName_lim,'writable',true);
+                     m_lim.predictorInfo=predictorInfo_lim;
+                     m_lim=[];
+
                     disp('fit kernels');
                     [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
                     [~, ~, PSTH_f, kernelInfo] = fitPSTH_cv(spk_all_cat, ...
                         predictorInfo_lim.t_r, param.predictorNames,   predictorInfo_lim.predictors_r, ...
                         predictorInfo_lim.npredVars,param.psth_sigma, param.kernelInterval, ...
-                        param.lagRange, param.ridgeParams, trIdx_r,fitoption,useGPU);
+                        param.lagRange, param.ridgeParams, trIdx_r,fitoption,useGPU, kfolds);
 
                     %% predict ALL conditions using the estimated kernel
                     [predicted, predicted_each] = predictPSTH_cv(spk_all_cat, ...
                         predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
                         predictorInfo.npredVars, param.psth_sigma, param.kernelInterval, ...
-                        param.lagRange,  trIdx_r, fitoption, kernelInfo);
+                        param.lagRange,  trIdx_r, fitoption, kernelInfo, kfolds);
 
                     y_r = cat(2,PSTH_f,predicted, predicted_each);
 
+                 
                     %% figure for kernel fitting
                     f = showKernel(t_r, y_r, kernelInfo, param_lim.cardinalDir);
                     screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix '_' figSuffix]), f);
@@ -246,11 +273,17 @@ for yyy = 1
 
                     %% Figure for target onset response (only to preferred direction)
                     [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-                        startSaccNoTask, saccDirNoTask, param_lim, [-0.5 0.5]);
+                        startSaccNoTask, saccDirNoTask, param_lim, param_lim.figTWin);
                     cellclassInfo.datech = datech;
                     screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_' figSuffix]), f);
                     close(f);
 
+                    %% response to fixation and cue onsets
+                    [f, avgfOnsetResp, avgCueResp, winSamps_fc] = showFixCueOnsetResp(t_r, ...
+                        y_r, catEvTimes, dd, psthNames, [-0.5 1], 1);
+                    screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix '_' figSuffix]),f);
+                    close(f);
+             
                     %% save results
                     mm_s=matfile(saveName_splt,'writable',true);
                     mm_s.PSTH_f = PSTH_f;
@@ -259,95 +292,85 @@ for yyy = 1
                     mm_s.kernelInfo = kernelInfo;
                     mm_s.t_r = t_r;
                     mm_s.param=param_lim;
-                    mm_s.predictorInfo = predictorInfo_lim;
+                    %mm_s.predictorInfo = predictorInfo_lim;
+                    mm_s.mFiringRate = mFiringRate;
 
                     clear mm_s 
                 end
 
-                clear predictorInfo param kernelInfo predicted predicted_all PSTH_f;
+                clear kernelInfo predicted predicted_all PSTH_f ;
             end
 
 
-            if fitIt && ~splitPredictor
+            %if fitIt && ~limPredictor
                 %% obtain kernels!
                 disp('fit kernels')
                 [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
                 [predicted_all, predicted, PSTH_f, kernelInfo] = fitPSTH_cv(spk_all_cat, ...
                     predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
                     predictorInfo.npredVars,param.psth_sigma, param.kernelInterval, ...
-                    param.lagRange, param.ridgeParams, trIdx_r,fitoption,useGPU);
-                
-                % load(saveName, 'predicted_all','predicted','PSTH_f','kernelInfo');
-                
-                
-                % %% extract time course of cue [0 1] for each target direction
-                %   param.predictorNames = {'cue'};
-                %   predictorInfo_cue = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
-                %
-                % %% fit with ridgeX
-                % [predicted_cue, gainInfo] = fitMultiplicative(PSTH_f, predicted_all, t_r, ...
-                %     predictorInfo.predictors_r);
+                    param.lagRange, param.ridgeParams, trIdx_r,fitoption,useGPU, kfolds);
                 
                 y_r = cat(2,PSTH_f,predicted_all, predicted);
                 
                 %% figure for kernel fitting
-                    f = showKernel( t_r, y_r, kernelInfo, param.cardinalDir);
-                    screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
-                    close(f);
+                f = showKernel( t_r, y_r, kernelInfo, param.cardinalDir);
+                screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
+                close(f);
                  
                 %% Figure for target onset response (only to preferred direction)
                 [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-                    startSaccNoTask, saccDirNoTask, param, [-0.5 0.5]);
+                    startSaccNoTask, saccDirNoTask, param, param.figTWin);
                 cellclassInfo.datech = datech;
                 %savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
                 screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
                 close(f);
                 
                 
-                %% Figure for target onset, w/wo cue
-                [f, avgTOnsetByCue, winSamps_tonsetByCue] = showTonsetByCue(t_r, ...
-                    y_r, param.cardinalDir, catEvTimes, dd, psthNames, [-0.5 0.5], 1);
-                screen2png(fullfile(saveFigFolder,['tonsetByCue_' saveSuffix '_onlySuccess']), f);
-                close(f);
-                
-                [f, avgTOnsetByCue_parea, winSamps_tonsetByCue_parea] = showTonsetByCue(t_r, ...
-                    predictorInfo.predictors_r(17,:)', param.cardinalDir, catEvTimes, dd, ...
-                    {'parea'}, [-0.5 0.5]);
-                set(f,'position',[0 0 1920 300]);
-                screen2png(fullfile(saveFigFolder,['tonsetByCue_' saveSuffix '_parea']), f);
-                close(f);
-                
-                %% response to saccades outside the task
-                [f,avgSaccResp, winSamps_sacc, singleSaccResp, sortedSaccLabels] = ...
-                    showSaccOnsetResp(t_r, y_r, param.cardinalDir, psthNames, ...
-                    startSaccNoTask, saccDirNoTask, [-0.5 0.5]);
-                screen2png(fullfile(saveFigFolder,['saccOn_' saveSuffix]));
-                close(f);
-                
-                %% response to fixation and cue onsets
-                [f, avgfOnsetResp, avgCueResp, winSamps_fc] = showFixCueOnsetResp(t_r, ...
-                    y_r, catEvTimes, dd, psthNames, [-0.5 1]);
-                screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix]),f);
-                close(f);
-                
-                close all;
-                
-                %%response of pdiam to fixation and cue onsets
-                [f, avgfOnsetResp_pdiam, avgCueResp_pdiam, winSamps_fc_pdiam] = showFixCueOnsetResp(t_r, ...
-                    predictorInfo.predictors_r(17,:)', catEvTimes, dd, {'parea'}, [-0.5 1]);
-                screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix '_pdiam']),f);
-                close(f);
-                
-
-                %% obtain gain
-                onlySuccess = 0;
-                respWin = [0.05 0.35]; %[s] %time after stim onset to obtain preferred direction
-                gainInfo = getGainInfo(t_r, y_r(:,1:2), param.cardinalDir, catEvTimes, ...
-                    dd, [-0.5 1], onlySuccess, respWin);
-                f=showGainInfo(gainInfo);
-                savefigname = fullfile(saveFigFolder,[saveSuffix '_gainInfo']);
-                screen2png(savefigname);
-                close(f);
+                % %% Figure for target onset, w/wo cue
+                % [f, avgTOnsetByCue, winSamps_tonsetByCue] = showTonsetByCue(t_r, ...
+                %     y_r, param.cardinalDir, catEvTimes, dd, psthNames, [-0.5 0.5], 1);
+                % screen2png(fullfile(saveFigFolder,['tonsetByCue_' saveSuffix '_onlySuccess']), f);
+                % close(f);
+                % 
+                % [f, avgTOnsetByCue_parea, winSamps_tonsetByCue_parea] = showTonsetByCue(t_r, ...
+                %     predictorInfo.predictors_r(17,:)', param.cardinalDir, catEvTimes, dd, ...
+                %     {'parea'}, [-0.5 0.5]);
+                % set(f,'position',[0 0 1920 300]);
+                % screen2png(fullfile(saveFigFolder,['tonsetByCue_' saveSuffix '_parea']), f);
+                % close(f);
+                % 
+                % %% response to saccades outside the task
+                % [f,avgSaccResp, winSamps_sacc, singleSaccResp, sortedSaccLabels] = ...
+                %     showSaccOnsetResp(t_r, y_r, param.cardinalDir, psthNames, ...
+                %     startSaccNoTask, saccDirNoTask, [-0.5 0.5]);
+                % screen2png(fullfile(saveFigFolder,['saccOn_' saveSuffix]));
+                % close(f);
+                % 
+                % %% response to fixation and cue onsets
+                % [f, avgfOnsetResp, avgCueResp, winSamps_fc] = showFixCueOnsetResp(t_r, ...
+                %     y_r, catEvTimes, dd, psthNames, [-0.5 1]);
+                % screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix]),f);
+                % close(f);
+                % 
+                % close all;
+                % 
+                % %%response of pdiam to fixation and cue onsets
+                % [f, avgfOnsetResp_pdiam, avgCueResp_pdiam, winSamps_fc_pdiam] = showFixCueOnsetResp(t_r, ...
+                %     predictorInfo.predictors_r(17,:)', catEvTimes, dd, {'parea'}, [-0.5 1]);
+                % screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix '_pdiam']),f);
+                % close(f);
+                % 
+                % 
+                % %% obtain gain
+                % onlySuccess = 0;
+                % respWin = [0.05 0.35]; %[s] %time after stim onset to obtain preferred direction
+                % gainInfo = getGainInfo(t_r, y_r(:,1:2), param.cardinalDir, catEvTimes, ...
+                %     dd, [-0.5 1], onlySuccess, respWin);
+                % f=showGainInfo(gainInfo);
+                % savefigname = fullfile(saveFigFolder,[saveSuffix '_gainInfo']);
+                % screen2png(savefigname);
+                % close(f);
                 
 
 
@@ -368,20 +391,22 @@ for yyy = 1
                 mm.predicted = predicted;
                 mm.kernelInfo = kernelInfo;
                 mm.t_r = t_r;
-                mm.cellclassInfo = cellclassInfo;
+                %mm.cellclassInfo = cellclassInfo;
                 mm.param=param;
                 mm.mFiringRate=mFiringRate;
                 mm.t_cat=t_cat;
                 mm.dd=dd;
-                mm.gainInfo = gainInfo; %26/10/2023
+                % mm.gainInfo = gainInfo; %26/10/2023
                 
-                clear mm;
+                clear mm mFiringRate;
 
                 %previousDate = thisDate;
 
-            end
+           % end
             
         catch err
+            clear mFiringRate
+
             disp(err);
             ng = [ng idata];
             close all;

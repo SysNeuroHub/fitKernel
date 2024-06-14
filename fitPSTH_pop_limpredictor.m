@@ -3,15 +3,15 @@
 %align number of rows of population data
 
 %% get ready
+limSuffix = '';%'_woSuccess';%_woSuccess';
+
 [saveServer, rootFolder] = getReady();
-saveSuffix_p = 'fitPSTH_pop20231102';
+saveSuffix_p = ['fitPSTH_pop' limSuffix];
 
 %% recorded data
 animal = 'hugo';
 dataType = 0;%0: each channel, 1: all channels per day
 tWin = [0 0.5];%[s]
-
-load(fullfile(saveServer,'param20231102.mat'),'param');
 
 %alldata = [];
 mFiringRate_pop = [];
@@ -30,8 +30,10 @@ ntotTrials_pop = [];
 id_pop = [];
 Rsqadj_pop = [];
 gainInfo_pop = [];
+expval_trig_pop = [];
+corr_trig_pop = [];
 errorIDs= cell(1);
-for yy = 1:3
+for yy = 1%:3
     switch yy
         case 1
             year = '2021';
@@ -54,12 +56,12 @@ for yy = 1:3
     %dataByYear = [];%struct(length(channels),1);
     %datech_pop = nan(length(channels),1);
     %corrcoef_pred_spk_pop = nan(length(channels),1);
-    for idata = 1:length(channels)
+    for idata = 1:150%length(channels)
         datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
         thisid = [animal '/' year '/' datech];
         disp(thisid);
 
-        saveSuffix = [animal replace(datech,'/','_') '_linear_rReg'];
+        saveSuffix = [animal replace(datech,'/','_') '_linear_rReg' limSuffix];
 
         thisDate = [months{idata} '_' dates{idata}];
 
@@ -73,8 +75,7 @@ for yy = 1:3
                 S = load(saveName, 'PSTH_f','predicted_all', 'predicted', ...
                     'kernelInfo','t_r','cellclassInfo','param','mFiringRate','t_cat',...
                     'dds');
-
-
+               
                 if isfield(S,'kernelInfo')
                     mFiringRate_pop = cat(2,mFiringRate_pop,S.mFiringRate);
                     kernel_pop = cat(3,kernel_pop,S.kernelInfo.kernel);
@@ -88,39 +89,39 @@ for yy = 1:3
 
                     eyeName = fullfile(saveFolder,[
                         'eyeCat_' animal thisDate '.mat']);
-                    load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), ...
-                        'predictorInfo');
-                    load(eyeName,'eyeData_rmotl_cat','catEvTimes');
+                    % load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), ...
+                    %     'predictorInfo');
+                    load(eyeName,'eyeData_rmotl_cat','catEvTimes','startSaccNoTask');
 
-                    if ~isfield(S,'dds')
-                        load(loadNames{idata},'dd'); %slow to read
-                        dds = getCueSaccadeSmall(dd);
-                        save(saveName, 'dds','-append');
-                        S.dds = dd;
-                    end
-                    dd = S.dds;
+                    % if ~isfield(S,'dds')
+                         load(loadNames{idata},'dd'); %slow to read
+                    %     dds = getCueSaccadeSmall(dd);
+                    %     save(saveName, 'dds','-append');
+                    %     S.dds = dd;
+                    % end
+                    % dd = S.dds;
 
 
                     %% Rsq adj of subjset of variables
-                    nsub=4;
-                    Rsqadj = zeros(nsub,1);
-                    for jj = 1:nsub
-                        switch jj
-                            case 1 %full model
-                                tgtGroups = 1:5;
-                            case 2 %omit vision %added 26/10/2023
-                                tgtGroups = setxor(1:5, 1);
-                            case 3 %omit eye speed
-                                tgtGroups = setxor(1:5, 2);
-                            case 4 %omit eye position
-                                tgtGroups = setxor(1:5, 3);
-                        end
-                        [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
-                            tgtGroups, param);%, idxTgtOnsets);
-
-                        Rsqadj(jj) = Rsqadjusted;
-                    end
-                    Rsqadj_pop = [Rsqadj_pop Rsqadj];
+                    % nsub=4;
+                    % Rsqadj = zeros(nsub,1);
+                    % for jj = 1:nsub
+                    %     switch jj
+                    %         case 1 %full model
+                    %             tgtGroups = 1:5;
+                    %         case 2 %omit vision %added 26/10/2023
+                    %             tgtGroups = setxor(1:5, 1);
+                    %         case 3 %omit eye speed
+                    %             tgtGroups = setxor(1:5, 2);
+                    %         case 4 %omit eye position
+                    %             tgtGroups = setxor(1:5, 3);
+                    %     end
+                    %     [Rsqadjusted,rr,r0] = fitSubset(S.PSTH_f, predictorInfo, ...
+                    %         tgtGroups, param);%, idxTgtOnsets);
+                    % 
+                    %     Rsqadj(jj) = Rsqadjusted;
+                    % end
+                    % Rsqadj_pop = [Rsqadj_pop Rsqadj];
 
                     %                 %Rsq_adjusted computed from pre-target
                     %                 periods - NG. can be < 0
@@ -135,10 +136,10 @@ for yy = 1:3
                     %                 Rsqadj_tgt_pop = [Rsqadj_tgt_pop Rsqadjusted_tgt];
 
                     %% response to target
-                    PtonsetResp_pop = [PtonsetResp_pop S.cellclassInfo.PtonsetResp];
-
-                    %% response to saccade
-                    PsaccResp_pop = [PsaccResp_pop S.cellclassInfo.PsaccResp];
+                    %PtonsetResp_pop = [PtonsetResp_pop S.cellclassInfo.PtonsetResp];
+                     
+                    % %% response to saccade
+                    % PsaccResp_pop = [PsaccResp_pop S.cellclassInfo.PsaccResp];
 
                     %% explained variance per kernel
                     expval = zeros(size(S.predicted,2)+1,1);
@@ -152,7 +153,7 @@ for yy = 1:3
 
                     %% explained variance for target response
                     expval_tgt(1,1) = getExpVal_tgt(S.PSTH_f, S.predicted_all, catEvTimes, S.t_r, tWin);
-                    expval_tgt(2:6,1) = getExpVal_tgt(S.PSTH_f, S.predicted, catEvTimes, S.t_r, tWin);
+                    expval_tgt(2:7,1) = getExpVal_tgt(S.PSTH_f, S.predicted, catEvTimes, S.t_r, tWin);
 
                     expval_tgt_pop = [expval_tgt_pop expval_tgt];
 
@@ -163,6 +164,31 @@ for yy = 1:3
                     %                     catEvTimes, S.t_r, [0 0.5], param.cardinalDir, dd);
                     %                 expval_avgtgt_pop = [expval_avgtgt_pop expval_avgtgt];
                     %                 corr_avgtgt_pop = [corr_avgtgt_pop corr_avgtgt];
+
+                    %% compute time-resolved explained variance
+                    [choiceOutcome] = getChoiceOutcome(dd);
+                    
+                    expval_trig = []; corr_trig = [];
+                    for ievtype = 1:4
+                        % 1: success trial
+                        % 2: failed quiescent trial
+                        % 3: failed wrong saccade direction
+                        % 4: saccade outside trials
+
+                        if ievtype <= 3
+                            theseEvents = find(choiceOutcome==ievtype);
+                            eventTimes = catEvTimes.tOnset(theseEvents);
+                        elseif ievtype == 4
+                            eventTimes = startSaccNoTask;
+                        end
+                        [expval_trig(:,:,ievtype), corr_trig(:,:,ievtype), winSamps] = ...
+                            getExpVal_trig(S.PSTH_f, [S.predicted_all S.predicted], S.t_r, eventTimes, [-0.5 0.5]);
+
+                    %ax_expval_trig(ievtype) = subplot(4,1,ievtype);
+                    %plot(winSamps, squeeze(expval_trig(:,:,ievtype))');
+                    end
+                    expval_trig_pop = cat(4, expval_trig_pop, expval_trig);
+                    corr_trig_pop = cat(4, corr_trig_pop, expval_trig);
 
                     %% number of target trials
                     ntargetTrials_pop = [ntargetTrials_pop sum(~isnan(catEvTimes.tOnset))];
@@ -175,17 +201,20 @@ for yy = 1:3
                     onlySuccess = 0;
                     respWin = [0.05 0.35]; %[s]
                     y_r = cat(2,S.PSTH_f,S.predicted_all);
-                    gainInfo = getGainInfo(S.t_r, y_r, param.cardinalDir, catEvTimes, ...
+                    gainInfo = getGainInfo(S.t_r, y_r, S.param.cardinalDir, catEvTimes, ...
                         dd, figTWin, onlySuccess, respWin);
                     gainInfo_pop = [gainInfo_pop gainInfo];
 
                     %retrieve just once
                     tlags = S.kernelInfo.tlags;
+                    param = S.param;
+
                     clear S
                 end
             catch err
                 errorIDs{numel(errorIDs)+1} = thisid;
-                continue;
+                disp('ERROR');
+                %continue;
             end
         end
     end
@@ -195,24 +224,31 @@ end
 
 % save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
 kernel_pop = squeeze(kernel_pop);
-save(fullfile(saveServer,saveSuffix_p,[saveSuffix_p animal]),'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
+save(fullfile(saveServer,[saveSuffix_p animal '.mat']),'mFiringRate_pop','kernel_pop','expval_pop','corrcoef_pop',...
     'corrcoef_pred_spk_pop','id_pop','ntotTrials_pop','ntargetTrials_pop','param',...
     'PsaccResp_pop','PtonsetResp_pop','expval_ind_pop','expval_tgt_pop','tlags',...
-    'corr_avgtgt_pop','expval_avgtgt_pop','Rsqadj_pop','gainInfo_pop');
+    'corr_avgtgt_pop','expval_avgtgt_pop','gainInfo_pop','expval_trig_pop','corr_trig_pop','winSamps'); %'Rsqadj_pop',
+
+% from syncitium/Daisuke/cuesaccade_data OBS/param20231102.mat
+param.mfiringRateTh = 5;
+param.expvalTh = 3;
+param.ntargetTrTh = 200;
+param.ptonsetRespTh = 0.05;
 
 %% apply inclusion critetia
 % [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
 %     = inclusionCriteria(mFiringRate_pop, expval_pop, ntargetTrials_pop, PtonsetResp_pop, param);
 % [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
 %     = inclusionCriteria(mFiringRate_pop, expval_tgt_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
-[okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
-    = inclusionCriteria(mFiringRate_pop, expval_ind_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
+% [okunits, mfiringRateOK, expvalOK, ntargetTrOK, ptonsetRespOK] ...
+%     = inclusionCriteria(mFiringRate_pop, expval_ind_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
 
-%% hack exclude redundant data
-[~, mfiringRate_u] = unique(mFiringRate_pop);
-[~, expval_u] = unique(expval_ind_pop(1,:));
-okunits_u = intersect(mfiringRate_u, expval_u);
-okunits = intersect(okunits, okunits_u);
+%TEMP as PtonsetResp_pop is unavailable:
+okunits = find((mFiringRate_pop>param.mfiringRateTh) ...
+    + (expval_ind_pop(1,:)>param.expvalTh) ...
+    + (ntargetTrials_pop> param.ntargetTrTh) == 3);
+save(fullfile(saveServer,[saveSuffix_p animal '.mat']), 'okunits','-append');
+
 
 kernel_pop = kernel_pop(:,okunits);
 expval_ind_pop = expval_ind_pop(:,okunits);
@@ -221,7 +257,19 @@ expval_tgt_pop = expval_tgt_pop(:,okunits);
 %corr_avgtgt_pop = corr_avgtgt_pop(:,okunits);
 id_pop = id_pop(okunits);
 mFiringRate_pop = mFiringRate_pop(okunits);
-Rsqadj_pop = Rsqadj_pop(:,okunits);
+%Rsqadj_pop = Rsqadj_pop(:,okunits);
+expval_trig_pop = expval_trig_pop(:,:,:,okunits);
+
+mexpval_trig_pop = squeeze(mean(expval_trig_pop,4));
+
+for ievtype = 1:4
+    ax_expval_trig(ievtype) = subplot(4,1,ievtype);
+    plot(winSamps, squeeze(mexpval_trig_pop(:,:,ievtype))');
+end
+linkaxes(ax_expval_trig);
+ylim([-10 40])
+legend(['all',param.predictorNames],'location','west');
+screen2png(fullfile(saveServer,[saveSuffix_p animal '_expval_trig' limSuffix '.png']));
 
 
 %% selected units

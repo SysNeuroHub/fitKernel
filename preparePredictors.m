@@ -34,9 +34,15 @@ for ivar = 1:nPredictors
             [~, pdiam] = getPupilDiameter(eyeData_rmotl_cat);
             pdiam_r = interp1(eyeData_rmotl_cat.t, pdiam, t_r)';
             thisPredictor = hpFilt(pdiam_r', 1/param.dt_r, param.cutoffFreq)';
+            thisPredictor = lpFilt(thisPredictor', 1/param.dt_r, 2)'; %test 11/6/24
         case 'pdiam_prctile'
             pdiam_prctile = getPupilDiameter(eyeData_rmotl_cat);
             thisPredictor = interp1(eyeData_rmotl_cat.t, pdiam_prctile, t_r)';
+        case 'pdiamspd'
+            [~, pdiam] = getPupilDiameter(eyeData_rmotl_cat);
+            pdiam_r = interp1(eyeData_rmotl_cat.t, pdiam, t_r)';
+            pdiam_r = hpFilt(pdiam_r', 1/param.dt_r, param.cutoffFreq)';
+            thisPredictor = [diff(pdiam_r) 0]/param.dt_r; %too noisy
         case 'parea'
             parea_r = interp1(eyeData_rmotl_cat.t, eyeData_rmotl_cat.parea, t_r)';
             thisPredictor = hpFilt(parea_r', 1/param.dt_r, param.cutoffFreq)';
@@ -67,6 +73,9 @@ for ivar = 1:nPredictors
             [rewardTimes, punishTimes] = getRewardTimes(dd);
             
             thisPredictor = cat(1,event2Trace(t_r, rewardTimes)',event2Trace(t_r, punishTimes)');
+        case 'fixationbhv'
+            valid = ~isnan(catEvTimes.fOnset);
+            thisPredictor = event2Trace(t_r, catEvTimes.fOnset(valid))';
     end
     predictors_r = cat(1, predictors_r, thisPredictor);
     npredVars(ivar) = size(thisPredictor,1);

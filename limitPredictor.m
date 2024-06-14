@@ -10,7 +10,7 @@ trialEndTimes = sort([rewardTimes punishTimes]);
 eventTimes = [];
 
 for itr = 1:dd.numTrials
-    %only register trials with reward 
+    %only register trials with reward from fixation behaviour till reward or punishment
     fOnset = onsets_cat.fOnset(itr);
     cOnset = onsets_cat.cOnset(itr);
     if isnan(cOnset) || isnan(fOnset) || trialOutcome(itr) == -1
