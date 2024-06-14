@@ -58,6 +58,10 @@ Functions for analysis/visualization
 * (showPspec_parea_psth NOT CHECKED)
 * (showDirTuning: NOT COMPLETED) : preferred direction of spikes at specified time window 
 * modelComparison_test.m : compute Rsquare_adjusted across all the units with getRsqadj.m. Used for JNSS2023
+* getExpVal: computes explained variance of a given period. Called in fitPSTH_cv
+* getExpVal_tgt: computes explained variance after the target stimuli. Called in fitPSTH_pop
+* getExpVal_avgtgt: Called in fitPSTH_pop
+* inclusionCriteria: Called in fitPSTH_pop
 
 Utility functions
 * filtPSTH: (a)causally filtered spike trace
