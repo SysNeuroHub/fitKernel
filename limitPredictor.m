@@ -3,8 +3,8 @@ function [predictorInfo_limit, param_limit] = limitPredictor(predictorInfo, dd, 
 % option 1: only use period with successful trials
 % option 2: use period EXCEPT successful trials
 
-[rewardTimes,punishTimes,~, trialOutcome] = getRewardTimes(dd);
-trialEndTimes = sort([rewardTimes punishTimes]);
+[trialEndTimes,~, trialOutcome] = getRewardTimes(dd);
+% trialEndTimes = sort([rewardTimes punishTimes]);
 
 %from getCueDirMtx.m
 eventTimes = [];
@@ -13,7 +13,7 @@ for itr = 1:dd.numTrials
     %only register trials with reward from fixation behaviour till reward or punishment
     fOnset = onsets_cat.fOnset(itr);
     cOnset = onsets_cat.cOnset(itr);
-    if isnan(cOnset) || isnan(fOnset) || trialOutcome(itr) == -1
+    if isnan(cOnset) || isnan(fOnset) || trialOutcome(itr) == -1|| isnan(trialOutcome(itr))
         continue;
     end
 

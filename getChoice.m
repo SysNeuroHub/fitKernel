@@ -2,6 +2,7 @@
  function [outcome, time] = getChoice(d)
  %[outcome, time] = getChoice(d)
  % returns true for trials ending in SUCCESS, false for trials ending in FAIL
+ % time: time when response is registered as SUCCESS or FAIL from the start of a trial
 
  %cf. cuesaccade.get.cOnset (only return SUCCESS trials)
  

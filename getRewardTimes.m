@@ -1,4 +1,4 @@
-function [rewardTimes, punishTimes, successTimes, trialOutcome] = getRewardTimes(dd)
+function [trialEndTimes, successTimes, trialOutcome] = getRewardTimes(dd)
 %[rewardTimes, unishTimes, successTimes, trialOutcome] = getRewardTimes(dd)
 %returns times of reward delivery detected as item2delivered
 %
@@ -8,11 +8,14 @@ eyeData = dd.eye;
 
 t_cat = [];
 nTrials = length(eyeData);
-rewardTimes = nan(1,nTrials);
-punishTimes = nan(1,nTrials);
+trialEndTimes = nan(1,nTrials);
 successTimes = nan(1,nTrials);
+trialOutcome = nan(1, nTrials);
 for itr = 1:nTrials
-    
+    if isempty(eyeData(itr).t)
+        continue;
+    end
+
     if isempty(t_cat)
         t0 = eyeData(itr).t(1);
     else
@@ -30,15 +33,18 @@ for itr = 1:nTrials
     deliveryTime = time_d(end) - dd.meta.cic.firstFrame('trial',itr).time + t0; %<multiple entries to "time"
     if sum(success_ind)>0 %dd.successTrials(itr) 
         successTimes(itr) = time_s(success_ind) - dd.meta.cic.firstFrame('trial',itr).time + t0;
-        rewardTimes(itr) = deliveryTime;
+        trialEndTimes(itr) = deliveryTime;
+        trialOutcome(itr) = 1;
     elseif sum(fail_ind)>0
-        punishTimes(itr) = time_s(fail_ind) - dd.meta.cic.firstFrame('trial',itr).time + t0;
+        trialEndTimes(itr) = time_s(fail_ind) - dd.meta.cic.firstFrame('trial',itr).time + t0;
+        trialOutcome(itr) = -1;
     end
+
 end
-trialOutcome(~isnan(rewardTimes))=1;
-trialOutcome(~isnan(punishTimes))=-1;
-punishTimes = punishTimes(trialOutcome==-1);
-rewardTimes = rewardTimes(trialOutcome==1);
-successTimes = successTimes(~isnan(successTimes));
+%trialOutcome(~isnan(rewardTimes))=1;
+%trialOutcome(~isnan(punishTimes))=-1;
+% punishTimes = punishTimes(trialOutcome==-1);
+% rewardTimes = rewardTimes(trialOutcome==1);
+% successTimes = successTimes(~isnan(successTimes));
 
 

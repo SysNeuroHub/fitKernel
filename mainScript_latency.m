@@ -6,7 +6,7 @@ set(0,'DefaultFigureVisible','off');
 %% recorded data
 animal = 'hugo';%'ollie';%'andy';% 'andy' '
 tWin_t = [-0.5 0.5];
-Thresh = 4; %to define latency
+Thresh = 2;%4; %threshold to define latency
 
 for yyy = 2
     switch yyy
@@ -18,16 +18,30 @@ for yyy = 2
             year = '2023';
     end
 
-    saveFigFolder = fullfile(saveServer, '20230713',year,animal);
+    saveFigFolder = fullfile(saveServer, '20240619',year,animal);
     mkdir(saveFigFolder);
 
 
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
 
     % to obtain index of specified month&date&channel
-    thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-           regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','16','*_ch4')))));
-    % thisdata = [];
+    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    %        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','11November','25','*_ch24'))))); %2021 no corr
+    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    %        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','16','*_ch9'))))); %2022 positive corr
+        % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+        %    regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','19','*_ch20'))))); %2022 positive corr
+     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+     %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','19','*_ch4'))))); %2022 no corr
+     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+     %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','19','*_ch15'))))); %2022 no corr
+     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+     %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','02February','25','*_ch24'))))); %2022 vision
+     % thisdata = [thisdata find(1-cellfun(@isempty, regexp(loadNames, ...
+     %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','09','*_ch3')))))]; %2022 vision
+     % thisdata = [thisdata find(1-cellfun(@isempty, regexp(loadNames, ...
+     %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','10','*_ch24')))))]; %2022 vision
+     thisdata = 915:1097;
 
     if isempty(thisdata)
         thisdata = 1:length(channels);
@@ -47,7 +61,7 @@ for yyy = 2
     previousDate = [];
     for idata = thisdata
 
-        n=load(fullfile(saveServer,'param20230405.mat'),'param');
+        n=load(fullfile(saveServer,'param20230405_copy.mat'),'param');
         param =n.param;
         n=[];
 
@@ -77,16 +91,22 @@ for yyy = 2
             
             load(eyeName,'eyeData_rmotl_cat','catEvTimes','onsets_cat');%result of processEyeData
             
-            [latency_neuro, latency_bhv, latency_r, fig_latency, fig_neurolatency] = getTgtLatencyCorr(PSTH_f, t_r, onsets_cat, ...
-                catEvTimes, tWin_t, Thresh, param, dd);
+            [latency_neuro, latency_bhv, latency_r, fig_latency, fig_neurolatency] = ...
+                getTgtLatencyCorr(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd);
             screen2png([saveName(1:end-4) '_latency.png'], fig_latency);
             screen2png([saveName(1:end-4) '_neurolatency.png'], fig_neurolatency);
             close(fig_latency);
             close(fig_neurolatency);
             save(saveName,'latency_bhv','latency_neuro','latency_r', '-append');
 
+            
+            validEvents = find(~isnan(catEvTimes.tOnset) .* ~isnan(catEvTimes.fOnset)); %with or without cue
+            [fig, stats_stratified] = showTonsetResp_stratified(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t,  param, dd, validEvents);
+            screen2png([saveName(1:end-4) '_tOnset_stratified.png'], fig);
+            close(fig);
+           
              [diffCueFOnset, mdiffCueFOnset,stddiffCueFOnset] = getDiffCueTgtOnset(onsets_cat, catEvTimes); %3/6/24
-                save(saveName,'mdiffCueFOnset','stddiffCueFOnset','-append');
+             save(saveName,'stats_stratified','mdiffCueFOnset','stddiffCueFOnset','-append');
 
             clear PSTH_f t_r latency_bhv latency_neuro latency_r  mdiffCueFOnset stddiffCueFOnset
         catch err

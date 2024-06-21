@@ -1,10 +1,10 @@
 [saveServer, rootFolder] = getReady();
-load(fullfile(saveServer,'param20230405.mat'),'param');
+load(fullfile(saveServer,'param20230405_copy.mat'),'param');
 
 animal = 'hugo';%'ollie';%'andy';% 'andy' '
 tgtModality = 'all';%'eyeSpeed';
 
-dataDir = '/mnt/syncitium/Daisuke/cuesaccade_data/figPSTH_pop20231026hugo/';
+dataDir = '/mnt/syncitium/Daisuke/cuesaccade_data OBS/figPSTH_pop20231026hugo/';
 
 
 %% load gain info <> avg tgt resp [HACK]

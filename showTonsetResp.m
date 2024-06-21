@@ -43,26 +43,23 @@ tgtDir = getTgtDir(dd.targetloc(successEvents), param.cardinalDir);
 [avgOnsetResp, winSamps, singleOnsetResp, ...
     sortedOnsetLabels, uniqueOnsetLabels] ...
     = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir, param.figTWin);
-
-
 tonsetRespAmp = characteriseResp(singleOnsetResp, ...
     winSamps, param.tOnRespWin, param.baseWin, 'mean');
-%trials x kinds
+
+ prefDir = getPrefDir(y_r(:,1), t_r, onsetTimes, tgtDir, param);
+
 tonsetRespAmp_p = characteriseResp(singleOnsetResp, ...
     winSamps, param.tOnRespWin, [], 'mean');
 tonsetRespAmp_b = characteriseResp(singleOnsetResp, ...
     winSamps, param.baseWin, [], 'mean');
 
-%prefDir = 180/pi*circ_mean(tgtDir'/180*pi,tonsetRespAmp_p(:,psthIdx)); %NG
-[fitPars, fitErr, r] = fitResponse(tgtDir, tonsetRespAmp(:,psthIdx), param.cardinalDir);
-prefDir = fitPars(1); %[deg]
-[~, prefDirIdx] = min(abs(circ_dist(pi/180*param.cardinalDir, pi/180*prefDir)));
 
 %% select trials
 if allTr
     theseTrials = 1:numel(tgtDir);
 else
-    theseTrials = find(tgtDir == param.cardinalDir(prefDirIdx));%trials with cell's preferred direction
+%    theseTrials = prefDirTrials;%trials with cell's preferred direction
+    theseTrials = find(tgtDir == prefDir);
 end
 
 %plot(tgtDir'/180*pi, tonsetRespAmp_p(:,psthIdx),'.');
@@ -108,7 +105,7 @@ secOnsetResp = 1/sqrt(numel(theseTrials))*squeeze(std(singleOnsetResp(theseTrial
 if allTr
     theseSaccTrials = 1:numel(sortedSaccLabels);
 else
-    theseSaccTrials = find(sortedSaccLabels == param.cardinalDir(prefDirIdx));
+    theseSaccTrials = find(sortedSaccLabels == prefDir);
 end
 msaccResp = squeeze(nanmean(singleSaccResp(theseSaccTrials,:,:)));%avg response to preferred direction
 sesaccResp = 1/sqrt(numel(theseSaccTrials))*squeeze(nanstd(singleSaccResp(theseSaccTrials,:,:),1));
@@ -141,7 +138,7 @@ tgtDir_v = getTgtDir(dd.targetloc(quiescentEvents), param.cardinalDir);
 if allTr
     theseTrials_v = 1:size(singleOnsetResp_v,1);
 else
-    theseTrials_v = find(sortedOnsetLabels_v == param.cardinalDir(prefDirIdx));%trials with cell's preferred direction
+    theseTrials_v = find(sortedOnsetLabels_v == prefDir);%trials with cell's preferred direction
 end
 mtOnsetResp_v = squeeze(mean(singleOnsetResp_v(theseTrials_v,:,:)));%avg response to preferred direction
 setOnsetResp_v = 1/sqrt(numel(theseTrials_v))*squeeze(std(singleOnsetResp_v(theseTrials_v,:,:)));%avg response to preferred direction
@@ -159,7 +156,7 @@ tgtDir_f = getTgtDir(dd.targetloc(wrongdirEvents), param.cardinalDir);
 if allTr
     theseTrials_f = 1:size(singleOnsetResp_f,1);
 else
-    theseTrials_f = find(sortedOnsetLabels_f == param.cardinalDir(prefDirIdx));%trials with cell's preferred direction
+    theseTrials_f = find(sortedOnsetLabels_f == prefDir);%trials with cell's preferred direction
 end
 mtOnsetResp_f = squeeze(mean(singleOnsetResp_f(theseTrials_f,:,:)));%avg response to preferred direction
 setOnsetResp_f = 1/sqrt(numel(theseTrials_f))*squeeze(std(singleOnsetResp_f(theseTrials_f,:,:)));%avg response to preferred direction
@@ -210,7 +207,7 @@ tname = [dd.subject ' ' dd.date ' ' ch];
 if allTr
     title(['resp to all directions']);
 else
-    title(['resp to' num2str(param.cardinalDir(prefDirIdx)) 'deg']);
+    title(['resp to' num2str(prefDir) 'deg']);
 end
 axis tight;
 xlim([-0.1 0.5]);

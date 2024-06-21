@@ -1,6 +1,6 @@
 function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, ...
     t_r, predictorNames, predictors_r, npredVars, sigma, kernelInterval, ...
-    lagRange, ridgeParam, trIdx_r, option,useGPU)
+    lagRange, ridgeParam, trIdx_r, option,useGPU, KFolds)
 %[predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, ...
 %    t_r, predictorNames, predictors_r, npredVars, sigma, kernelInterval, ...
 %    lagRange, ridgeParam, trIdx_r, option, useGPU)
@@ -21,6 +21,9 @@ function [predicted, predicted_each, PSTH_f, kernelInfo] = fitPSTH_cv(spk_cat, .
 % 13/7/23 added option=5 (rReg)
 
 sparse = 1; %whether to use sparse matrix in compileSparseDesignMatrix
+if nargin < 13
+    KFolds = 5;
+end
 if nargin < 12
     useGPU = 0;
 end
@@ -32,7 +35,6 @@ useSptrain = 0;
 
 unitOfTime = 's';
 uniqueID = 1;
-KFolds = 5;
 kernelInfo.basisType = 'raised cosine';
 detrend = 1; %22/7/22
 %nBasisFunctions = 20;

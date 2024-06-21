@@ -1,5 +1,6 @@
 function [inputDir_q, dirIndex] = getTgtDir(inputDir, cardinalDir)%, targetDir)
-% [saccDir, dirIndex] = getTgtDir(targetloc, cardinalDir)
+% [InputDir_q, dirIndex] = getTgtDir(targetloc, cardinalDir)
+% returns quantized input direction
 % 19/2/22 created from getSaccDir
 %
 %INPUT:

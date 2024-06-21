@@ -14,7 +14,7 @@ fitIt = 0;
 limPredictor = 1; %whether to limit predictors by behaviour 5/6/2024
 kfolds = 5; %12/6/24
 
-for yyy = 2
+for yyy = 1;
     switch yyy
         case 1
             year = '2021'; 
@@ -24,7 +24,7 @@ for yyy = 2
             year = '2023';
     end 
     
-    saveFigFolder = fullfile(saveServer, '20240612',year,animal);
+    saveFigFolder = fullfile(saveServer, '20240619',year,animal);
     if ~exist(saveFigFolder, 'dir')
         mkdir(saveFigFolder);
     end
@@ -34,20 +34,16 @@ for yyy = 2
     % to obtain index of specified month&date&channel
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','14','*_ch4')))));
-    thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-        regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19')))));
+    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19')))));
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27')))));
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','05','*_ch2')))));
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','03March','23','*_ch29')))));
-    %thisdata = [ ];
-
-    % if isempty(thisdata)
-    %     thisdata = 1:length(channels);
-    % end
-
+    thisdata = 1:length(channels);
+    
     %% omit data
     % no saccade response
     % low spontaneous firing
@@ -234,7 +230,7 @@ for yyy = 2
 
             if limPredictor            
                 %[predictorInfo, param] = splitPredictorByCue(predictorInfo, dd, onsets_cat, param);
-                for limOption =1:2
+                for limOption = 2
                     if limOption==1
                         figSuffix = 'onlySuccess';
                     elseif limOption==2
@@ -273,7 +269,7 @@ for yyy = 2
 
                     %% Figure for target onset response (only to preferred direction)
                     [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-                        startSaccNoTask, saccDirNoTask, param_lim, param_lim.figTWin);
+                        startSaccNoTask, saccDirNoTask, param_lim, [-0.1 0.5]);
                     cellclassInfo.datech = datech;
                     screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_' figSuffix]), f);
                     close(f);
@@ -320,7 +316,7 @@ for yyy = 2
                  
                 %% Figure for target onset response (only to preferred direction)
                 [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-                    startSaccNoTask, saccDirNoTask, param, param.figTWin);
+                    startSaccNoTask, saccDirNoTask, param, [-0.1 0.5]);%param.figTWin);
                 cellclassInfo.datech = datech;
                 %savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
                 screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);

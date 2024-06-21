@@ -4,8 +4,7 @@ function [predictorInfo_split, param_split] = splitPredictorByCue(predictorInfo,
 %
 % 5/6/24: NEED FIX woCue condition includes outside trials
 
-[rewardTimes, punishTimes] = getRewardTimes(dd);
-trialEndTimes = sort([rewardTimes punishTimes]);
+trialEndTimes = getRewardTimes(dd);
 
 %from getCueDirMtx.m
 eventTimes = [];

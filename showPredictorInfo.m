@@ -17,11 +17,7 @@ tidx_full = trangeIdx_full(1):trangeIdx_full(2);
 
 %% retrieve if trial was success or not
 nTrials = numel(dd.started);
-[rewardTimes_c, punishTimes_c, successTimes_c, trialOutcome] = getRewardTimes(dd);
-
-rewardPunishTimes = nan(nTrials,1);
-rewardPunishTimes(trialOutcome==1) = rewardTimes_c;%successTimes_c;%
-rewardPunishTimes(trialOutcome==-1) = punishTimes_c;
+[rewardPunishTimes, successTimes_c, trialOutcome] = getRewardTimes(dd);
 
 fixStart = nan(nTrials,1);
 trialStart = nan(nTrials,1);
