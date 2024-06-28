@@ -14,6 +14,7 @@ switch getenv('COMPUTERNAME')
         %addpath(genpath('/home/daisuke/Documents/git'));
         rmpath(genpath('/home/daisuke/Documents/git/VariabilityEarlyVisualCortex/matlab/'))
         rmpath(genpath('/home/daisuke/Documents/git/dsbox/chronux_2_11/'));
+        rmpath(genpath('/home/daisuke/Documents/git/chronux_2_11'));
         %saveServer = '~/Documents/cuesaccade_data';
         %saveServer = '/mnt/syncitium/Daisuke/cuesaccade_data';
         saveServer = '/media/daisuke/cuesaccade_data';

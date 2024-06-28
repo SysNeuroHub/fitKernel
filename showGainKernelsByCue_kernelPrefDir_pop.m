@@ -1,5 +1,5 @@
 [saveServer, rootFolder] = getReady();
-load(fullfile(saveServer,'param20230405_copy.mat'),'param');
+load(fullfile(saveServer,'param20240625.mat'),'param');
 
 animal = 'hugo';%'ollie';%'andy';% 'andy' '
 tgtModality = 'all';%'eyeSpeed';

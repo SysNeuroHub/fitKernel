@@ -2,16 +2,22 @@
 %load('/mnt/syncitium/Daisuke/cuesaccade_data/2022/hugo/hugo09September_06_10_linear_rReg.mat')
 
 function [latency_neuro, thresh_neuro, tgtDir, fig] = ...
-    getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd, validEvents)
+    getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, ThreshParam, param, dd, validEvents)
 % [latency_neuro, validEvents, thresh_neuro, tgtDir] = getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd)
 
 % TODO: each row by trial type success tgt in / success tgt out / fail tgt
 % in / fail tgt out / quiescent tgt in / quiescent tgt out
 
+if isempty(ThreshParam)
+    %threshOption = 'uniform'; %uniform threshold across all trials or inidividual threshold of each trial (India)
+    ThreshParam.option = 'individual'; %OR  define by onset of behavioural fixation as 'fonset'; turned out to produce too short latency
+    ThreshParam.dur = 0.04;%s
+    ThreshParam.Thresh = 4;
+end
+
+
 %% target response
 %baseline = 'tonset';
-%threshOption = 'uniform'; %uniform threshold across all trials or inidividual threshold of each trial (India)
-threshOption = 'individual'; %OR  define by onset of behavioural fixation as 'fonset'; turned out to produce too short latency
 %tWin_f = [0  min(onsets_cat.cueOnset-onsets_cat.fOnset)];
 
 
@@ -28,7 +34,7 @@ singleResp_t = reshape(singleResp_t, size(singleResp_t,1), size(singleResp_t,3))
 
 
 %% neural latency
- [latency_neuro, thresh_neuro] = getSingleTrialLatency(singleResp_t, winSamps_t, tWin_t, threshOption, Thresh);
+ [latency_neuro, thresh_neuro] = getSingleTrialLatency(singleResp_t, winSamps_t, tWin_t, ThreshParam);
 % from     latencyV1MT/secondary/findSingleTrialLatency.m
 
 %% behavioural latency for sorting trials
@@ -45,16 +51,24 @@ fail = choiceOutcome(validEvents) >= 2; %quiescent + wrong
 prefDirTrials = zeros(numel(onsetTimes_t),1);
 prefDirTrials(prefDirTrials_c) = 1;
 
+[prevDir, prevDirTrials_c] = getPrevDir(tgtDir, param);
+prevDirTrials = zeros(numel(onsetTimes_t),1);
+prevDirTrials(prevDirTrials_c) = 1;
+
+
 %% visualization
 if nargout>3
-    fig = figure('position',[1003         219         2*588         664]);
+    nCols = 4;
+    fig = figure('position',[1003         219         nCols*588         664]);
 
-    for istimtype = 1:3
+    for istimtype = 1:nCols
         if istimtype==1
             stimtrials = prefDirTrials;
         elseif istimtype == 2
             stimtrials = 1-prefDirTrials;
-        elseif istimtype == 3
+        elseif istimtype==3
+                stimtrials = prevDirTrials;
+        elseif istimtype == 4
             stimtrials = ones(size(prefDirTrials));
         end
 
@@ -74,7 +88,7 @@ if nargout>3
         end
         nTrials =  [sum(success.*stimtrials) sum(hesitant.*stimtrials) sum(fail.*stimtrials)];
 
-        axes(istimtype) = subplot(1,3,istimtype);
+        axes(istimtype) = subplot(1,nCols,istimtype);
         if sum(theseTrials)==0
             continue;
         end
@@ -83,7 +97,7 @@ if nargout>3
         plot(latency_neuro(theseTrials), 1:numel(theseTrials),'r.');
         plot(latency_bhv_srt(theseTrials), 1:numel(theseTrials),'w.');
         vline(0);
-        hline(cumsum(nTrials)+.5,gca,'-','k');
+        hline(cumsum(nTrials)+.5,gca,'-','m');
         if istimtype == 1
             title(['tgt stim on preferred direction ' num2str(prefDir) ]);
             xlabel('time from target onset [s]');
@@ -91,6 +105,8 @@ if nargout>3
         elseif istimtype == 2
             title('other stimulus directions');
         elseif istimtype == 3
+            title(['tgt stim on most freq direction ' num2str(prevDir) ]);
+        elseif istimtype == 4
             title('all stimulus directions');
            end
     end

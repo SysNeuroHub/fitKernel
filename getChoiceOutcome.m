@@ -38,7 +38,7 @@ end
 successTr = find(dd.successTrials==1);
 % wrongSuccTr = find(dd.successTrials==0&~isnan(dd.tOnset)&succDist>=distTh);
 % quiescentTr = find(dd.successTrials==0&~isnan(dd.tOnset)&succDist<distTh);
-wrongSuccTr = find(dd.successTrials==0&~isnan(dd.tOnset)&~isnan(dd.srt));
+wrongSuccTr = find(dd.successTrials==0&~isnan(dd.tOnset)&~isnan(dd.srt)); %ALLWAYS EMPTY
 quiescentTr = find(dd.successTrials==0&~isnan(dd.tOnset)&isnan(dd.srt));
 
 choiceOutcome = nan(nTrials,1);

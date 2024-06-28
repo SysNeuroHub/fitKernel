@@ -39,10 +39,10 @@ for ii = 1:3
         [rho, pval] = circ_corrcc(xvalues'*pi/180, yvalues'*pi/180);
     end
     if ~isempty(valueRange)
-        xvalues(xvalues<valueRange(1))=valueRange(1);
-        xvalues(xvalues>valueRange(2))=valueRange(2);
-        yvalues(yvalues<valueRange(1))=valueRange(1);
-        yvalues(yvalues>valueRange(2))=valueRange(2);
+        xvalues(xvalues<valueRange(1))=nan;%valueRange(1);
+        xvalues(xvalues>valueRange(2))=nan;%valueRange(2);
+        yvalues(yvalues<valueRange(1))=nan;%valueRange(1);
+        yvalues(yvalues>valueRange(2))=nan;%valueRange(2);
     end
     plot(xvalues, yvalues,'k.'); hold on;
     if ~isempty(selectedIDs)

@@ -14,7 +14,7 @@ fitIt = 0;
 limPredictor = 1; %whether to limit predictors by behaviour 5/6/2024
 kfolds = 5; %12/6/24
 
-for yyy = 1;
+for yyy = 2
     switch yyy
         case 1
             year = '2021'; 
@@ -40,9 +40,9 @@ for yyy = 1;
     %         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27')))));
     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','05','*_ch2')))));
-    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','03March','23','*_ch29')))));
-    thisdata = 1:length(channels);
+     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','15','*_ch*')))));
+    % thisdata = 1060;%1:length(channels);
     
     %% omit data
     % no saccade response
@@ -316,7 +316,7 @@ for yyy = 1;
                  
                 %% Figure for target onset response (only to preferred direction)
                 [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-                    startSaccNoTask, saccDirNoTask, param, [-0.1 0.5]);%param.figTWin);
+                    startSaccNoTask, saccDirNoTask, param);%
                 cellclassInfo.datech = datech;
                 %savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
                 screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
