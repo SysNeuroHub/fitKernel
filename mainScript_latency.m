@@ -41,15 +41,9 @@ for yyy = 1
      % thisdata = [thisdata find(1-cellfun(@isempty, regexp(loadNames, ...
      %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','09','*_ch3')))))]; %2022 vision
      % thisdata =  find(1-cellfun(@isempty, regexp(loadNames, ...
-     %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27'))))); %2022 vision
-     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-     %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','08','*_ch17'))))); %2022
-     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','03March','22','*_ch21')))));
-     % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-     %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','24','*_ch27'))))); %2021 non bhv
-        thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','12December','13','*_ch*')))));
+     %       regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27'))))); %2021 vision
+     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+           regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','29','*_ch32'))))); %2022
 
      %thisdata = 1:length(channels);
   
@@ -108,8 +102,7 @@ for yyy = 1
 
             %% single-trial latency
             [latency_neuro, latency_bhv, latency_r, fig_latency, fig_neurolatency] = ...
-                getTgtLatencyCorr(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, param, ...
-                dd, validEvents);
+                getTgtLatencyCorr(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, param, dd, validEvents);
             screen2png(fullfile(saveFigFolder, ['latencyCorr_' saveSuffix]), fig_latency);
             screen2png(fullfile(saveFigFolder, ['latencySingle_' saveSuffix]), fig_neurolatency);
             close(fig_latency);
@@ -122,7 +115,7 @@ for yyy = 1
             screen2png(fullfile(saveFigFolder, ['tOnset_stratified_' saveSuffix]), fig)
             close(fig);
            
-            %% ?
+            %% delay between Target onset and cue Onset of each trial
              [diffCueFOnset, mdiffCueFOnset,stddiffCueFOnset] = ...
                  getDiffCueTgtOnset(onsets_cat, catEvTimes); %3/6/24
 

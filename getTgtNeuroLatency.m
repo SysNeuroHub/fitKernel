@@ -4,6 +4,7 @@
 function [latency_neuro, thresh_neuro, tgtDir, fig] = ...
     getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, ThreshParam, param, dd, validEvents)
 % [latency_neuro, validEvents, thresh_neuro, tgtDir] = getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd)
+% create figure of single-trials sorted by behavioural latency
 
 % TODO: each row by trial type success tgt in / success tgt out / fail tgt
 % in / fail tgt out / quiescent tgt in / quiescent tgt out
@@ -20,6 +21,9 @@ end
 %baseline = 'tonset';
 %tWin_f = [0  min(onsets_cat.cueOnset-onsets_cat.fOnset)];
 
+%% delay between Target onset and cue Onset of each trial
+diffCueFOnset = getDiffCueTgtOnset(onsets_cat, catEvTimes); %3/6/24
+diffCueFOnset = diffCueFOnset(validEvents);
 
 %% from showTonsetByCue:
 onsetTimes_t = catEvTimes.tOnset(validEvents);
@@ -96,6 +100,7 @@ if nargout>3
         hold on
         plot(latency_neuro(theseTrials), 1:numel(theseTrials),'r.');
         plot(latency_bhv_srt(theseTrials), 1:numel(theseTrials),'w.');
+        plot(-diffCueFOnset(theseTrials), 1:numel(theseTrials),'g.');
         vline(0);
         hline(cumsum(nTrials)+.5,gca,'-','m');
         if istimtype == 1

@@ -30,6 +30,10 @@ onsetTimes = onsetTimes(theseEvents);
 tgtDir = getTgtDir(dd.targetloc, param.cardinalDir);
 tgtDir = tgtDir(theseEvents);
 
+%% cue-tgt interval
+diffCueFOnset = getDiffCueTgtOnset(onsets_cat, catEvTimes); 
+diffCueFOnset = abs(diffCueFOnset(validEvents));
+
 %% select trials with preferred direction (showTonsetResp)
 [prefDir, prefDirTrials] = getPrefDir(PSTH_f, t_r, onsetTimes, tgtDir, param);
 tgt_pref = zeros(numel(validEvents),1);
@@ -80,7 +84,9 @@ catch err
 end
 
 if nargout > 3
-    f = figure;
+    f = figure('position',[ 420           5        1405         849]);
+
+    ax(1) = subplot(2,6,[1:3 7:9]); %bhv v neuro
     plot(latency_bhv(logical(wCue.*success)), latency_neuro(logical(wCue.*success)),'ro','DisplayName','success w cue'); hold on;
     plot(latency_bhv(logical(woCue.*success)), latency_neuro(logical(woCue.*success)),'bo','DisplayName','succes wo cue'); hold on;
     plot(latency_bhv(logical(wCue.*success.*tgt_pref)), latency_neuro(logical(wCue.*success.*tgt_pref)),'o','MarkerFaceColor','r','DisplayName','success w cue prefDir'); hold on;
@@ -89,7 +95,7 @@ if nargout > 3
     plot(latency_bhv(logical(woCue.*fail)), latency_neuro(logical(woCue.*fail)),'bx','DisplayName','failure wo cue'); hold on;
     xlabel('behavioural latency');
     ylabel('neural latency');
-    legend('location','eastoutside');
+    legend('location','southoutside');
     tname = sprintf(['all dir: %.2f (p=%.2f), \n' ...
         'success all dir: %.2f (p=%.2f) \n' ...
         'success pref dir: %.2f (p=%.2f)\n' ...
@@ -101,4 +107,32 @@ if nargout > 3
     title(tname); %title(['r=' num2str(r) ', r(success)=' num2str(r_success)]);
     squareplot;
     axis padded; set(gca,'TickDir','out');
+    bhvrange = get(gca,'XLim');
+
+    ax(2) = subplot(2,6,4); %cue v bhv
+    plot(0, latency_bhv(logical(woCue.*success)),'bo','DisplayName','success wo cue'); hold on;
+    plot(0,latency_bhv(logical(woCue.*success.*tgt_pref)),'b','MarkerFaceColor','r','DisplayName','success wo cue prefDir'); hold on;
+    plot(0, latency_bhv(logical(woCue.*fail)),'bx','DisplayName','failure wo cue'); hold on;
+    ylim(bhvrange); ylabel('bhv latency'); grid on;
+
+    ax(3) = subplot(2,6,[5 6]); %cue v bhv
+    plot(diffCueFOnset(logical(wCue.*success)), latency_bhv(logical(wCue.*success)),'ro','DisplayName','success w cue'); hold on;
+    plot(diffCueFOnset(logical(wCue.*success.*tgt_pref)),latency_bhv(logical(wCue.*success.*tgt_pref)),'o','MarkerFaceColor','r','DisplayName','success w cue prefDir'); hold on;
+    plot(diffCueFOnset(logical(wCue.*fail)), latency_bhv(logical(wCue.*fail)),'rx','DisplayName','failure w cue'); hold on;
+    ylim(bhvrange); xlim([.48 .72]);grid on;
+    xlabel('cue-tgt interval [s]');
+
+    ax(4) = subplot(2,6,10); %cue v bhv
+   plot(0, latency_neuro(logical(woCue.*success)),'bo','DisplayName','success wo cue'); hold on;
+    plot(0,latency_neuro(logical(woCue.*success.*tgt_pref)),'b','MarkerFaceColor','r','DisplayName','success wo cue prefDir'); hold on;
+    plot(0, latency_neuro(logical(woCue.*fail)),'bx','DisplayName','failure wo cue'); hold on;
+    ylim(bhvrange); ylabel('neuro latency');grid on;
+
+    ax(5) = subplot(2,6,[11 12]); %cue v bhv
+    plot(diffCueFOnset(logical(wCue.*success)), latency_neuro(logical(wCue.*success)),'ro','DisplayName','success w cue'); hold on;
+    plot(diffCueFOnset(logical(wCue.*success.*tgt_pref)), latency_neuro(logical(wCue.*success.*tgt_pref)),'o','MarkerFaceColor','r','DisplayName','success w cue prefDir'); hold on;
+    plot(diffCueFOnset(logical(wCue.*fail)), latency_neuro(logical(wCue.*fail)),'rx','DisplayName','failure w cue'); hold on;
+    ylim(bhvrange);xlim([.48 .72]); xlabel('cue-tgt interval [s]'); grid on;
+    
+    %linkaxes(ax(:),'y');
 end
