@@ -35,7 +35,10 @@ for yy = 1:3
    nData = length(channels);
 
 
-stats_stratifiedByCue_pop = cell(nData,1);
+   mampRespByCue_pop = cell(nData,1);
+   p_visRespByCue_pop = cell(nData,1);
+   p_cueModulationByCue_pop = cell(nData,1);
+   latency_r_cue_pop = cell(nData,1);
     for idata = 1:length(channels)
         datech = [months{idata} '/' dates{idata} '/' num2str(channels{idata})];
         thisid = [animal '/' year '/' datech];
@@ -54,7 +57,7 @@ stats_stratifiedByCue_pop = cell(nData,1);
             try
 
                 %result of mainScript.m and mainScript_latency.m
-                S = load(saveName, 'kernelInfo','stats_stratifiedByCue'); %PSTH_f','predicted_all', 'predicted', ...
+                S = load(saveName, 'kernelInfo','stats_stratifiedByCue','latency_r_cue'); %PSTH_f','predicted_all', 'predicted', ...
                     % 'kernelInfo','t_r','cellclassInfo','mFiringRate','t_cat','mdiffCueFOnset','stddiffCueFOnset'); %param
                
                 if isfield(S,'kernelInfo')
@@ -123,16 +126,17 @@ stats_stratifiedByCue_pop = cell(nData,1);
                     % % latency_neuro_pop{idata} = S.latency_neuro;
                     % % latency_r_pop{idata} = S.latency_r;
                     % % stats_stratified_pop{idata} = S.stats_stratified;
+                    latency_r_cue_pop{idata} = S.latency_r_cue;
 
-                    %stats_stratifiedByCye_pop{idata} = S.stats_stratifiedByCue;
-                    if ~isempty(S.stats_stratifiedByCue) && isfield(S.stats_stratifiedByCue, 'multcomp_anova')
-                        stats_stratifiedByCue_pop{idata} = min(S.stats_stratifiedByCue.multcomp_anova{1}(:,6));
-                    else
-                        stats_stratifiedByCue_pop{idata} = NaN;
-                    end
-
-                    %output mean amp diff wcue - wocue
-                    %output p-value instated of stats struct
+                    %stats_stratifiedByCue_pop{idata} = S.stats_stratifiedByCue;
+                    % if ~isempty(S.stats_stratifiedByCue) && isfield(S.stats_stratifiedByCue, 'multcomp_anova')
+                    %     stats_stratifiedByCue_pop{idata} = min(S.stats_stratifiedByCue.multcomp_anova{1}(:,6));
+                    % else
+                    %     stats_stratifiedByCue_pop{idata} = NaN;
+                    % end
+                    mampRespByCue_pop{idata} = S.stats_stratifiedByCue.mampResp;
+                    p_visRespByCue_pop{idata} = S.stats_stratifiedByCue.p_visResp;
+                    p_cueModulationByCue_pop{idata} = S.stats_stratifiedByCue.p_cueModulation;
                     %output bhv latency - c-t interval rank correlation
                     %why some units have no field?
 
@@ -175,8 +179,11 @@ stats_stratifiedByCue_pop = cell(nData,1);
 % assembly.expval_tgt_rel_pop = expval_tgt_rel_pop;
 % assembly.corr_tgt_rel_pop = corr_tgt_rel_pop;
 % assembly.corr_tgt_pop = corr_tgt_pop;
-assembly.stats_stratified_pop = stats_stratifiedByCue_pop;
-
+% assembly.stats_stratified_pop = stats_stratifiedByCue_pop;
+ assembly.latency_r_cue_pop = latency_r_cue_pop;
+assembly.mampRespByCue_pop = mampRespByCue_pop;
+assembly.p_visRespByCue_pop = p_visRespByCue_pop;
+assembly.p_cueModulationByCue_pop = p_cueModulationByCue_pop;
 %% 
 % save('fitPSTH_pop20220202','avgPupilResp_pop', '-append');
 %save(fullfile(saveServer,[saveSuffix_p animal '.mat']),'assembly');

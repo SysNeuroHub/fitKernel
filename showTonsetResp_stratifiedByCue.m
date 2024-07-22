@@ -6,9 +6,6 @@ function [fig, stats] = showTonsetResp_stratifiedByCue(PSTH_f, t_r, onsets_cat, 
 %
 % see also: getTgtNeuroLatency
 
-nDiv = 2;%4;
-
-
 %% delay between Target onset and cue Onset of each trial
 diffCueFOnset = getDiffCueTgtOnset(onsets_cat, catEvTimes); %3/6/24
 diffCueFOnset = diffCueFOnset(validEvents);
@@ -21,9 +18,6 @@ tgtDir = getTgtDir(dd.targetloc(validEvents), param.cardinalDir);
 % triggered by target onset
 [~, winSamps_t, singleResp_t] ...
     = eventLockedAvg(PSTH_f', t_r, onsetTimes_t, tgtDir, tWin_t);
-
-%% behavioural latency for sorting trials
-latency_bhv_srt = getTgtBhvLatency(onsets_cat, dd, validEvents, 1);
 
 hesitant = getChoiceOutcome_hesitant(onsets_cat, dd, validEvents);
 
@@ -44,10 +38,10 @@ bWin =  intersect(find(winSamps_t >= param.baseWin(1)), find(winSamps_t <= param
 rWin =  intersect(find(winSamps_t >= param.respWin(1)), find(winSamps_t <= param.respWin(2)));
 bSignal = mean(singleResp_t(tgtDir == 0, bWin),2);
 rSignal = mean(singleResp_t(tgtDir == 0, rWin),2);
-%p = signrank(bSignal, rSignal);
-respPolarity = sign(mean(rSignal) - mean(bSignal));
+p_visResp = signrank(bSignal, rSignal); %is there a modulation after target stimulation?
+%respPolarity = sign(mean(rSignal) - mean(bSignal));
 
-theseColors = cool(nDiv+1);
+theseColors = cool(2); %wcue v wocue
 
 nCols = 1;%2;
 fig = figure('position',[1003         219         nCols*588         1200]);
@@ -58,42 +52,29 @@ for istimtype = 1:nCols
     if istimtype==1
         %stimtrials = prefDirTrials;
         stimtrials = find(tgtDir == 0);
-    elseif istimtype == 2
-        %stimtrials = 1-prefDirTrials;
-        stimtrials = find(tgtDir == 180);
-    elseif istimtype == 3
-        %stimtrials = prevDirTrials;
-    elseif istimtype == 4
-        %stimtrials = ones(size(prefDirTrials));
-    end
+      end
 
     % theseTrials_c = find(success.*stimtrials);
     % [~, idx] = sort(latency_bhv_srt(theseTrials_c));
     % theseTrials = theseTrials_c(idx);
     
-    if ceil(numel(stimtrials)/nDiv) <= 1
+    if ceil(numel(stimtrials)) <= 1
         continue;
     end
 
     %divIdx = 0;
     ampResp = []; factor = []; 
-    multcomp_anova_stimtype = cell(nCols,1);
-    for idiv = 1:nDiv+1
+    mampResp = nan(2,1);
+    for idiv = 1:2
         %divIdx = divIdx(end)+1:ceil(idiv*numel(theseTrials)/nDiv);
         switch idiv
             % case 1
             %     divTrials = find(~isinf(diffCueFOnset));
             %     thisLabel = 'w cue';
             case 1
-               divTrials = intersect(find(dd.cuedLoc(validEvents)==1), intersect(find(diffCueFOnset > .6), find(~isinf(diffCueFOnset))));
+               divTrials = intersect(find(dd.cuedLoc(validEvents)==1), find(~isinf(diffCueFOnset)));
                thisLabel = 'congruent cue >.6';
             case 2
-                divTrials = intersect(find(dd.cuedLoc(validEvents)==1), intersect(find(diffCueFOnset <= .6), find(~isinf(diffCueFOnset))));
-                thisLabel = 'congruent cue <.6';
-            % case 3
-            %     divTrials = intersect(find(dd.cuedLoc(validEvents)==0), find(~isinf(diffCueFOnset)));
-            %     thisLabel = 'incongruent';
-            case nDiv+1
                 divTrials = find(isinf(diffCueFOnset));
                 thisLabel = 'wo cue';
         end
@@ -102,34 +83,21 @@ for istimtype = 1:nCols
 
         %% stats per division
         avgResp(idiv, istimtype, :) = median(singleResp_t(theseTrials_div,:),1);
-        %avgLatency_bhv(idiv, istimtype) = median(latency_bhv_srt(theseTrials_div),1);
         seResp_t(idiv, istimtype, :) = ste(singleResp_t(theseTrials_div,:), 1);
-        %seLatency_bhv(idiv, istimtype) = ste(latency_bhv_srt(theseTrials_div), 1);
-        %avgAmpResp(idiv,istimtype,:) = median(mean(singleResp_t(theseTrials_div, rWin),2), 1);
-        ampResp = [ampResp; mean(singleResp_t(theseTrials_div, rWin),2)];
+        
+        thisAmpResp = mean(singleResp_t(theseTrials_div, rWin),2);
+        ampResp = [ampResp; thisAmpResp];
         factor = [factor; idiv*ones(numel(theseTrials_div),1)];
+        mampResp(idiv) = median(thisAmpResp);
     
         %% visualization
-        axes(istimtype, idiv) = subplot(nDiv+3, nCols, nCols*(idiv-1)+istimtype, 'Parent', fig);
+        axes(istimtype, idiv) = subplot(1+3, nCols, nCols*(idiv-1)+istimtype, 'Parent', fig);
          
-        if idiv==1
-            if istimtype==1
-                %title(['pref direction ' num2str(prefDir)]);
-                title('stimDir = 0deg')
-            elseif istimtype==2
-                %title('other directions');
-                title('stimDir = 180deg')
-            elseif istimtype==3
-                %title(['most frequent directions ' num2str(prevDir)]);
-             elseif istimtype==4
-                %title('all directions');
-            end
-         end
-
-          if istimtype==1
-            ylabel(thisLabel);
-          end
-
+        if istimtype==1&&idiv==1
+           title(['stimDir = 0deg, p visResp: ' num2str(p_visResp)]);
+        end
+        ylabel(thisLabel);
+        
         if sum(theseTrials_div)==0
             continue;
         end
@@ -137,10 +105,7 @@ for istimtype = 1:nCols
             'cmap',theseColors(idiv,:));
         %vline(avgLatency_bhv(idiv, istimtype),  axes(istimtype,idiv), ':', 'k');
         xlabel(num2str(numel(theseTrials_div)));
-        xlim(tWin_t);
-
-       
-       
+        xlim(tWin_t);       
     end % end of idiv
 
     %% stats across divisions
@@ -152,8 +117,8 @@ for istimtype = 1:nCols
     % end
 
     %% summary across divisions
-    axes(istimtype, nDiv+2) = subplot(nDiv+3, nCols, nCols*(nDiv+1)+istimtype, 'Parent', fig);
-    for idiv = 1:nDiv+1
+    axes(istimtype, 3) = subplot(1+3, nCols, nCols*2+istimtype, 'Parent', fig);
+    for idiv = 1:1+1
         plot(winSamps_t,  squeeze(avgResp(idiv, istimtype, :)), 'Color', theseColors(idiv,:)); hold on;
     end
     xlim(tWin_t);
@@ -167,34 +132,36 @@ for istimtype = 1:nCols
         ylabel('all divisions');
     end
 
-  %% ANOVA comparing different cue conditions (across rows)  
-    [p_anova, ~, stats_anova] = anova1(ampResp, factor, "off");
-    [multcomp_anova, ~,~, gnames] = multcompare(stats_anova,"Display","off");
+    %% ANOVA comparing different cue conditions (across rows)
+    % [p_anova, ~, stats_anova] = anova1(ampResp, factor, "off");
+    % [multcomp_anova, ~,~, gnames] = multcompare(stats_anova,"Display","off");
+    % 
+    % multcomp_anova_stimtype{istimtype} = multcomp_anova;
+    % multcomp_anova_stimtype{istimtype}(:,1) = changem(multcomp_anova_stimtype{istimtype}(:,1), str2num(cell2mat(gnames))', 1:numel(gnames));
+    % multcomp_anova_stimtype{istimtype}(:,2) = changem(multcomp_anova_stimtype{istimtype}(:,2), str2num(cell2mat(gnames))', 1:numel(gnames));
+    if  sum(factor==1)*sum(factor==2) ~= 0
+        p_cueMod = ranksum(ampResp(factor == 1), ampResp(factor==2));
+    else
+        p_cueMod = NaN;
+    end
+    c = zeros(1,6);
+    c(1:2) = [1 2];
+    c(6) = p_cueMod;
 
-    multcomp_anova_stimtype{istimtype} = multcomp_anova;
-    multcomp_anova_stimtype{istimtype}(:,1) = changem(multcomp_anova_stimtype{istimtype}(:,1), str2num(cell2mat(gnames))', 1:numel(gnames));
-    multcomp_anova_stimtype{istimtype}(:,2) = changem(multcomp_anova_stimtype{istimtype}(:,2), str2num(cell2mat(gnames))', 1:numel(gnames));
-
-    axes(istimtype, nDiv+3) = subplot(nDiv+3, nCols, nCols*(nDiv+2)+istimtype, 'Parent', fig);
-    %violin(ampResp_c,'facecolor',theseColors, 'plotlegend', 0);
-        simple_violin_scatter(factor, ampResp, 10, .5, {2, theseColors(factor,:)})
-        title(sprintf('ANOVA p: %f', p_anova));
-        addSignStar(axes(istimtype, nDiv+3), multcomp_anova_stimtype{istimtype});
-   
-
-
+    axes(istimtype, 4) = subplot(1+3, nCols, nCols*3+istimtype, 'Parent', fig);
+    simple_violin_scatter(factor, ampResp, 10, .5, {2, theseColors(factor,:)})
+    title(sprintf('p cueMod: %f', p_cueMod));
+    addSignStar(axes(istimtype, 1+3), c);
 
 end
 linkaxes(axes(:),'y');
 %linkaxes(axes(:,nDiv+1));
 
 %% summary stats 
-stats.latency = latency_neuro;
-stats.thresh = thresh_neuro;
+%stats.latency = latency_neuro;
+%stats.thresh = thresh_neuro;
 %stats.avglatency_bhv = avgLatency_bhv;
-stats.avgResp = avgResp;
-% stats.p_anova = p_anova;
-stats.multcomp_anova = multcomp_anova_stimtype;
+stats.mampResp = mampResp;
+stats.p_visResp = p_visResp;
+stats.p_cueModulation = p_cueMod;
 
-%stats.avgCorr = avgCorr;
-%stats.pCorr = pCorr;
