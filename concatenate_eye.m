@@ -41,9 +41,11 @@ y_cat = [];
 t_cat = [];
 %dd_cat = marmodata.cuesaccade;
 
-[~, cOnset] = getChoice(dd); %cOnset time including FAIL
-[outcome, cueOnset] = getCueOnset(dd);
-fOnset = getFOnset(dd);
+if nargout > 1  || ~isempty(varargout(2))
+    [~, cOnset] = getChoice(dd); %cOnset time including FAIL
+    [outcome, cueOnset] = getCueOnset(dd);
+    fOnset = getFOnset(dd);
+end
 
 for itr = 1:nTrials
     x_cat = cat(1, x_cat, eyeData(itr).x);
@@ -66,7 +68,7 @@ for itr = 1:nTrials
         t_cat = cat(1, t_cat, eyeData(itr).t+t0);
     end
 
-    if nargout > 1
+    if nargout > 1  || ~isempty(varargout(2))
         %         for idd = 1:length(ddnames)
         %             dd_cat.(ddnames{idd}) = cat(1, dd_cat.(ddnames{idd}), dd.(ddnames)(itr)+t0);
         %         end
@@ -80,7 +82,7 @@ for itr = 1:nTrials
         onsets_cat.fOnset(itr,1) = fOnset(itr) + t0;
         
     end
-    if nargout > 2
+    if nargout > 2 || ~isempty(varargout(3))
         for iedf = 1:length(edfnames)
             meta_cat.(edfnames{iedf}) = cat(1, meta_cat.(edfnames{iedf}), ...
                 (dd.meta.edf.(edfnames{iedf})('trial',itr).time)' ...

@@ -23,6 +23,8 @@ mampRespByCue_pop = [];
 p_visRespByCue_pop = [];
 p_cueModulationByCue_pop = [];
 latency_r_cue_pop = [];
+avgAmp_hm_pop = [];
+p_hm_pop = [];
 for yy = 1:3
     switch yy
         case 1
@@ -35,10 +37,8 @@ for yy = 1:3
     saveFolder = fullfile(saveServer, year,animal);%17/6/23
     load(fullfile(saveFolder, 'assembly.mat'),'assembly','param');
     tmp=load(fullfile(saveFolder, 'assembly_tmp.mat'),'assembly','param');
-    assembly.latency_r_cue_pop = tmp.assembly.latency_r_cue_pop;
-    assembly.mampRespByCue_pop = tmp.assembly.mampRespByCue_pop;
-    assembly.p_visRespByCue_pop = tmp.assembly.p_visRespByCue_pop;
-    assembly.p_cueModulationByCue_pop = tmp.assembly.p_cueModulationByCue_pop;
+    assembly.avgAmp_hm_pop = tmp.assembly.avgAmp_hm_pop;
+    assembly.p_hm_pop = tmp.assembly.p_hm_pop;
     
     save(fullfile(saveFolder, 'assembly.mat'),'assembly','param');
     
@@ -57,6 +57,10 @@ for yy = 1:3
     expval_tgt_rel_pop = [expval_tgt_rel_pop; assembly.expval_tgt_rel_pop(entries)];
     corr_tgt_pop = [corr_tgt_pop; assembly.corr_tgt_pop(entries)];
     corr_tgt_rel_pop = [corr_tgt_rel_pop; assembly.corr_tgt_rel_pop(entries)];
+   % hit v miss
+   %avgAmp_hm_pop = [avgAmp_hm_pop; assembly.avgAmp_hm_pop()]
+   p_hm_pop = [p_hm_pop; assembly.p_hm_pop(entries)];
+   
 
     % latency 
     % latency_bhv_pop = [latency_bhv_pop; assembly.latency_bhv_pop{entries}'];
@@ -103,9 +107,10 @@ latency_r_cue_pop = latency_r_cue_pop(okunits);
 mampRespByCue_pop = mampRespByCue_pop(okunits);
 p_visRespByCue_pop = p_visRespByCue_pop(okunits);
 p_cueModulationByCue_pop = p_cueModulationByCue_pop(okunits);
+p_hm_pop = p_hm_pop(okunits);
 
 
-%% latency
+%% convert from cell to matrix
 thisTrialType = 1; %successful trials to preferred stimulus direction
 stratified_latency_pop_c = cellfun(@(a)a.latency(:,thisTrialType), stats_stratified_pop, 'UniformOutput', false);
 stratified_latency_pop = [stratified_latency_pop_c{:}];
@@ -119,6 +124,9 @@ latency_r_cue_pop = [latency_r_cue_pop{:}];
 mampRespByCue_pop = [mampRespByCue_pop{:}];
 p_visRespByCue_pop = [p_visRespByCue_pop{:}];
 p_cueModulationByCue_pop = [p_cueModulationByCue_pop{:}];
+p_hm_pop_before = cellfun(@(a)a(1), p_hm_pop);
+p_hm_pop_after = cellfun(@(a)a(2), p_hm_pop);
+p_hm_pop = [p_hm_pop_before p_hm_pop_after];
 
 
 %% time-resolved exp val
@@ -225,6 +233,31 @@ fig = showScatterTriplets(corr_tgt_rel_pop', ...
     param.predictorNames, [-100 200], selectedIDs);
 squareplots
 savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['corr_tgt_r_' animal]));close;
+
+%% hit v miss
+units_hm = ~isnan(p_hm_pop(:,1));
+
+for iregress = 1:2
+    subplot(1,2,iregress);
+    scatter(corr_tgt_rel_pop(:,2),corr_tgt_rel_pop(:,1),15,[.5 .5 .5])
+    hold on
+    scatter(corr_tgt_rel_pop(units_hm,2),corr_tgt_rel_pop(units_hm,1),15,-log(p_hm_pop(units_hm, iregress)),'filled')
+    clim([0 4]);
+    colormap("cool");hh=colorbar; hh.Label.String = '-log(p hit v miss)';
+    xlabel('eye speed'); ylabel('stimulus');
+    tname = sprintf('Hit v Miss at preferred direction');
+    if iregress == 2
+        tname = [tname ' after regression'];
+    end
+    title(tname);
+    squareplot(gca, [-50 150]);
+end
+screen2png(fullfile(saveServer,saveSuffix_p,'p_hm'));
+
+[val, id] = sort(p_hm_pop(units_hm,2), 'ascend');
+units_hmID = find(units_hm);
+selectedUnits = units_hmID(id(1:100));
+ id_pop(selectedUnits)
 
 %% latency stats on correlation to tgt
 % avg-trial latency correlation
