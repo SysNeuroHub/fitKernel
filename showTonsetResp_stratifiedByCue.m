@@ -68,12 +68,10 @@ for istimtype = 1:nCols
     for idiv = 1:2
         %divIdx = divIdx(end)+1:ceil(idiv*numel(theseTrials)/nDiv);
         switch idiv
-            % case 1
-            %     divTrials = find(~isinf(diffCueFOnset));
-            %     thisLabel = 'w cue';
             case 1
-               divTrials = intersect(find(dd.cuedLoc(validEvents)==1), find(~isinf(diffCueFOnset)));
-               thisLabel = 'congruent cue >.6';
+                %divTrials = intersect(find(dd.cuedLoc(validEvents)==1), find(~isinf(diffCueFOnset)));
+                divTrials = intersect(find(dd.cuedLoc(validEvents)==1), intersect(find(diffCueFOnset <= .6), find(~isinf(diffCueFOnset))));
+                thisLabel = 'congruent cue <.6';
             case 2
                 divTrials = find(isinf(diffCueFOnset));
                 thisLabel = 'wo cue';

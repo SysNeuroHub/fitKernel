@@ -4,7 +4,7 @@ set(0,'DefaultFigureVisible','off');
 
 
 %% recorded data
-animal = 'hugo';%'ollie';%'andy';% 'andy' '
+animal = 'ollie';%'andy';% 'andy' '
 % fitoption = 1; %'linear'
 fitoption = 5; %linear_rReg', as of 13/7/2023
 useGPU = 0;
@@ -14,7 +14,7 @@ fitIt = 0;
 limPredictor = 1; %whether to limit predictors by behaviour 5/6/2024
 kfolds = 5; %12/6/24
 
-for yyy = 2
+for yyy = 3
     switch yyy
         case 1
             year = '2021'; 

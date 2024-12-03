@@ -8,7 +8,7 @@ animal = 'hugo';%'ollie';%'andy';% 'andy' '
 tWin_t = [-0.8 0.5]; %17/7/24
 
 
-for yyy = 3
+for yyy = 1:3
     switch yyy
         case 1
             year = '2021';
@@ -17,9 +17,9 @@ for yyy = 3
         case 3
             year = '2023';
     end
-    logName = fullfile(saveServer,'20240715',year,animal,'log_mainScript_latency');
+    logName = fullfile(saveServer,'20241111',year,animal,'log_mainScript_latency');
 
-    saveFigFolder = fullfile(saveServer, '20240715',year,animal);
+    saveFigFolder = fullfile(saveServer, '20241111',year,animal);
     mkdir(saveFigFolder);
 
 
@@ -43,8 +43,8 @@ for yyy = 3
   %thisdata = [1     2     3     4     5     6   234   237   238   242   243   244   245   246   250   251  253   254   258   260];
 
     % parameters
-    %n=load(fullfile(saveServer,'param20230405_copy.mat'),'param');
-    n=load(fullfile(saveServer,'param20240625.mat'),'param');
+    %n=load(fullfile(saveServer,'param20240625.mat'),'param');
+    n=load(fullfile(saveServer,'param20241111.mat'),'param');
     param =n.param;
     n=[];
     ncDirs = length(param.cardinalDir);

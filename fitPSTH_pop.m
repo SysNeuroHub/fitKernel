@@ -1,7 +1,7 @@
 [saveServer, rootFolder] = getReady();
 
 animal = 'hugo';
-saveSuffix_p = ['20240715'];
+saveSuffix_p = ['20241111'];
 
 %% load result of mainscript_assemble.m
 mFiringRate_pop = [];
@@ -35,12 +35,12 @@ for yy = 1:3
             year = '2023';
     end
     saveFolder = fullfile(saveServer, year,animal);%17/6/23
-    load(fullfile(saveFolder, 'assembly.mat'),'assembly','param');
-    tmp=load(fullfile(saveFolder, 'assembly_tmp.mat'),'assembly','param');
-    assembly.avgAmp_hm_pop = tmp.assembly.avgAmp_hm_pop;
-    assembly.p_hm_pop = tmp.assembly.p_hm_pop;
+    load(fullfile(saveFolder, 'assembly20241111.mat'),'assembly','param');
+    % tmp=load(fullfile(saveFolder, 'assembly_tmp.mat'),'assembly','param');
+    % assembly.avgAmp_hm_pop = tmp.assembly.avgAmp_hm_pop;
+    % assembly.p_hm_pop = tmp.assembly.p_hm_pop;
     
-    save(fullfile(saveFolder, 'assembly.mat'),'assembly','param');
+    %save(fullfile(saveFolder, 'assembly.mat'),'assembly','param');
     
     entries =  find(1-cellfun(@isempty, assembly.id_pop));
 
@@ -59,19 +59,19 @@ for yy = 1:3
     corr_tgt_rel_pop = [corr_tgt_rel_pop; assembly.corr_tgt_rel_pop(entries)];
    % hit v miss
    %avgAmp_hm_pop = [avgAmp_hm_pop; assembly.avgAmp_hm_pop()]
-   p_hm_pop = [p_hm_pop; assembly.p_hm_pop(entries)];
+   %p_hm_pop = [p_hm_pop; assembly.p_hm_pop(entries)];
    
 
     % latency 
     % latency_bhv_pop = [latency_bhv_pop; assembly.latency_bhv_pop{entries}'];
      %latency_neuro_pop = [latency_neuro_pop; [assembly.latency_neuro_pop{entries}]'];
-     latency_r_pop = [latency_r_pop; assembly.latency_r_pop(entries)];
+     %latency_r_pop = [latency_r_pop; assembly.latency_r_pop(entries)];
      stats_stratified_pop = [stats_stratified_pop; assembly.stats_stratified_pop(entries)];
      %stats_stratifiedByCue_pop = [stats_stratifiedByCue_pop; assembly.stats_stratifiedByCue_pop(entries)];
      mampRespByCue_pop = [mampRespByCue_pop; assembly.mampRespByCue_pop(entries)];
      p_visRespByCue_pop = [p_visRespByCue_pop; assembly.p_visRespByCue_pop(entries)];
      p_cueModulationByCue_pop = [p_cueModulationByCue_pop; assembly.p_cueModulationByCue_pop(entries)];
-     latency_r_cue_pop = [latency_r_cue_pop; assembly.latency_r_cue_pop(entries)];
+     %latency_r_cue_pop = [latency_r_cue_pop; assembly.latency_r_cue_pop(entries)];
 end
 
 %% apply inclusion critetia
@@ -97,36 +97,36 @@ corr_tgt_pop = [corr_tgt_pop{okunits}]';
 corr_tgt_rel_pop = [corr_tgt_rel_pop{okunits}]';
 id_pop = id_pop(okunits);
 mFiringRate_pop = mFiringRate_pop(okunits);
-latency_r_pop = latency_r_pop(okunits);
+%latency_r_pop = latency_r_pop(okunits);
 stats_stratified_pop = stats_stratified_pop(okunits);
 %stats_stratifiedByCue_pop = stats_stratifiedByCue_pop(okunits);
 %expval_avgtgt_pop = expval_avgtgt_pop(:,okunits);
 %corr_avgtgt_pop = corr_avgtgt_pop(:,okunits);
 %Rsqadj_pop = Rsqadj_pop(okunits);
-latency_r_cue_pop = latency_r_cue_pop(okunits);
+%latency_r_cue_pop = latency_r_cue_pop(okunits);
 mampRespByCue_pop = mampRespByCue_pop(okunits);
 p_visRespByCue_pop = p_visRespByCue_pop(okunits);
 p_cueModulationByCue_pop = p_cueModulationByCue_pop(okunits);
-p_hm_pop = p_hm_pop(okunits);
+% p_hm_pop = p_hm_pop(okunits);
 
 
 %% convert from cell to matrix
-thisTrialType = 1; %successful trials to preferred stimulus direction
-stratified_latency_pop_c = cellfun(@(a)a.latency(:,thisTrialType), stats_stratified_pop, 'UniformOutput', false);
-stratified_latency_pop = [stratified_latency_pop_c{:}];
-stratified_avgCorr_pop = cellfun(@(a)a.avgCorr(thisTrialType), stats_stratified_pop);
-stratified_pCorr_pop = cellfun(@(a)a.pCorr(thisTrialType), stats_stratified_pop);
-
-latency_r_nb_pop = cellfun(@(a)a.r_success_pref, latency_r_pop);
-latency_p_nb_pop = cellfun(@(a)a.p_success_pref, latency_r_pop);
-
-latency_r_cue_pop = [latency_r_cue_pop{:}];
+% thisTrialType = 1; %successful trials to preferred stimulus direction
+% stratified_latency_pop_c = cellfun(@(a)a.latency(:,thisTrialType), stats_stratified_pop, 'UniformOutput', false);
+% stratified_latency_pop = [stratified_latency_pop_c{:}];
+% stratified_avgCorr_pop = cellfun(@(a)a.avgCorr(thisTrialType), stats_stratified_pop);
+% stratified_pCorr_pop = cellfun(@(a)a.pCorr(thisTrialType), stats_stratified_pop);
+% 
+% latency_r_nb_pop = cellfun(@(a)a.r_success_pref, latency_r_pop);
+% latency_p_nb_pop = cellfun(@(a)a.p_success_pref, latency_r_pop);
+% 
+% latency_r_cue_pop = [latency_r_cue_pop{:}];
 mampRespByCue_pop = [mampRespByCue_pop{:}];
 p_visRespByCue_pop = [p_visRespByCue_pop{:}];
 p_cueModulationByCue_pop = [p_cueModulationByCue_pop{:}];
-p_hm_pop_before = cellfun(@(a)a(1), p_hm_pop);
-p_hm_pop_after = cellfun(@(a)a(2), p_hm_pop);
-p_hm_pop = [p_hm_pop_before p_hm_pop_after];
+% p_hm_pop_before = cellfun(@(a)a(1), p_hm_pop);
+% p_hm_pop_after = cellfun(@(a)a(2), p_hm_pop);
+% p_hm_pop = [p_hm_pop_before p_hm_pop_after];
 
 
 %% time-resolved exp val
@@ -348,18 +348,18 @@ squareplot(gca, [-50 150]);
 screen2png(fullfile(saveServer,saveSuffix_p,'cueEffect_frate_r'));
 
 % %%
- [val, id] = sort(p_cueModulationByCue_pop(respUnits), 'ascend');
- respUnitsID = find(respUnits);
- selectedUnits = respUnitsID(id(1:30));
- scatter(corr_tgt_rel_pop(selectedUnits,2),corr_tgt_rel_pop(selectedUnits,1),15, ...
-     -log(p_cueModulationByCue_pop(selectedUnits)),'filled');
-hold on;
-text(corr_tgt_rel_pop(selectedUnits,2),corr_tgt_rel_pop(selectedUnits,1), id_pop(selectedUnits), 'fontsize',6);
-clim([0 5]);
-xlabel('eye speed'); ylabel('stimulus');
-title(sprintf(' wo cue v w cue (<0.6s delay) v w cue (>0.6s delay) to tgt at 0deg'));
-squareplot(gca, [-50 150]);
-screen2png(fullfile(saveServer,saveSuffix_p,'cueEffect_pval_top30'));
+%  [val, id] = sort(p_cueModulationByCue_pop(respUnits), 'ascend');
+%  respUnitsID = find(respUnits);
+%  selectedUnits = respUnitsID(id(1:30));
+%  scatter(corr_tgt_rel_pop(selectedUnits,2),corr_tgt_rel_pop(selectedUnits,1),15, ...
+%      -log(p_cueModulationByCue_pop(selectedUnits)),'filled');
+% hold on;
+% text(corr_tgt_rel_pop(selectedUnits,2),corr_tgt_rel_pop(selectedUnits,1), id_pop(selectedUnits), 'fontsize',6);
+% clim([0 5]);
+% xlabel('eye speed'); ylabel('stimulus');
+% title(sprintf(' wo cue v w cue (<0.6s delay) v w cue (>0.6s delay) to tgt at 0deg'));
+% squareplot(gca, [-50 150]);
+% screen2png(fullfile(saveServer,saveSuffix_p,'cueEffect_pval_top30'));
 
 %% correlation on avg response between kernels
 % fig = showScatterTriplets(corr_tgt_pop(2:4,:), ...
