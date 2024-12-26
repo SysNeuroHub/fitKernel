@@ -31,7 +31,7 @@ if nargin < 11
     option = 4;
 end
 
-useSptrain = 0;
+useSptrain = 0; %whether to use spike train instead of filtered firing rate
 
 unitOfTime = 's';
 uniqueID = 1;
@@ -215,6 +215,9 @@ for ifold = 1:KFolds
     for itr = xvFolds{ifold,2}
         tidx_r_xv = [tidx_r_xv; trIdx_r{itr}];
     end
+
+    % tidx_r_xv = intersect(tidx_r_xv, find(includeTrace));
+
     predicted(tidx_r_xv) = yPred_xv;
     
     [expval(ifold), mse(ifold), R(ifold)] = getExpVal(PSTH_f(tidx_r_xv), ...

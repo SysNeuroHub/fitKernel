@@ -48,37 +48,47 @@ validLatency = ~isnan(latency_neuro);
 
 %correlation beteween behaviour and neuro using only successful trials
 try
-    [latcorr.r, latcorr.p] = corr(latency_bhv(logical(validLatency.*~isnan(latency_bhv))), ...
-        latency_neuro(logical(validLatency.*~isnan(latency_bhv))), 'type', corrOption);
+    theseTrials = logical(validLatency.*~isnan(latency_bhv));
+    latcorr.trials = theseTrials;
+    [latcorr.r, latcorr.p] = corr(latency_bhv(theseTrials), latency_neuro(theseTrials), 'type', corrOption);
 catch err
+    latcorr.trials = [];
     latcorr.r = nan;
     latcorr.p = nan;
 end
 try
-    [latcorr.r_success, latcorr.p_success] = corr(latency_bhv(logical(success.*validLatency)), ...
-        latency_neuro(logical(success.*validLatency)), 'type', corrOption);
+    theseTrials = logical(success.*validLatency);
+    latcorr.trials_success = theseTrials;
+    [latcorr.r_success, latcorr.p_success] = corr(latency_bhv(theseTrials), latency_neuro(theseTrials), 'type', corrOption);
 catch err
+    latcorr.trials_succss = [];
     latcorr.r_success = nan;
     latcorr.p_success = nan;
 end
 try
-    [latcorr.r_pref, latcorr.p_pref] = corr(latency_bhv(logical(validLatency.*~isnan(latency_bhv).*tgt_pref)), ...
-        latency_neuro(logical(validLatency.*~isnan(latency_bhv).*tgt_pref)), 'type', corrOption);
+    theseTrials = logical(validLatency.*~isnan(latency_bhv).*tgt_pref);
+    latcorr.trials_pref = theseTrials;
+    [latcorr.r_pref, latcorr.p_pref] = corr(latency_bhv(theseTrials), latency_neuro(theseTrials), 'type', corrOption);
 catch err
+    latcorr.trials_pref = [];
     latcorr.r_pref = nan;
     latcorr.p_pref = nan;
 end
 try
-    [latcorr.r_success_pref, latcorr.p_success_pref] = corr(latency_bhv(logical(success.*validLatency.*tgt_pref)), ...
-        latency_neuro(logical(success.*validLatency.*tgt_pref)), 'type', corrOption);
+    theseTrials = logical(success.*validLatency.*tgt_pref);
+    latcorr.trials_success_pref = theseTrials;
+    [latcorr.r_success_pref, latcorr.p_success_pref] = corr(latency_bhv(theseTrials), latency_neuro(theseTrials), 'type', corrOption);
 catch err
+    latcorr.trials_success_pref = [];
     latcorr.r_success_pref  = nan;
     latcorr.p_success_pref = nan;
 end
 try
-    [latcorr.r_success_prev, latcorr.p_success_prev] = corr(latency_bhv(logical(success.*validLatency.*(tgtDir==0).*(dd.cuedLoc(validEvents)==1))), ...
-        latency_neuro(logical(success.*validLatency.*(tgtDir==0).*(dd.cuedLoc(validEvents)==1))), 'type', corrOption);
+    theseTrials = logical(success.*validLatency.*(tgtDir==0).*(dd.cuedLoc(validEvents)==1));
+    latcorr.trials_success_prev = theseTrials;
+    [latcorr.r_success_prev, latcorr.p_success_prev] = corr(latency_bhv(theseTrials), latency_neuro(theseTrials), 'type', corrOption);
 catch err
+    latcorr.trials_success_prev = [];
     latcorr.r_success_prev  = nan;
     latcorr.p_success_prev = nan;
 end

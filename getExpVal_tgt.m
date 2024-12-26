@@ -1,9 +1,13 @@
-function [expval_tgt, corr_tgt] = getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, tWin)
+function [expval_tgt, corr_tgt] = getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, tWin, includeTrials)
 % expval_tgt = getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, tWin)
+
+if nargin < 6
+    includeTrials = 1:numel(catEvTimes.tOnset);
+end
 
 %% explained variance for target response
 idxTgtOnsets = [];
-onsetTimes = catEvTimes.tOnset;
+onsetTimes = catEvTimes.tOnset(includeTrials);
 onsetTimes = onsetTimes(~isnan(onsetTimes));
 for ievent = 1:numel(onsetTimes)
     idxTgtOnsets = cat(1, idxTgtOnsets, ...

@@ -28,6 +28,8 @@ diffCueFOnset = diffCueFOnset(validEvents);
 %% from showTonsetByCue:
 onsetTimes_t = catEvTimes.tOnset(validEvents);
 tgtDir = getTgtDir(dd.targetloc(validEvents), param.cardinalDir);
+% onsetTimes_t = catEvTimes.tOnset; %13/12/24
+% tgtDir = getTgtDir(dd.targetloc, param.cardinalDir); %13/12/24
 
 [~,dirIdx]=intersect(param.cardinalDir, unique(tgtDir));
 % triggered by target onset
@@ -44,25 +46,31 @@ singleResp_t = reshape(singleResp_t, size(singleResp_t,1), size(singleResp_t,3))
 %% behavioural latency for sorting trials
 latency_bhv_srt = getTgtBhvLatency(onsets_cat, dd, validEvents, 1);
 latency_bhv_cOn = getTgtBhvLatency(onsets_cat, dd, validEvents, 0);
+% latency_bhv_srt = getTgtBhvLatency(onsets_cat, dd, [], 1);
+% latency_bhv_cOn = getTgtBhvLatency(onsets_cat, dd, [], 0);
 
 %% divide trials
 [choiceOutcome] = getChoiceOutcome(dd);
 success = (choiceOutcome(validEvents) == 1) .* (latency_bhv_cOn - latency_bhv_srt <= 0.1);
-hesitant = (latency_bhv_cOn - latency_bhv_srt > 0.1); %1st saccade did NOT lead to choice
 fail = choiceOutcome(validEvents) >= 2; %quiescent + wrong
+%success = (choiceOutcome == 1) .* (latency_bhv_cOn - latency_bhv_srt <= 0.1); %13/12/24
+hesitant = (latency_bhv_cOn - latency_bhv_srt > 0.1); %1st saccade did NOT lead to choice
+% fail = choiceOutcome >= 2; %quiescent + wrong %13/12/24
 
 [prefDir, prefDirTrials_c] = getPrefDir(PSTH_f, t_r, onsetTimes_t, tgtDir, param);
 prefDirTrials = zeros(numel(onsetTimes_t),1);
 prefDirTrials(prefDirTrials_c) = 1;
+clear prefDirTrials_c
 
 [prevDir, prevDirTrials_c] = getPrevDir(tgtDir, param);
 prevDirTrials = zeros(numel(onsetTimes_t),1);
 prevDirTrials(prevDirTrials_c) = 1;
+clear prevDirTrials_c
 
 
 %% visualization
 if nargout>3
-    nCols = 4;
+    nCols = 1;
     fig = figure('position',[1003         219         nCols*588         664]);
 
     for istimtype = 1:nCols
@@ -77,7 +85,7 @@ if nargout>3
         end
 
         %theseTrials = [find(success.*stimtrials); find(quiescent.*stimtrials); find(wrong.*stimtrials)];
-        theseTrials = [];
+        theseTrials = []; nTrials = [];
         for ievtype = 1:3
             switch ievtype
                 case 1
@@ -87,33 +95,34 @@ if nargout>3
                 case 3
                     theseTrials_c = find(fail.*stimtrials);
             end
+
+            theseTrials_c = intersect(theseTrials_c, validEvents);
+
             [~, idx] = sort(latency_bhv_srt(theseTrials_c));
             theseTrials = [theseTrials; theseTrials_c(idx)];
-        end
-        nTrials =  [sum(success.*stimtrials) sum(hesitant.*stimtrials) sum(fail.*stimtrials)];
+            nTrials(ievtype) = numel(theseTrials_c);
 
-        axes(istimtype) = subplot(1,nCols,istimtype);
-        if sum(theseTrials)==0
-            continue;
+
+            axes(istimtype) = subplot(3,nCols,ievtype);
+            if sum(theseTrials)==0
+                continue;
+            end
+            imagesc(winSamps_t, 1:numel(theseTrials_c), singleResp_t(theseTrials_c(idx),:));
+            hold on
+            plot(latency_neuro(theseTrials_c(idx)), 1:numel(theseTrials_c),'r.');
+            plot(latency_bhv_srt(theseTrials_c(idx)), 1:numel(theseTrials_c),'w.');
+            plot(-diffCueFOnset(theseTrials_c(idx)), 1:numel(theseTrials_c),'g.');
+            vline(0);
+            if ievtype == 1
+                title(['tgt stim on preferred direction ' num2str(prefDir) ]);
+                ylabel('success');
+            elseif ievtype == 2
+                ylabel('hesitent');
+            elseif ievtype == 3
+                ylabel('failure');
+                xlabel('Time from target onset [s]')
+            end
         end
-        imagesc(winSamps_t,1:numel(theseTrials), singleResp_t(theseTrials,:));
-        hold on
-        plot(latency_neuro(theseTrials), 1:numel(theseTrials),'r.');
-        plot(latency_bhv_srt(theseTrials), 1:numel(theseTrials),'w.');
-        plot(-diffCueFOnset(theseTrials), 1:numel(theseTrials),'g.');
-        vline(0);
-        hline(cumsum(nTrials)+.5,gca,'-','m');
-        if istimtype == 1
-            title(['tgt stim on preferred direction ' num2str(prefDir) ]);
-            xlabel('time from target onset [s]');
-            ylabel('fail/ hesitant / success');
-        elseif istimtype == 2
-            title('other stimulus directions');
-        elseif istimtype == 3
-            title(['tgt stim on most freq direction ' num2str(prevDir) ]);
-        elseif istimtype == 4
-            title('all stimulus directions');
-           end
     end
     linkcaxes(axes);mcolorbar(gca, .5);
 end

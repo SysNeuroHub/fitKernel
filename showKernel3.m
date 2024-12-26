@@ -7,12 +7,12 @@ prefDirOption = 0;%
 %something is not right in option=2 
 
 [ncol, nrow] = size(kernel_pop);
-nTrials = size(kernel_pop{1,1},2);
+nUnits = nrow;%size(kernel_pop{1,1},2);
 kernel_avg = [];prefdir=[];prefdirPval=[];
-for col = 1:5
+for col = 1:ncol %predictor type
     if centering && col<=3
         allmatrix = reshape(zeros(size(kernel_pop{col,1})),[],1);
-        for row = 1:nrow
+        for row = 1:nrow %unit
             allmatrix(:,row) = reshape(kernel_pop{col,row},1,[]);
         end
         orisize = size(kernel_pop{col,1});
@@ -50,7 +50,7 @@ caxis([-crange crange]);
 set(gca,'ytick',directions);
 xlabel('time from targetOnset [s]');
 mcolorbar(a2,.5);
-title(['n=' num2str(nTrials)]);
+title(['n=' num2str(nUnits)]);
    
 a3=subplot(3,2,3);
 thisIm = kernel_avg{2}';
@@ -81,7 +81,7 @@ if size(kernel_avg{3},2)>1
     xlabel('time from eye movement [s]');
     mcolorbar(a4,.5);
 
-    a5=subplot(2,2,2);
+    a5=subplot(3,2,2);
     plot(tlags{4}, [kernel_pop{4,:}],'color',[.7 .7 .7]);
     hold on
     plot(tlags{4}, kernel_avg{4}','k','linewidth',2);
@@ -89,13 +89,21 @@ if size(kernel_avg{3},2)>1
     xlabel('time from pupil dilation [s]');
     axis tight;
 
-    a6=subplot(2,2,4);
+    a6=subplot(3,2,4);
     plot(tlags{5}, [kernel_pop{5,:}],'color',[.7 .7 .7]);
     hold on
     plot(tlags{5}, kernel_avg{5}','k','linewidth',2);
     vline(0);
     xlabel('time from blink [s]');
     axis tight;
+
+    % a7=subplot(3,2,6);
+    % plot(tlags{6}, [kernel_pop{6,:}],'color',[.7 .7 .7]);
+    % hold on
+    % plot(tlags{6}, kernel_avg{6}','k','linewidth',2);
+    % vline(0);
+    % xlabel('time from fixation onset [s]');
+    % axis tight;
 
     linkaxes([a2 a3 a4 a5 a6],'x');
 else

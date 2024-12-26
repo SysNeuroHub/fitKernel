@@ -4,27 +4,24 @@ set(0,'DefaultFigureVisible','off');
 
 
 %% recorded data
-animal = 'ollie';%'andy';% 'andy' '
+animal = 'ollie';%'andy';%  'hugo'; %
 % fitoption = 1; %'linear'
 fitoption = 5; %linear_rReg', as of 13/7/2023
-useGPU = 0;
+useGPU = 1; %13/12/24
 dataType = 0;%0: each channel, 1: all channels per day
 fitIt = 0;
-%splitPredictor = 1; %whether to split predictors by cue. 28/10/2023
-limPredictor = 1; %whether to limit predictors by behaviour 5/6/2024
-kfolds = 5; %12/6/24
-
+            
 for yyy = 3
     switch yyy
         case 1
-            year = '2021'; 
+            year = '2021'; %hugo
         case 2 
-            year = '2022';
+            year = '2022'; %hugo
         case 3
-            year = '2023';
+            year = '2023'; %hugo, ollie
     end 
     
-    saveFigFolder = fullfile(saveServer, '20240619',year,animal);
+    saveFigFolder = fullfile(saveServer, '20241212',year,animal);
     if ~exist(saveFigFolder, 'dir')
         mkdir(saveFigFolder);
     end
@@ -32,46 +29,49 @@ for yyy = 3
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
     
     % to obtain index of specified month&date&channel
-    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','14','*_ch4')))));
-    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19')))));
-    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    %         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27')))));
-    % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','05','*_ch2')))));
-     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','15','*_ch*')))));
-    % thisdata = 1060;%1:length(channels);
-    
-    %% omit data
-    % no saccade response
-    % low spontaneous firing
-    % low number of successful trials
-    
-    % parameters
-    n=load(fullfile(saveServer,'param20240611.mat'),'param');
-    param =n.param;
-    n=[];
-    ncDirs = length(param.cardinalDir);
-    %param.lagRange(2,:)=[-1 0.5];
-    
-    psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
-    
+    thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+    regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','23','*_ch29'))))):numel(loadNames);
+
+    % nData = numel(loadNames);
+    %  thisdata = 1:nData;
+    % 
+    %thisdata = [632 635];%[15    34    91   106   133   431   576   632   655];
+    nData = numel(thisdata);
+
+    id_pop = cell(nData,1);
+
+    expval_tgt_pop = cell(nData,1);
+    corr_tgt_pop = cell(nData,1);
+    corr_tgt_rel_pop = cell(nData,1);
+
+    latency_r_pop = cell(nData,1);
+    avgAmp_hm_pop = cell(nData,1);
+    p_hm_pop = cell(nData,1);
+    spkOk_th_pop = cell(nData,1);
+    spkOkTrials_pop = cell(nData,1);
+    spkOkUCueTrials_pop = cell(nData,1);
+    mFiringRate_pop = cell(nData,1);
+    PtonsetResp_pop = cell(nData,1);
+    ntargetTrials_pop = cell(nData, 1);
+    errorIDs = cell(nData,1);
+        
     ng = [];
     previousDate = [];
     for idata = thisdata
 
-        n=load(fullfile(saveServer,'param20240611.mat'),'param');
+        
+        n=load(fullfile(saveServer,'param20241223.mat'),'param');
         param =n.param;
         n=[];
+        psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
 
         try
             % datech = [years{idata} filesep months{idata} filesep dates{idata} filesep num2str(channels{idata})];
             datech = [months{idata} filesep dates{idata} filesep num2str(channels{idata})];
-            disp([num2str(idata) '/' num2str(numel(thisdata)) ', ' datech ]);
+            thisid = [animal '/' year '/' datech];
+            disp(thisid);
             
-            saveSuffix = [animal replace(datech,filesep,'_') '_linear_rReg'];%'_cue'];
+            saveSuffix = [animal replace(datech,filesep,'_') '_linear_rReg'];
             
             thisDate = [months{idata} '_' dates{idata}];
              % if sum(strcmp(thisDate, {'06June_06','06June_11','06June_09'}))>0
@@ -85,13 +85,7 @@ for yyy = 3
                 mkdir(saveFolder);
             end
             saveName = fullfile(saveFolder, [saveSuffix '.mat']);
-            %delete(saveName); %TEMP
             
-            % saveName_splt = [saveName(1:end-4) '_splitPredictor.mat'];
-            %    if exist(saveName_splt,'file')
-            %        continue;
-            %    end
-
             
             EE = load(loadNames{idata},'ephysdata','dd');
             dd = EE.dd;
@@ -117,8 +111,8 @@ for yyy = 3
             clear spk_all;
             %clear ephysdata
             
-            if mFiringRate < 5
-                disp(['skipped as mFiringRate<5']);
+            if mFiringRate < param.mfr_th
+                disp(['skipped as mFiringRate < ' num2str(param.mfr_th)]);
                 %save(saveName,'mFiringRate');
                 m=matfile(saveName,'writable',true);
                 m.FiringRate = mFiringRate;
@@ -133,35 +127,7 @@ for yyy = 3
                 
                 [eyeData_rmotl_cat, catEvTimes, t_tr, onsets_cat,meta_cat,blinks,outliers] ...
                     = processEyeData(dd.eye, dd, param);
-                %             [pspec_parea,faxis_parea] =
-                %             pmtm(eyeData_rmotl_cat.parea, 10, ...
-                %                 length(eyeData_rmotl_cat.parea), fs_eye);%slow
-                
-                tOnset = catEvTimes.tOnset;
-                cOnset = catEvTimes.cOnset; %choice onset not cue
-                validEvents = intersect(find(~isnan(tOnset)), find(~isnan(cOnset)));
-                tOnset = tOnset(validEvents);
-                cOnset = cOnset(validEvents);
-                
-                tcOnset_trace = event2Trace(t_cat, [tOnset; cOnset], 2*0.5);
-                excEventT_cat = (tcOnset_trace + blinks + outliers > 0); %28/1/22
-                
-                [startSaccNoTask, endSaccNoTask] = selectSaccades(catEvTimes.saccadeStartTimes, ...
-                    catEvTimes.saccadeEndTimes, t_cat, excEventT_cat);%param.minSaccInterval);
-                %<slow
-                
-                [saccDirNoTask, dirIndexNoTask] = getSaccDir(startSaccNoTask, endSaccNoTask, ...
-                    eyeData_rmotl_cat, param.cardinalDir);
-                %<slow
-                
-                %             save(fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']), 'startSaccNoTask', 'endSaccNoTask', ...
-                %                 'saccDirNoTask', 'dirIndexNoTask','-append');
-                
-
-                % save(eyeName,'eyeData_rmotl_cat','catEvTimes',...
-                %     'onsets_cat','meta_cat','blinks','outliers','t_tr',...
-                %     'startSaccNoTask', 'endSaccNoTask', ...
-                %     'saccDirNoTask', 'dirIndexNoTask');
+        
                 m=matfile(eyeName,'writable',true);
                 m.eyeData_rmotl_cat = eyeData_rmotl_cat;
                 m.catEvTimes = catEvTimes;
@@ -170,24 +136,15 @@ for yyy = 3
                 m.blinks = blinks;
                 m.outliers=outliers;
                 m.t_tr=t_tr;
-                m.startSaccNoTask=startSaccNoTask;
-                m.endSaccNoTask=endSaccNoTask;
-                m.saccDirNoTask=saccDirNoTask;
-                m.dirIndexNoTask=dirIndexNoTask;
                 close all
-                
-         
             else
 %                 if exist(saveName,'file')
 %                     continue;
 %                 end
                 
                 disp('loading eye/predictor data');
-                %load(fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']), 'predictorInfo');
                 n=load(eyeName,'eyeData_rmotl_cat','catEvTimes',...
-                    'onsets_cat','meta_cat','blinks','outliers','t_tr',...
-                    'startSaccNoTask', 'endSaccNoTask', ...
-                    'saccDirNoTask', 'dirIndexNoTask');
+                    'onsets_cat','meta_cat','blinks','outliers','t_tr');
                 eyeData_rmotl_cat = n.eyeData_rmotl_cat;
                 catEvTimes = n.catEvTimes;
                 onsets_cat=n.onsets_cat;
@@ -195,10 +152,7 @@ for yyy = 3
                 blinks=n.blinks;
                 outliers=n.outliers;
                 t_tr=n.t_tr;
-                startSaccNoTask=n.startSaccNoTask;
-                endSaccNoTask=n.endSaccNoTask;
-                saccDirNoTask=n.saccDirNoTask;
-                dirIndexNoTask=n.dirIndexNoTask;
+       
                 n=[];
 
                 % t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
@@ -214,198 +168,188 @@ for yyy = 3
        %% prepare predictor variables after downsampling
        t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
        predictorInfoName = fullfile(saveFolder,['predictorInfo_' animal thisDate '.mat']);
-       % if exist(predictorInfoName, 'file')
-       %     n=load(predictorInfoName, 'predictorInfo');
-       %     predictorInfo = n.predictorInfo;
-       %     n=[];
-       % else
+       if exist(predictorInfoName, 'file')
+           n=load(predictorInfoName, 'predictorInfo');
+           predictorInfo = n.predictorInfo;
+           n=[];
+       else
            predictorInfo = preparePredictors(dd, eyeData_rmotl_cat, t_r, param, catEvTimes);
            save(predictorInfoName, 'predictorInfo');
-       % end
+       end
 
 
             %% remove trials with too short duration 28/10/23
-            [t_tr, catEvTimes, validTrials] = trimInvalids(t_tr, catEvTimes);
+            %[t_tr, catEvTimes, validTrials] = trimInvalids(t_tr,
+            %catEvTimes); %commented out 17/12/24
+
+            [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
+
+            %% detect trials where firing rate is extremely large
+            [spkOkTrials, spkOk_th] = getSpkOKtrials(spk_all_cat, t_r, trIdx_r, param);
+           
+            [spkOkUCueTrace, spkOkUCueTrials] = getIncludeTrace(t_cat, t_r, t_tr, onsets_cat, spkOkTrials);
+            spkNGRate = (numel(t_tr)-numel(spkOkTrials))/numel(t_tr)*100;
+            CueTrRate = (numel(spkOkTrials)-numel(spkOkUCueTrials))/numel(spkOkTrials)*100;
+
+            ntargetTrials = numel(intersect(find(~isnan(catEvTimes.tOnset)), spkOkUCueTrials));
 
 
-            if limPredictor            
-                %[predictorInfo, param] = splitPredictorByCue(predictorInfo, dd, onsets_cat, param);
-                for limOption = 2
-                    if limOption==1
-                        figSuffix = 'onlySuccess';
-                    elseif limOption==2
-                        figSuffix = 'woSuccess';
-                    end
-                     saveName_splt = fullfile(saveFolder, [saveSuffix '_' figSuffix '.mat']);
+            %%  detect saccades outside the task
+            tOnset = catEvTimes.tOnset;
+            cOnset = catEvTimes.cOnset; %choice onset not cue %% WHY THIS CONDITION??
+            validEvents = intersect(find(~isnan(tOnset)), find(~isnan(cOnset)));
+            tOnset = tOnset(validEvents);
+            cOnset = cOnset(validEvents);
 
-                     [predictorInfo_lim, param_lim] = limitPredictor(predictorInfo, dd, onsets_cat, param, limOption);
-                     predictorInfoName_lim = fullfile(saveFolder,['predictorInfo_' animal thisDate '_' figSuffix '.mat']);
-                     %save(predictorInfoName_lim, 'predictorInfo');
-                     m_lim=matfile(predictorInfoName_lim,'writable',true);
-                     m_lim.predictorInfo=predictorInfo_lim;
-                     m_lim=[];
+            tcOnset_trace = event2Trace(t_cat, [tOnset; cOnset], 2*0.5);
+            excEventT_cat = (tcOnset_trace + blinks + outliers > 0); %28/1/22
+            [startSaccNoTask, endSaccNoTask] = selectSaccades(catEvTimes.saccadeStartTimes, ...
+                    catEvTimes.saccadeEndTimes, t_cat, excEventT_cat);%param.minSaccInterval);
+            saccNoTaskTrace = event2Trace(t_cat, [startSaccNoTask endSaccNoTask]);
+            spkOkUCueTrace_tmp = getIncludeTrace(t_cat, t_cat, t_tr, onsets_cat, spkOkTrials);
+            saccNoTask_spkOkUCue_Trace = saccNoTaskTrace.*spkOkUCueTrace_tmp;
 
-                    disp('fit kernels');
-                    [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
-                    [~, ~, PSTH_f, kernelInfo] = fitPSTH_cv(spk_all_cat, ...
-                        predictorInfo_lim.t_r, param.predictorNames,   predictorInfo_lim.predictors_r, ...
-                        predictorInfo_lim.npredVars,param.psth_sigma, param.kernelInterval, ...
-                        param.lagRange, param.ridgeParams, trIdx_r,fitoption,useGPU, kfolds);
-
-                    %% predict ALL conditions using the estimated kernel
-                    [predicted, predicted_each] = predictPSTH_cv(spk_all_cat, ...
-                        predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
-                        predictorInfo.npredVars, param.psth_sigma, param.kernelInterval, ...
-                        param.lagRange,  trIdx_r, fitoption, kernelInfo, kfolds);
-
-                    y_r = cat(2,PSTH_f,predicted, predicted_each);
-
-                 
-                    %% figure for kernel fitting
-                    f = showKernel(t_r, y_r, kernelInfo, param_lim.cardinalDir);
-                    screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix '_' figSuffix]), f);
-                    close(f);
-
-
-                    %% Figure for target onset response (only to preferred direction)
-                    [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-                        startSaccNoTask, saccDirNoTask, param_lim, [-0.1 0.5]);
-                    cellclassInfo.datech = datech;
-                    screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_' figSuffix]), f);
-                    close(f);
-
-                    %% response to fixation and cue onsets
-                    [f, avgfOnsetResp, avgCueResp, winSamps_fc] = showFixCueOnsetResp(t_r, ...
-                        y_r, catEvTimes, dd, psthNames, [-0.5 1], 1);
-                    screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix '_' figSuffix]),f);
-                    close(f);
-             
-                    %% save results
-                    mm_s=matfile(saveName_splt,'writable',true);
-                    mm_s.PSTH_f = PSTH_f;
-                    mm_s.predicted_all = predicted;
-                    mm_s.predicted = predicted_each;
-                    mm_s.kernelInfo = kernelInfo;
-                    mm_s.t_r = t_r;
-                    mm_s.param=param_lim;
-                    %mm_s.predictorInfo = predictorInfo_lim;
-                    mm_s.mFiringRate = mFiringRate;
-
-                    clear mm_s 
-                end
-
-                clear kernelInfo predicted predicted_all PSTH_f ;
-            end
-
-
-            %if fitIt && ~limPredictor
+            [~, startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue] = trace2Event(saccNoTask_spkOkUCue_Trace, t_cat);
+            [saccDirNoTask_spkOkUCue, dirIndexNoTask_spkOkUCue] = getSaccDir(startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue, ...
+                    eyeData_rmotl_cat, param.cardinalDir);
+  
                 %% obtain kernels!
-                disp('fit kernels')
-                [trIdx_r] = retrieveTrIdx_r(t_cat, t_r, t_tr);
+               % if exist(saveName,'file')
+               %      disp('load kernel fit results');
+               %      load (saveName, 'predicted_all', 'predicted', 'PSTH_f', 'kernelInfo','mFiringRate');
+               %  else
+                disp('fit kernels');
                 [predicted_all, predicted, PSTH_f, kernelInfo] = fitPSTH_cv(spk_all_cat, ...
-                    predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
-                    predictorInfo.npredVars,param.psth_sigma, param.kernelInterval, ...
-                    param.lagRange, param.ridgeParams, trIdx_r,fitoption,useGPU, kfolds);
-                
+                        predictorInfo.t_r, param.predictorNames,   predictorInfo.predictors_r, ...
+                        predictorInfo.npredVars,param.psth_sigma, param.kernelInterval, ...
+                        param.lagRange, param.ridgeParams, trIdx_r(spkOkUCueTrials),fitoption,useGPU, ...
+                        param.kfolds);
+                % end
                 y_r = cat(2,PSTH_f,predicted_all, predicted);
                 
+
+                  %% explained variance for target response
+                  nPredictorNames = numel(param.predictorNames);
+                    
+                    expval_tgt = zeros(nPredictorNames, 1);
+                    corr_tgt = zeros(nPredictorNames, 1);
+                    [expval_tgt(1,1), corr_tgt(1,1)] = ...
+                        getExpVal_tgt(PSTH_f, predicted_all, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
+                    [expval_tgt(2:nPredictorNames+1,1), corr_tgt(2:nPredictorNames+1,1)] = ...
+                        getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
+                    corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
+
+
                 %% figure for kernel fitting
                 f = showKernel( t_r, y_r, kernelInfo, param.cardinalDir);
+                %% TODO: normalize kernel? across modality or across units?
                 screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
                 close(f);
                  
                 %% Figure for target onset response (only to preferred direction)
                 [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-                    startSaccNoTask, saccDirNoTask, param);%
+                    startSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, param, [], spkOkUCueTrials);
                 cellclassInfo.datech = datech;
                 %savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
                 screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
                 close(f);
-                
-                
-                % %% Figure for target onset, w/wo cue
-                % [f, avgTOnsetByCue, winSamps_tonsetByCue] = showTonsetByCue(t_r, ...
-                %     y_r, param.cardinalDir, catEvTimes, dd, psthNames, [-0.5 0.5], 1);
-                % screen2png(fullfile(saveFigFolder,['tonsetByCue_' saveSuffix '_onlySuccess']), f);
-                % close(f);
-                % 
-                % [f, avgTOnsetByCue_parea, winSamps_tonsetByCue_parea] = showTonsetByCue(t_r, ...
-                %     predictorInfo.predictors_r(17,:)', param.cardinalDir, catEvTimes, dd, ...
-                %     {'parea'}, [-0.5 0.5]);
-                % set(f,'position',[0 0 1920 300]);
-                % screen2png(fullfile(saveFigFolder,['tonsetByCue_' saveSuffix '_parea']), f);
-                % close(f);
-                % 
-                % %% response to saccades outside the task
-                % [f,avgSaccResp, winSamps_sacc, singleSaccResp, sortedSaccLabels] = ...
-                %     showSaccOnsetResp(t_r, y_r, param.cardinalDir, psthNames, ...
-                %     startSaccNoTask, saccDirNoTask, [-0.5 0.5]);
-                % screen2png(fullfile(saveFigFolder,['saccOn_' saveSuffix]));
-                % close(f);
-                % 
-                % %% response to fixation and cue onsets
-                % [f, avgfOnsetResp, avgCueResp, winSamps_fc] = showFixCueOnsetResp(t_r, ...
-                %     y_r, catEvTimes, dd, psthNames, [-0.5 1]);
-                % screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix]),f);
-                % close(f);
-                % 
-                % close all;
-                % 
-                % %%response of pdiam to fixation and cue onsets
-                % [f, avgfOnsetResp_pdiam, avgCueResp_pdiam, winSamps_fc_pdiam] = showFixCueOnsetResp(t_r, ...
-                %     predictorInfo.predictors_r(17,:)', catEvTimes, dd, {'parea'}, [-0.5 1]);
-                % screen2png(fullfile(saveFigFolder,['fixCueOnsetResp_' saveSuffix '_pdiam']),f);
-                % close(f);
-                % 
-                % 
-                % %% obtain gain
-                % onlySuccess = 0;
-                % respWin = [0.05 0.35]; %[s] %time after stim onset to obtain preferred direction
-                % gainInfo = getGainInfo(t_r, y_r(:,1:2), param.cardinalDir, catEvTimes, ...
-                %     dd, [-0.5 1], onlySuccess, respWin);
-                % f=showGainInfo(gainInfo);
-                % savefigname = fullfile(saveFigFolder,[saveSuffix '_gainInfo']);
-                % screen2png(savefigname);
-                % close(f);
-                
+             
+
+                %% single-trial latency
+                %temporal window was [-0.5 0.5] in early 2024
+                   % only use events whose time window is within the recording (from eventLockedAvg)
+                targetTrials_c = find(~isnan(catEvTimes.tOnset) .* ~isnan(catEvTimes.fOnset)); %with or without cue
+                winSamps = param.latencyTWin(1):median(diff(t_r)):param.latencyTWin(2);
+                periEventTimes = bsxfun(@plus, catEvTimes.tOnset, winSamps); % rows of absolute time points around each event
+                okEvents = intersect(find(periEventTimes(:,end)<=max(t_r)), find(periEventTimes(:,1)>=min(t_r)));
+                targetTrials = intersect(intersect(targetTrials_c, okEvents), spkOkUCueTrials);
+
+                [latency_neuro, latency_bhv, latency_r, ~, fig_latency, fig_neurolatency] = ...
+                    getTgtLatencyCorr(PSTH_f,  t_r, onsets_cat, catEvTimes, param.latencyTWin, param, dd, targetTrials);
+                screen2png(fullfile(saveFigFolder, ['latencyCorr_' saveSuffix]), fig_latency);
+                screen2png(fullfile(saveFigFolder, ['latencySingle_' saveSuffix]), fig_neurolatency);
+                close(fig_latency);
+                close(fig_neurolatency);
+            
+                 latencyStats.latency_neuro = latency_neuro;
+                 latencyStats.latency_bhv = latency_bhv;
+                 latencyStats.latency_r = latency_r;
+                 nLatencyTrials = sum(latencyStats.latency_r.trials);
+                 nLatencyTrials_pref = sum(latencyStats.latency_r.trials_pref);
+
+                %% target response hit v miss
+                [fig, avgAmp_hm, p_hm] = showTonsetResp_hm(y_r, t_r, onsets_cat, catEvTimes, param.figTWin,  ...
+                    param, dd, targetTrials);
+
+                screen2png(fullfile(saveFigFolder, ['tOnsetResp_hm_' saveSuffix]), fig);
+                close(fig);
+
+                %% for population analysis
+                id_pop{idata} = thisid;
+
+                expval_tgt_pop{idata} = expval_tgt;
+                corr_tgt_pop{idata} = corr_tgt;
+                corr_tgt_rel_pop{idata} = corr_tgt_rel;
+                latency_r_pop{idata} = latencyStats.latency_r;
+                avgAmp_hm_pop{idata} = avgAmp_hm;
+                p_hm_pop{idata} = p_hm;
+                spkOk_th_pop{idata} = spkOk_th;
+                spkOkTrials_pop{idata} = spkOkTrials;
+                spkOkUCueTrials_pop{idata} = spkOkUCueTrials;
+                mFiringRate_pop{idata} = mFiringRate;
+                PtonsetResp_pop{idata} = cellclassInfo.PtonsetResp;
+                ntargetTrials_pop{idata} = ntargetTrials;
+                errorIDs{idata} = 0;
+                spkNGRate_pop{idata} = spkNGRate;
+                CueTrRate_pop{idata} = CueTrRate;
+                nLatencyTrials_pop{idata} = nLatencyTrials;
+                nLatencyTrials_pref_pop{idata} = nLatencyTrials_pref;
 
 
                 %% save results
-                
-                % save(saveName, 'PSTH_f','predicted_all', 'predicted','kernelInfo'...
-                %     ,'t_r','cellclassInfo','param','mFiringRate','t_cat','dd');
-                % 'avgfOnsetResp', 'avgCueResp', 'winSamps_fc', ...
-                % 'avgTOnsetByCue','winSamps_sacc', 'singleSaccResp', 'sortedSaccLabels',...
-                %);
-                %'pspec_psth','pspec_parea','faxis_psth','faxis_parea');
-                %         clear spk_all dd kernel kernel_x kernel_y psth_all mDir seDir mDir_pred seDir_pred
-
-
                 mm=matfile(saveName,'writable',true);
                 mm.PSTH_f = PSTH_f;
                 mm.predicted_all = predicted_all;
                 mm.predicted = predicted;
                 mm.kernelInfo = kernelInfo;
                 mm.t_r = t_r;
-                %mm.cellclassInfo = cellclassInfo;
                 mm.param=param;
                 mm.mFiringRate=mFiringRate;
                 mm.t_cat=t_cat;
                 mm.dd=dd;
-                % mm.gainInfo = gainInfo; %26/10/2023
-                
+                mm.latencyStats = latencyStats;
+                mm.avgAmp_hm = avgAmp_hm;
+                mm.p_hm = p_hm;
+                mm.expval_tgt = expval_tgt;
+                mm.corr_tgt = corr_tgt;
+                mm.corr_tgt_rel = corr_tgt_rel;
+                mm.avgAmp_hm = avgAmp_hm;
+                mm.p_hm = p_hm;
+                mm.spkOk_th = spkOk_th;
+                mm.spkOkTrials = spkOkTrials;
+                mm.spkOkUCueTrials = spkOkUCueTrials;
+                mm.cellclassInfo = cellclassInfo;
+                mm.ntargetTrials = ntargetTrials;
+                mm.spkNGRate = spkNGRate;
+                mm.CueTrRate = CueTrRate;
+                mm.nLatencyTrials = nLatencyTrials;
+                mm.nLatencyTrials_pref = nLatencyTrials_pref;
                 clear mm mFiringRate;
-
-                %previousDate = thisDate;
-
-           % end
             
         catch err
             clear mFiringRate
 
             disp(err);
+            errorIDs{idata} = 1;
             ng = [ng idata];
             close all;
         end
     end
+
+    % % save(fullfile(saveFolder, 'assembly20241212.mat'),'param',...
+    % %     'id_pop','expval_tgt_pop','corr_tgt_pop','corr_tgt_rel_pop',...
+    % %     'latency_r_pop','avgAmp_hm_pop','p_hm_pop','spkOk_th_pop',...
+    % %     'spkOkTrials_pop','spkOkUCueTrials_pop','mFiringRate_pop',...
+    % %     'PtonsetResp_pop','errorIDs');
+    % % assembly = [];
 end

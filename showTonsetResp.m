@@ -1,5 +1,5 @@
 function [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-    startSaccNoTask, saccDirNoTask, param, allTr)
+    startSaccNoTask, saccDirNoTask, param, allTr, includeTrials)
 %[f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
 %    startSaccNoTask, saccDirNoTask, param, figTWin)
 %
@@ -15,10 +15,16 @@ function [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames
 %     cellclassInfo.nprefSaccTrials:
 %     cellclassInfo.winSamps:
 
-%created from classifyUnits_circ & resp_cueConditions.m
 if nargin < 10
+    includeTrials = 1:dd.numTrials;
+end
+%created from classifyUnits_circ & resp_cueConditions.m
+if nargin < 9 || isempty(allTr)
     allTr = 0; %only show response to preferred direction
 end
+
+figTWin = param.figTWin; %figure temporal window
+compTWin = [figTWin(1) - 0.2 figTWin(2)]; %triggered response is computed
 
 psthIdx = find(strcmp(psthNames, 'psth'));
 allMdlIdx = find(strcmp(psthNames, 'predicted_all'));
@@ -31,8 +37,8 @@ eyeposIdx = find(strcmp(psthNames, 'eyeposition'));
 
 
 %% triggered by tOnsets
-successEvents = find((choiceOutcome==1));
-successEvents = intersect(successEvents, find(catEvTimes.tOnset + param.figTWin(2) < max(t_r)));
+successEvents = intersect(find((choiceOutcome==1)), includeTrials);
+successEvents = intersect(successEvents, find(catEvTimes.tOnset + compTWin(2) < max(t_r)));
 %only use trials when the choices were registered.
 %this is a temporary fix as my current algorithm assumes stimuli were NOT
 %presented, causing no visual response in the model
@@ -42,9 +48,9 @@ tgtDir = getTgtDir(dd.targetloc(successEvents), param.cardinalDir);
 
 [~,dirIdx] = intersect(param.cardinalDir, unique(tgtDir));
 
-[avgOnsetResp, winSamps, singleOnsetResp, ...
+[~, winSamps, singleOnsetResp, ...
     sortedOnsetLabels, uniqueOnsetLabels] ...
-    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir, param.figTWin);
+    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir, compTWin);
 tonsetRespAmp = characteriseResp(singleOnsetResp, ...
     winSamps, param.tOnRespWin, param.baseWin, 'mean');
 
@@ -94,14 +100,15 @@ end
 onsetTimes = catEvTimes.cOnset(successEvents);
 [avgOnsetResp, winSamps, singleOnsetResp, ...
     sortedOnsetLabels, uniqueOnsetLabels] ...
-    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir, param.figTWin);
+    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir, compTWin);
 mcOnsetResp = squeeze(mean(singleOnsetResp(theseTrials,:,:)));%avg response to preferred direction
 secOnsetResp = 1/sqrt(numel(theseTrials))*squeeze(std(singleOnsetResp(theseTrials,:,:)));%avg response to preferred direction
 
 
 %% triggered by saccade onsets (outside of the task)
+
 [avgSaccResp, ~, singleSaccResp, sortedSaccLabels, uniqueSaccLabels] ...
-    = eventLockedAvg(y_r',t_r, startSaccNoTask, saccDirNoTask, param.figTWin);
+    = eventLockedAvg(y_r',t_r, startSaccNoTask, saccDirNoTask, compTWin);
 
 %use the same saccade direction to the one used for tOnset
 if allTr
@@ -129,13 +136,13 @@ PsaccResp = dirDotProdTest(saccDirNoTask(nonanEvents)'/180*pi, ...
 
 
 %% triggered by tOnset without saccade
-quiescentEvents = find(choiceOutcome == 3);
+quiescentEvents = intersect(find(choiceOutcome == 3), includeTrials);
 onsetTimes = catEvTimes.tOnset(quiescentEvents);
 tgtDir_v = getTgtDir(dd.targetloc(quiescentEvents), param.cardinalDir);
 
 [avgOnsetResp_v, winSamps, singleOnsetResp_v, ...
     sortedOnsetLabels_v, uniqueOnsetLabels_v] ...
-    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir_v, param.figTWin);
+    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir_v, compTWin);
 
 if allTr
     theseTrials_v = 1:size(singleOnsetResp_v,1);
@@ -153,7 +160,7 @@ tgtDir_f = getTgtDir(dd.targetloc(wrongdirEvents), param.cardinalDir);
 
 [avgOnsetResp_f, winSamps, singleOnsetResp_f, ...
     sortedOnsetLabels_f, uniqueOnsetLabels_f] ...
-    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir_f, param.figTWin);
+    = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir_f, compTWin);
 
 if allTr
     theseTrials_f = 1:size(singleOnsetResp_f,1);
@@ -240,7 +247,7 @@ axis tight;
 ylabel(sprintf('tOnset (fail) \nn=%d', numel(theseTrials_f)) );
 set(gca,'tickdir','out');
 linkaxes(ax(1:3),'x');
-xlim(param.figTWin);
+xlim(figTWin);
 
 ax(4) = subplot(514);
 boundedline(winSamps, msaccResp(psthIdx,:), sesaccResp(psthIdx,:),'k', 'linewidth',2);
@@ -250,7 +257,7 @@ boundedline(winSamps, msaccResp(visionIdx,:), sesaccResp(visionIdx,:),'m', 'tran
 boundedline(winSamps, msaccResp(eyevelIdx,:), sesaccResp(eyevelIdx,:),'c', 'transparency', 0.5);
 boundedline(winSamps, msaccResp(eyeposIdx,:), sesaccResp(eyeposIdx,:),'g', 'transparency', 0.5);
 axis tight;
-xlim([winSamps(1)-medianSaccDelay winSamps(end)-medianSaccDelay])
+xlim([figTWin(1)-medianSaccDelay figTWin(end)-medianSaccDelay])
 ylabel(sprintf('saccade(outside task) \nn=%d', numel(theseSaccTrials)));
 
 ax(5) = subplot(515);
@@ -261,7 +268,7 @@ boundedline(winSamps, mcOnsetResp(visionIdx,:), secOnsetResp(visionIdx,:),'m', '
 boundedline(winSamps, mcOnsetResp(eyevelIdx,:), secOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
 boundedline(winSamps, mcOnsetResp(eyeposIdx,:), secOnsetResp(eyeposIdx,:),'g', 'transparency', 0.5);
 axis tight;
-xlim([winSamps(1)-medianSaccDelay winSamps(end)-medianSaccDelay])
+xlim([figTWin(1)-medianSaccDelay figTWin(end)-medianSaccDelay])
 
 linkaxes(ax(:),'y');
 vline(medianSaccDelay, ax(1));

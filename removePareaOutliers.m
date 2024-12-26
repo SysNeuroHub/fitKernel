@@ -1,5 +1,6 @@
 function [eyeData_rmotl, outliers] = removePareaOutliers(eyeData, marginSize, visualize, th, diffth)
-% [eyeData_rmblk, blinks] = removeBlinks(eyeData, marginSize, visualize)
+% [eyeData_rmotl, outliers] = removePareaOutliers(eyeData, marginSize, visualize, th, diffth)
+% created from removeBlinks
 
 if nargin < 5
     diffth = 5;

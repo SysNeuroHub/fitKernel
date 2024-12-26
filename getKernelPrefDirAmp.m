@@ -1,6 +1,11 @@
 function [prefDir, amp] = getKernelPrefDirAmp(kernel_pop, tlags, tgtRange, cardinalDir, prefDirOption)
 %[prefDir, amp] = getKernelPrefDirAmp(kernel_pop, tlags, tgtRange)
-%kernel_pop: {modality x units)
+%Input:
+% kernel_pop: {modality x units}
+%
+%Output:
+% prefDir: preferred direction of the kernel (units x modality) in [deg]
+% amp: kernel amplitude at the preferred direction (units x modality)
 %
 % created from fitPSTH_pop.m & alignMtxDir
 if nargin < 5

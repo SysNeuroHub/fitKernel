@@ -7,7 +7,7 @@ function latency_bhv = getTgtBhvLatency(onsets_cat, dd, validEvents, option)
 if nargin < 4
     option = 0;
 end
-if nargin < 3
+if nargin < 3 || isempty(validEvents)
     validEvents = 1:numel(onsets_cat.tOnset);
 end
 

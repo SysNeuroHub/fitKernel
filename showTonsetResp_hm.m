@@ -1,6 +1,6 @@
 function [fig, avgAmp, p_hm] = showTonsetResp_hm(y_r, t_r, onsets_cat, catEvTimes, tWin_t,  ...
     param, dd, validEvents)
-% fig = showTonsetResp_hm(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t,  param, dd, validEvents)
+% [fig, avgAmp, p_hm] = showTonsetResp_hm(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t,  param, dd, validEvents)
 % 
 %
 
@@ -13,7 +13,7 @@ tgtDir = getTgtDir(dd.targetloc(validEvents), param.cardinalDir);
 [~, winSamps_t, singleResp_t] ...
     = eventLockedAvg(y_r', t_r, onsetTimes_t, tgtDir, tWin_t);
 
-hesitant = getChoiceOutcome_hesitant(onsets_cat, dd, validEvents);
+%hesitant = getChoiceOutcome_hesitant(onsets_cat, dd, validEvents);
 
 %% divide trials
 [choiceOutcome] = getChoiceOutcome(dd);
@@ -61,7 +61,8 @@ for iregress = 1:2
                 theseData = squeeze(singleResp_t(theseTrials,1,:));
                 tname = 'observed';
             elseif iregress == 2 %subtracted away by the full model
-                theseData = -squeeze(diff(singleResp_t(theseTrials,:,:),1,2));
+                %theseData = -squeeze(diff(singleResp_t(theseTrials,:,:),1,2));
+                theseData = reshape(singleResp_t(theseTrials,1,:)-singleResp_t(theseTrials,2,:),numel(theseTrials),[]);
                 tname = 'after subtraction by full mdl';
             end
                 avgResp(itgtDir, ihm, iregress, :) = mean(theseData,1);

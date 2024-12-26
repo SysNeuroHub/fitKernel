@@ -19,6 +19,12 @@ end
 if size(eventTimes,2)==2
     assert(isempty(find(eventTimes(:,2)-eventTimes(:,1)<=0)));
 end
+
+if isempty(eventTimes)
+    trace =  false(length(taxis),1);
+    return;
+end
+
 %% implementation 1: SLOW
 % trace = zeros(length(taxis),1);
 % for itr = 1:length(eventTimes)
