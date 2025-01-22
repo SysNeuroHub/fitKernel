@@ -1,13 +1,9 @@
-%load('/mnt/syncitium/Daisuke/cuesaccade_data/2022/hugo/eyeCat_hugo09September_06.mat')
-%load('/mnt/syncitium/Daisuke/cuesaccade_data/2022/hugo/hugo09September_06_10_linear_rReg.mat')
-
-function [latency_neuro, thresh_neuro, tgtDir, fig] = ...
+function [latency_neuro, thresh_neuro, tgtDir, fig, nlatencyTrials_pref_success, latencyStats] = ...
     getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, ThreshParam, param, dd, validEvents)
 % [latency_neuro, validEvents, thresh_neuro, tgtDir] = getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd)
 % create figure of single-trials sorted by behavioural latency
 
-% TODO: each row by trial type success tgt in / success tgt out / fail tgt
-% in / fail tgt out / quiescent tgt in / quiescent tgt out
+%16/1/25 added nlatencyTrials_pref_success and latencyStats 
 
 if isempty(ThreshParam)
     %threshOption = 'uniform'; %uniform threshold across all trials or inidividual threshold of each trial (India)
@@ -36,93 +32,102 @@ tgtDir = getTgtDir(dd.targetloc(validEvents), param.cardinalDir);
 [~, winSamps_t, singleResp_t] ...
     = eventLockedAvg(PSTH_f', t_r, onsetTimes_t, tgtDir, tWin_t);
 singleResp_t = reshape(singleResp_t, size(singleResp_t,1), size(singleResp_t,3));
-%singleResp: trials x times
+singleResp = nan(numel(validEvents), numel(winSamps_t));
+singleResp(~isnan(onsetTimes_t),:) = singleResp_t; %16/1/25
+%singleResp: trials x times (including events w onsetTimes_t == NAN)
+
 
 
 %% neural latency
- [latency_neuro, thresh_neuro] = getSingleTrialLatency(singleResp_t, winSamps_t, tWin_t, ThreshParam);
+[latency_neuro, thresh_neuro] = getSingleTrialLatency(singleResp, winSamps_t, tWin_t, ThreshParam);
 % from     latencyV1MT/secondary/findSingleTrialLatency.m
 
 %% behavioural latency for sorting trials
 latency_bhv_srt = getTgtBhvLatency(onsets_cat, dd, validEvents, 1);
 latency_bhv_cOn = getTgtBhvLatency(onsets_cat, dd, validEvents, 0);
-% latency_bhv_srt = getTgtBhvLatency(onsets_cat, dd, [], 1);
-% latency_bhv_cOn = getTgtBhvLatency(onsets_cat, dd, [], 0);
 
 %% divide trials
 [choiceOutcome] = getChoiceOutcome(dd);
-success = (choiceOutcome(validEvents) == 1) .* (latency_bhv_cOn - latency_bhv_srt <= 0.1);
+success = (choiceOutcome(validEvents) == 1) .* (latency_bhv_cOn - latency_bhv_srt <= 0.1); %1st saccade lead to choice
 fail = choiceOutcome(validEvents) >= 2; %quiescent + wrong
-%success = (choiceOutcome == 1) .* (latency_bhv_cOn - latency_bhv_srt <= 0.1); %13/12/24
 hesitant = (latency_bhv_cOn - latency_bhv_srt > 0.1); %1st saccade did NOT lead to choice
-% fail = choiceOutcome >= 2; %quiescent + wrong %13/12/24
 
-[prefDir, prefDirTrials_c] = getPrefDir(PSTH_f, t_r, onsetTimes_t, tgtDir, param);
+[prefDir, prefDirTrials_c] = getPrefDir(PSTH_f, t_r, onsetTimes_t, tgtDir, param); %same as showTonsetResp
 prefDirTrials = zeros(numel(onsetTimes_t),1);
 prefDirTrials(prefDirTrials_c) = 1;
 clear prefDirTrials_c
 
-[prevDir, prevDirTrials_c] = getPrevDir(tgtDir, param);
-prevDirTrials = zeros(numel(onsetTimes_t),1);
-prevDirTrials(prevDirTrials_c) = 1;
-clear prevDirTrials_c
-
 
 %% visualization
 if nargout>3
-    nCols = 1;
-    fig = figure('position',[1003         219         nCols*588         664]);
+    fig = figure('position',[1003         300         840         664]);
 
-    for istimtype = 1:nCols
-        if istimtype==1
-            stimtrials = prefDirTrials;
-        elseif istimtype == 2
-            stimtrials = 1-prefDirTrials;
-        elseif istimtype==3
-                stimtrials = prevDirTrials;
-        elseif istimtype == 4
-            stimtrials = ones(size(prefDirTrials));
+    stimtrials = prefDirTrials;
+
+    theseTrials = []; nTrials = [];
+    for ievtype = 1:3
+        switch ievtype
+            case 1
+                theseTrials_c = find(success.*stimtrials);
+            case 2
+                theseTrials_c = find(hesitant.*stimtrials);%find(quiescent.*stimtrials);
+            case 3
+                theseTrials_c = find(fail.*stimtrials);
         end
 
-        %theseTrials = [find(success.*stimtrials); find(quiescent.*stimtrials); find(wrong.*stimtrials)];
-        theseTrials = []; nTrials = [];
-        for ievtype = 1:3
-            switch ievtype
-                case 1
-                    theseTrials_c = find(success.*stimtrials);
-                case 2
-                    theseTrials_c = find(hesitant.*stimtrials);%find(quiescent.*stimtrials);
-                case 3
-                    theseTrials_c = find(fail.*stimtrials);
-            end
+        theseTrials_c = intersect(theseTrials_c, validEvents);
+        bothidx = find(~isnan(latency_bhv_srt(theseTrials_c)).*~isnan(latency_neuro(theseTrials_c)));
+        theseTrials_c = theseTrials_c(bothidx);
 
-            theseTrials_c = intersect(theseTrials_c, validEvents);
-
-            [~, idx] = sort(latency_bhv_srt(theseTrials_c));
-            theseTrials = [theseTrials; theseTrials_c(idx)];
-            nTrials(ievtype) = numel(theseTrials_c);
-
-
-            axes(istimtype) = subplot(3,nCols,ievtype);
-            if sum(theseTrials)==0
-                continue;
-            end
-            imagesc(winSamps_t, 1:numel(theseTrials_c), singleResp_t(theseTrials_c(idx),:));
-            hold on
-            plot(latency_neuro(theseTrials_c(idx)), 1:numel(theseTrials_c),'r.');
-            plot(latency_bhv_srt(theseTrials_c(idx)), 1:numel(theseTrials_c),'w.');
-            plot(-diffCueFOnset(theseTrials_c(idx)), 1:numel(theseTrials_c),'g.');
-            vline(0);
-            if ievtype == 1
-                title(['tgt stim on preferred direction ' num2str(prefDir) ]);
-                ylabel('success');
-            elseif ievtype == 2
-                ylabel('hesitent');
-            elseif ievtype == 3
-                ylabel('failure');
-                xlabel('Time from target onset [s]')
-            end
+        [~, idx] = sort(latency_bhv_srt(theseTrials_c));
+        theseTrials = [theseTrials; theseTrials_c(idx)];
+        nTrials(ievtype) = numel(theseTrials_c);
+    
+        %from getTgtlatencyCorr.m
+        corrOption = 'Spearman'; %'Pearson'
+        try
+            [r(ievtype), p(ievtype)] = corr(latency_bhv_srt(theseTrials_c), latency_neuro(theseTrials_c), 'type', corrOption);
+        catch err
+            r(ievtype) = nan;
+            p(ievtype) = nan;
         end
+
+        axes(2*ievtype-1) = subplot(3, 2, 2*ievtype-1);
+        if sum(theseTrials)==0
+            continue;
+        end
+        imagesc(winSamps_t, 1:numel(theseTrials_c), singleResp(theseTrials_c(idx),:));
+        hold on
+        plot(latency_neuro(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'r.');
+        plot(latency_bhv_srt(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'w.');
+        plot(-diffCueFOnset(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'g.');
+        vline(0);
+        if ievtype == 1
+            title(['tgt stim on preferred direction ' num2str(prefDir) ]);
+            xlabel('Time from target onset [s]')
+            ylabel('success');
+        elseif ievtype == 2
+            ylabel('hesitent');
+        elseif ievtype == 3
+            ylabel('failure');
+        end
+        set(axes(2*ievtype-1),'tickdir','out');
+        mcolorbar(gca, .5);
+
+        axes(2*ievtype) = subplot(3, 2, 2*ievtype);
+        plot(latency_bhv_srt(theseTrials_c(idx)), latency_neuro(theseTrials_c(idx)),'o'); hold on;
+        xlabel('behavioural latency');
+        ylabel('neural latency');
+        tname = sprintf('corr: %.2f (p=%.2f)', r(ievtype), p(ievtype));
+        title(tname); %title(['r=' num2str(r) ', r(success)=' num2str(r_success)]);
+        squareplot;
+        axis padded; set(gca,'TickDir','out');
+
     end
-    linkcaxes(axes);mcolorbar(gca, .5);
 end
+linkcaxes(axes([1 3 5]));
+
+nlatencyTrials_pref_success = nTrials(1);
+latencyStats.latency_r = r(1);
+latencyStats.latency_p = p(1);
+

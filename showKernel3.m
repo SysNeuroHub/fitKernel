@@ -51,6 +51,7 @@ set(gca,'ytick',directions);
 xlabel('time from targetOnset [s]');
 mcolorbar(a2,.5);
 title(['n=' num2str(nUnits)]);
+set(gca,'tickdir','out');
    
 a3=subplot(3,2,3);
 thisIm = kernel_avg{2}';
@@ -65,6 +66,7 @@ caxis([-crange crange]);
 set(gca,'ytick',directions);
 xlabel('time from eye movement [s]');
 mcolorbar(a3,.5);
+set(gca,'tickdir','out');
 
 if size(kernel_avg{3},2)>1
     a4=subplot(3,2,5);
@@ -78,6 +80,7 @@ if size(kernel_avg{3},2)>1
     end
     caxis([-crange crange]);
     set(gca,'ytick',directions);
+    set(gca,'tickdir','out');
     xlabel('time from eye movement [s]');
     mcolorbar(a4,.5);
 
@@ -87,6 +90,7 @@ if size(kernel_avg{3},2)>1
     plot(tlags{4}, kernel_avg{4}','k','linewidth',2);
     vline(0);
     xlabel('time from pupil dilation [s]');
+    set(gca,'tickdir','out');
     axis tight;
 
     a6=subplot(3,2,4);
@@ -95,6 +99,7 @@ if size(kernel_avg{3},2)>1
     plot(tlags{5}, kernel_avg{5}','k','linewidth',2);
     vline(0);
     xlabel('time from blink [s]');
+    set(gca,'tickdir','out');
     axis tight;
 
     % a7=subplot(3,2,6);

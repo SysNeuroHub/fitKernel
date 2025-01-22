@@ -28,5 +28,5 @@ tonsetRespAmp = characteriseResp(singleOnsetResp, ...
 prefDir = fitPars(1); %[deg]
 [~, prefDirIdx] = min(abs(circ_dist(pi/180*param.cardinalDir, pi/180*prefDir)));
 prefDir_quantized = param.cardinalDir(prefDirIdx);
-prefDirTrials =  find(tgtDir_valid == prefDir_quantized);%trials with cell's preferred direction
+prefDirTrials =  find(tgtDir == prefDir_quantized);%trials with cell's preferred direction
 

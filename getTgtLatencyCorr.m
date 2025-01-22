@@ -66,7 +66,7 @@ catch err
     latcorr.p_success = nan;
 end
 try
-    theseTrials = logical(validLatency.*~isnan(latency_bhv).*tgt_pref);
+    theseTrials = logical(~isnan(latency_bhv).*validLatency.*tgt_pref);
     latcorr.trials_pref = theseTrials;
     [latcorr.r_pref, latcorr.p_pref] = corr(latency_bhv(theseTrials), latency_neuro(theseTrials), 'type', corrOption);
 catch err
@@ -95,7 +95,7 @@ end
 
 %% correlation between bhv latency and cue-tgt interval
 try
-        [latcorr_cue.r_success_prev, latcorr_cue.p_success_prev] = corr(latency_bhv(logical(success.*validLatency.*tgt_prev)), ...
+    [latcorr_cue.r_success_prev, latcorr_cue.p_success_prev] = corr(latency_bhv(logical(success.*validLatency.*tgt_prev)), ...
         diffCueFOnset(logical(success.*validLatency.*tgt_prev)), 'type', corrOption);
 catch err
     latcorr_cue.r_success_prev  = nan;
