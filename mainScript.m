@@ -4,14 +4,14 @@ set(0,'DefaultFigureVisible','off');
 
 
 %% recorded data
-animal = 'ollie';%'andy';%  'hugo'; %
+animal =  'hugo'; % 'ollie';%'andy';% 
 % fitoption = 1; %'linear'
 fitoption = 5; %linear_rReg', as of 13/7/2023
 useGPU = 1; %13/12/24
 dataType = 0;%0: each channel, 1: all channels per day
 fitIt = 0;
             
-for yyy = 3
+for yyy = 1
     switch yyy
         case 1
             year = '2021'; %hugo
@@ -21,7 +21,7 @@ for yyy = 3
             year = '2023'; %hugo, ollie
     end 
     
-    saveFigFolder = fullfile(saveServer, '20241212',year,animal);
+    saveFigFolder = fullfile(saveServer, '20250122',year,animal);
     if ~exist(saveFigFolder, 'dir')
         mkdir(saveFigFolder);
     end
@@ -29,14 +29,10 @@ for yyy = 3
     [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
     
     % to obtain index of specified month&date&channel
-    thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','23','*_ch29'))))):numel(loadNames);
-
-    % nData = numel(loadNames);
-    %  thisdata = 1:nData;
-    % 
-    %thisdata = [632 635];%[15    34    91   106   133   431   576   632   655];
-    nData = numel(thisdata);
+     %thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+     %regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','12','*_ch23'))))):numel(loadNames);
+      thisdata = 1:numel(loadNames);
+     nData = numel(thisdata);
 
     id_pop = cell(nData,1);
 
@@ -60,7 +56,7 @@ for yyy = 3
     for idata = thisdata
 
         
-        n=load(fullfile(saveServer,'param20241223.mat'),'param');
+        n=load(fullfile(saveServer,'param20250122.mat'),'param');
         param =n.param;
         n=[];
         psthNames = cat(2,{'psth','predicted_all'},param.predictorNames);
@@ -177,6 +173,10 @@ for yyy = 3
            save(predictorInfoName, 'predictorInfo');
        end
 
+       %% nomalize predictor variables so the resulting kernels are comparable 22/1/25
+       %predictorInfo.predictors_r(9:end,:) = normalize(predictorInfo.predictors_r(9:end,:),2,'zscore');
+       predictorInfo.predictors_r(9:end,:) = normalize(predictorInfo.predictors_r(9:end,:),2,'range'); %house variable to [0 1]
+
 
             %% remove trials with too short duration 28/10/23
             %[t_tr, catEvTimes, validTrials] = trimInvalids(t_tr,
@@ -242,10 +242,13 @@ for yyy = 3
 
                 %% figure for kernel fitting
                 f = showKernel( t_r, y_r, kernelInfo, param.cardinalDir);
-                %% TODO: normalize kernel? across modality or across units?
                 screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
                 close(f);
-                 
+
+                fp = showKernel_prefDir( t_r, PSTH_f, dd, catEvTimes, kernelInfo, param, spkOkUCueTrials);
+                screen2png(fullfile(saveFigFolder,['kernel_prefDir_exp' saveSuffix]), fp);
+                close(fp);
+
                 %% Figure for target onset response (only to preferred direction)
                 [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
                     startSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, param, [], spkOkUCueTrials);
@@ -258,25 +261,18 @@ for yyy = 3
                 %% single-trial latency
                 %temporal window was [-0.5 0.5] in early 2024
                    % only use events whose time window is within the recording (from eventLockedAvg)
-                targetTrials_c = find(~isnan(catEvTimes.tOnset) .* ~isnan(catEvTimes.fOnset)); %with or without cue
-                winSamps = param.latencyTWin(1):median(diff(t_r)):param.latencyTWin(2);
-                periEventTimes = bsxfun(@plus, catEvTimes.tOnset, winSamps); % rows of absolute time points around each event
-                okEvents = intersect(find(periEventTimes(:,end)<=max(t_r)), find(periEventTimes(:,1)>=min(t_r)));
-                targetTrials = intersect(intersect(targetTrials_c, okEvents), spkOkUCueTrials);
+                  targetTrials_c = find(~isnan(catEvTimes.tOnset) .* ~isnan(catEvTimes.fOnset)); %with or without cue
+            winSamps = param.latencyTWin(1):median(diff(t_r)):param.latencyTWin(2);
+            periEventTimes = bsxfun(@plus, catEvTimes.tOnset, winSamps); % rows of absolute time points around each event
+            okEvents = intersect(find(periEventTimes(:,end)<=max(t_r)), find(periEventTimes(:,1)>=min(t_r)));
+            targetTrials = intersect(intersect(targetTrials_c, okEvents), spkOkUCueTrials);
 
-                [latency_neuro, latency_bhv, latency_r, ~, fig_latency, fig_neurolatency] = ...
-                    getTgtLatencyCorr(PSTH_f,  t_r, onsets_cat, catEvTimes, param.latencyTWin, param, dd, targetTrials);
-                screen2png(fullfile(saveFigFolder, ['latencyCorr_' saveSuffix]), fig_latency);
-                screen2png(fullfile(saveFigFolder, ['latencySingle_' saveSuffix]), fig_neurolatency);
-                close(fig_latency);
-                close(fig_neurolatency);
-            
-                 latencyStats.latency_neuro = latency_neuro;
-                 latencyStats.latency_bhv = latency_bhv;
-                 latencyStats.latency_r = latency_r;
-                 nLatencyTrials = sum(latencyStats.latency_r.trials);
-                 nLatencyTrials_pref = sum(latencyStats.latency_r.trials_pref);
+           [latency_neuro, thresh_neuro, tgtDir, fig_latency, nLatencyTrials_pref_success, latencyStats] = ...
+                getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, param.latencyTWin, ...
+                param.threshParam, param, dd, targetTrials);
+            screen2png(fullfile(saveFigFolder, ['latencyCorr_' saveSuffix]), fig_latency);close(fig_latency);
 
+                 
                 %% target response hit v miss
                 [fig, avgAmp_hm, p_hm] = showTonsetResp_hm(y_r, t_r, onsets_cat, catEvTimes, param.figTWin,  ...
                     param, dd, targetTrials);
@@ -302,8 +298,7 @@ for yyy = 3
                 errorIDs{idata} = 0;
                 spkNGRate_pop{idata} = spkNGRate;
                 CueTrRate_pop{idata} = CueTrRate;
-                nLatencyTrials_pop{idata} = nLatencyTrials;
-                nLatencyTrials_pref_pop{idata} = nLatencyTrials_pref;
+                nLatencyTrials_pref_success_pop{idata} = nLatencyTrials_pref_success;
 
 
                 %% save results
@@ -333,7 +328,7 @@ for yyy = 3
                 mm.spkNGRate = spkNGRate;
                 mm.CueTrRate = CueTrRate;
                 mm.nLatencyTrials = nLatencyTrials;
-                mm.nLatencyTrials_pref = nLatencyTrials_pref;
+                mm.nLatencyTrials_pref_success = nLatencyTrials_pref_success;
                 clear mm mFiringRate;
             
         catch err

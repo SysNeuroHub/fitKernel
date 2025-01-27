@@ -54,7 +54,8 @@ tgtDir = getTgtDir(dd.targetloc(successEvents), param.cardinalDir);
 tonsetRespAmp = characteriseResp(singleOnsetResp, ...
     winSamps, param.tOnRespWin, param.baseWin, 'mean');
 
- prefDir = getPrefDir(y_r(:,1), t_r, onsetTimes, tgtDir, param);
+% prefDir = getPrefDir(y_r(:,1), t_r, onsetTimes, tgtDir, param);
+prefDir = getPrefDir_wrapper(y_r, t_r, dd, catEvTimes, param, includeTrials);
 
 tonsetRespAmp_p = characteriseResp(singleOnsetResp, ...
     winSamps, param.tOnRespWin, [], 'mean');
