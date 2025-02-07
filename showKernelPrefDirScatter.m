@@ -11,7 +11,7 @@ end
 %tuned = amp>param.ampTh;
 %tuned = 1:numel(okunits);
 
-f = figure('position',[ 680         485        1181         493]);
+f = figure('position',[ 680         485        800 1200]);
 for aa = 1:numel(unique(animalid_pop))
     if aa==1
         asymbol = 'o';
@@ -29,7 +29,9 @@ for aa = 1:numel(unique(animalid_pop))
                 v = [2 3];
         end
         %doubleTuned = find(tuned(:,v(1))+tuned(:,v(2))==2);
-        subplot(2,3,ii);
+        
+        %% scatter plot
+        subplot(3,2,2*ii-1);
         plot(prefDir(animalid_pop==aa,v(1)), prefDir(animalid_pop==aa,v(2)), asymbol);hold on
         %plot(prefDir(doubleTuned,v(1)), prefDir(doubleTuned,v(2)), 'b.');
         squareplot;
@@ -40,7 +42,8 @@ for aa = 1:numel(unique(animalid_pop))
         ylabel(param.predictorNames{v(2)});
         set(gca,'tickdir','out');
 
-        subplot(2,3,ii+3)
+        %% histogram
+        subplot(3,2,2*ii)
         histogram(prefDir(animalid_pop==aa,v(1)) - prefDir(animalid_pop==aa,v(2)),-180:5:180); hold on;
         %histogram(prefDir(doubleTuned,v(1)) - prefDir(doubleTuned,v(2)), -180:5:180,  'facecolor', 'b');
         if aa == numel(unique(animalid_pop))

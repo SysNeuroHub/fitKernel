@@ -1,10 +1,10 @@
 %16/12/24 created from fitPSTH_pop.m
 [saveServer, rootFolder] = getReady();
 
-saveSuffix_p = ['20241212'];
+saveSuffix_p = ['20250128'];
 animals = {'hugo', 'ollie'};
 
-n=load(fullfile(saveServer,'param20241223.mat'),'param');
+n=load(fullfile(saveServer,'param20250128.mat'),'param');
 param =n.param;
 
 %% load result of mainscript_assemble.m
@@ -85,9 +85,6 @@ end
 
 
 %% apply inclusion critetia
-% param.corr_tgtTh = 0.05;
-param.ptonsetRespTh=.2; %.1;
-% param.nLatencyTr_pref_th = 5;
 [okunits, corr_tgtOK, ntargetTrOK, ptonsetRespOK] ...
     = inclusionCriteria(corr_tgt_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
 
@@ -117,9 +114,12 @@ p_hm_pop = [p_hm_pop_before; p_hm_pop_after];
 
 %% selected units
 theseIDs = {'hugo/2021/08August/25/27',... %vision
-    'hugo/2022/07July/26/19',... %eye speed
+    'hugo/2021/03March/22/8',... %eye position
+    'hugo/2022/08August/17/3',... %eye speed+position
     'hugo/2022/08August/15/4'}; %integrator new 2025 
 [~, selectedIDs] = intersect(id_pop, theseIDs);
+
+%    'hugo/2022/07July/26/19',... %eye speed
 %integrator candidates
 % 'hugo/2022/08August/05/2' 2023 JNS
 % 'hugo/2022/08August/23/7'
@@ -160,13 +160,13 @@ theseIDs_hm = {    'hugo/2021/09September/07/26',... %no reduction
 
 %% kernel avg across units (FIG2)
 %average kernel before centering
-[f, kernel_avg] = showKernel3(kernel_pop, tlags, param.cardinalDir, 0);
+[f, kernel_avg] = showKernel_pop(kernel_pop, tlags, param.cardinalDir, 0);
 savePaperFigure(f,fullfile(saveServer,saveSuffix_p,['avgKernel_' animals{:}]));
 close(f);
 
 %centerring by preferred direction
 tgtRange = [0.05 0.15; 0.03 0.25; -0.1 0.1];
-[f, kernel_centered_avg] = showKernel3(kernel_pop, tlags, param.cardinalDir, 1, tgtRange);
+[f, kernel_centered_avg] = showKernel_pop(kernel_pop, tlags, param.cardinalDir, 1, tgtRange);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['avgKernel_centered_' animals{:}]));
 close(f);
 
@@ -177,7 +177,6 @@ close(f);
 
 
 %% cell type distibution (FIG3)
-
 % correlation during target presentation
 fig_abs = showScatterTriplets(corr_tgt_pop, ...
     param.predictorNames, [-.2 1], selectedIDs,'linear',animalid_pop);
@@ -202,3 +201,6 @@ screen2png(fullfile(saveServer,saveSuffix_p,['corr_tgt_rel_pop_latency_r_pref_su
 %% hit v miss (FIG 5)
 f = showHMScatter(corr_tgt_rel_pop, p_hm_pop, selectedIDs_hm, animalid_pop);
 screen2png(fullfile(saveServer,saveSuffix_p,['p_hm' animals{:}]));close;
+disp(['The number of significant units before regression: '  num2str(sum(p_hm_pop_before<0.05))]);
+disp(['The number of significant units after regression: '  num2str(sum(p_hm_pop_after<0.05))]);
+

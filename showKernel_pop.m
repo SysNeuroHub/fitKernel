@@ -1,6 +1,8 @@
-function [fig, kernel_avg,prefdir, prefdirPval] = showKernel3(kernel_pop, ...
+function [fig, kernel_avg,prefdir, prefdirPval] = showKernel_pop(kernel_pop, ...
     tlags, cardinalDir, centering, tgtRange)
-% fig = showKernel3(kernel_pop, tlags, cardinalDir, centering)
+% fig = showKernel_pop(kernel_pop, tlags, cardinalDir, centering)
+
+useSameYrange = true;
 
 prefDirOption = 0;%
 %very slow in option=1
@@ -35,18 +37,25 @@ for col = 1:ncol %predictor type
     end
 end
 
+if useSameYrange
+    absMax = max(cellfun(@(x)abs(max(x(:))), kernel_avg));
+end
+
 % created rom showKernel
 fig = figure('position',[1          41        1440         783]);
 a2=subplot(3,2,1);
 thisIm = kernel_avg{1}';
 crange = prctile(abs(thisIm(:)),99);
-%crange = prctile(thisIm(:),[1 99]);
+if useSameYrange
+    crange = absMax;
+end
+
 imagesc(tlags{1}(:,1), directions, thisIm);
 vline(0);
 if centering
     hline(0);
 end
-caxis([-crange crange]);
+clim([-crange crange]);
 set(gca,'ytick',directions);
 xlabel('time from targetOnset [s]');
 mcolorbar(a2,.5);
@@ -57,12 +66,15 @@ a3=subplot(3,2,3);
 thisIm = kernel_avg{2}';
 crange = prctile(abs(thisIm(:)),99);
 %crange = prctile(thisIm(:),[1 99]);
+if useSameYrange
+    crange = absMax;
+end
 imagesc(tlags{2}(:,1),directions, thisIm);
 vline(0);
 if centering
     hline(0);
 end
-caxis([-crange crange]);
+clim([-crange crange]);
 set(gca,'ytick',directions);
 xlabel('time from eye movement [s]');
 mcolorbar(a3,.5);
@@ -73,6 +85,10 @@ if size(kernel_avg{3},2)>1
     thisIm = kernel_avg{3}';
     crange = prctile(abs(thisIm(:)),99);
     %crange = prctile(thisIm(:),[1 99]);
+    if useSameYrange
+        crange = absMax;
+    end
+    
     imagesc(tlags{3}(:,1),directions, thisIm);
     vline(0);
     if centering

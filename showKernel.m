@@ -43,7 +43,9 @@ set(gca,'ytick',cardinalDir);
 xlabel('time from eye movement [s]');
 mcolorbar(a3,.5);
 
-if size(kernelInfo.kernel{3},2)>1
+if numel(kernelInfo.kernel)==2
+    return;
+elseif size(kernelInfo.kernel{3},2)>1
     a4=subplot(4,2,6);
     thisIm = kernelInfo.kernel{3}';
     crange = prctile(abs(thisIm(:)),99);

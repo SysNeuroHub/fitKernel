@@ -205,7 +205,9 @@ boundedline(winSamps, mtOnsetResp(psthIdx,:), setOnsetResp(psthIdx,:),'k', 'line
 hold on;
 boundedline(winSamps, mtOnsetResp(allMdlIdx,:), setOnsetResp(allMdlIdx,:),'b', 'transparency', 0.5);
 boundedline(winSamps, mtOnsetResp(visionIdx,:), setOnsetResp(visionIdx,:),'m', 'transparency', 0.5);
-boundedline(winSamps, mtOnsetResp(eyevelIdx,:), setOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
+if ~isempty(eyevelIdx)
+    boundedline(winSamps, mtOnsetResp(eyevelIdx,:), setOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
+end
 boundedline(winSamps, mtOnsetResp(eyeposIdx,:), setOnsetResp(eyeposIdx,:),'g', 'transparency', 0.5);
 %boundedline(winSamps, mtOnsetResp(5,:), setOnsetResp(5,:),'g', 'transparency', 0.5);
 %vbox(param.baseWin(1), param.baseWin(2))
@@ -227,7 +229,9 @@ boundedline(winSamps, mtOnsetResp_v(psthIdx,:), setOnsetResp_v(psthIdx,:),'k', '
 hold on;
 boundedline(winSamps, mtOnsetResp_v(allMdlIdx,:), setOnsetResp_v(allMdlIdx,:),'b', 'transparency', 0.5);
 boundedline(winSamps, mtOnsetResp_v(visionIdx,:), setOnsetResp_v(visionIdx,:),'m', 'transparency', 0.5);
-boundedline(winSamps, mtOnsetResp_v(eyevelIdx,:), setOnsetResp_v(eyevelIdx,:),'c', 'transparency', 0.5);
+if ~isempty(eyevelIdx)
+    boundedline(winSamps, mtOnsetResp_v(eyevelIdx,:), setOnsetResp_v(eyevelIdx,:),'c', 'transparency', 0.5);
+end
 boundedline(winSamps, mtOnsetResp_v(eyeposIdx,:), setOnsetResp_v(eyeposIdx,:),'g', 'transparency', 0.5);
 %vbox(param.baseWin(1), param.baseWin(2))
 %vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
@@ -240,7 +244,9 @@ boundedline(winSamps, mtOnsetResp_f(psthIdx,:), setOnsetResp_f(psthIdx,:),'k', '
 hold on;
 boundedline(winSamps, mtOnsetResp_f(allMdlIdx,:), setOnsetResp_f(allMdlIdx,:),'b', 'transparency', 0.5);
 boundedline(winSamps, mtOnsetResp_f(visionIdx,:), setOnsetResp_f(visionIdx,:),'m', 'transparency', 0.5);
-boundedline(winSamps, mtOnsetResp_f(eyevelIdx,:), setOnsetResp_f(eyevelIdx,:),'c', 'transparency', 0.5);
+if ~isempty(eyevelIdx)
+    boundedline(winSamps, mtOnsetResp_f(eyevelIdx,:), setOnsetResp_f(eyevelIdx,:),'c', 'transparency', 0.5);
+end
 boundedline(winSamps, mtOnsetResp_f(eyeposIdx,:), setOnsetResp_f(eyeposIdx,:),'g', 'transparency', 0.5);
 %vbox(param.baseWin(1), param.baseWin(2))
 %vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
@@ -255,7 +261,9 @@ boundedline(winSamps, msaccResp(psthIdx,:), sesaccResp(psthIdx,:),'k', 'linewidt
 hold on;
 boundedline(winSamps, msaccResp(allMdlIdx,:), sesaccResp(allMdlIdx,:),'b', 'transparency', 0.5);
 boundedline(winSamps, msaccResp(visionIdx,:), sesaccResp(visionIdx,:),'m', 'transparency', 0.5);
-boundedline(winSamps, msaccResp(eyevelIdx,:), sesaccResp(eyevelIdx,:),'c', 'transparency', 0.5);
+if ~isempty(eyevelIdx)
+    boundedline(winSamps, msaccResp(eyevelIdx,:), sesaccResp(eyevelIdx,:),'c', 'transparency', 0.5);
+end
 boundedline(winSamps, msaccResp(eyeposIdx,:), sesaccResp(eyeposIdx,:),'g', 'transparency', 0.5);
 axis tight;
 xlim([figTWin(1)-medianSaccDelay figTWin(end)-medianSaccDelay])
@@ -266,7 +274,9 @@ boundedline(winSamps, mcOnsetResp(psthIdx,:), secOnsetResp(psthIdx,:),'k', 'line
 hold on;
 boundedline(winSamps, mcOnsetResp(allMdlIdx,:), secOnsetResp(allMdlIdx,:),'b', 'transparency', 0.5);
 boundedline(winSamps, mcOnsetResp(visionIdx,:), secOnsetResp(visionIdx,:),'m', 'transparency', 0.5);
-boundedline(winSamps, mcOnsetResp(eyevelIdx,:), secOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
+if ~isempty(eyevelIdx)
+    boundedline(winSamps, mcOnsetResp(eyevelIdx,:), secOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
+end
 boundedline(winSamps, mcOnsetResp(eyeposIdx,:), secOnsetResp(eyeposIdx,:),'g', 'transparency', 0.5);
 axis tight;
 xlim([figTWin(1)-medianSaccDelay figTWin(end)-medianSaccDelay])
@@ -286,6 +296,7 @@ set(gca,'tickdir','out');
 
 ylabel(sprintf('cOnset (success)\nn=%d',numel(theseTrials)));
 legend('observed','all mdl','vision','eye velocity','eye position','location','northwest')
+%legend('observed','all mdl','vision','eye velocity','location','northwest')
 
 end
 

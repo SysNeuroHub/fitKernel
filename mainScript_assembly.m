@@ -1,6 +1,6 @@
 [saveServer, rootFolder] = getReady();
-animal =  'hugo'; %'ollie';% %'andy';%
-for yy = 1:3
+animal =  'ollie';% %'andy';%
+for yy = 3
     switch yy
         case 1
             year = '2021';
@@ -66,7 +66,7 @@ for yy = 1:3
         clear mFiringRate
     end
 
-    save(fullfile(saveFolder, 'assembly20241212.mat'),...
+    save(fullfile(saveFolder, 'assembly20250128.mat'),...
         'id_pop','expval_tgt_pop','corr_tgt_pop','corr_tgt_rel_pop',...
         'latency_r_pop','avgAmp_hm_pop','p_hm_pop','spkOk_th_pop',...
         'spkOkTrials_pop','spkOkUCueTrials_pop','mFiringRate_pop',...
