@@ -28,7 +28,7 @@ for yyy = 2
     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19')))));
  
-    thisdata = thisdata:numel(loadNames);
+    %thisdata = thisdata:numel(loadNames);
     nData = numel(thisdata);
 
     id_pop = cell(nData,1);
@@ -232,7 +232,7 @@ for yyy = 2
                 getExpVal_tgt(PSTH_f, predicted_all, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
             [expval_tgt(2:nPredictorNames+1,1), corr_tgt(2:nPredictorNames+1,1)] = ...
                 getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
-            corr_tgt_rel = 100*corr_tgt(2:3)./corr_tgt(1);
+            corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
 
 
             %% figure for kernel fitting
