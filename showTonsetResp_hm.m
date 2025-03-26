@@ -1,8 +1,10 @@
-function [fig, avgAmp, p_hm] = showTonsetResp_hm(y_r, t_r, onsets_cat, catEvTimes, tWin_t,  ...
+function [fig, avgAmp, p_hm, ranksumval_hm, ranksumz_hm] = showTonsetResp_hm(y_r, t_r, catEvTimes, tWin_t,  ...
     param, dd, validEvents)
 % [fig, avgAmp, p_hm] = showTonsetResp_hm(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t,  param, dd, validEvents)
 % 
 %
+
+figPosition = [0 0 163 2*163];%200 400];
 
 %% from showTonsetByCue:
 onsetTimes_t = catEvTimes.tOnset(validEvents);
@@ -32,9 +34,9 @@ rWin =  intersect(find(winSamps_t >= param.respWin(1)), find(winSamps_t <= param
 % p_visResp = signrank(bSignal, rSignal); %is there a modulation after target stimulation?
 %respPolarity = sign(mean(rSignal) - mean(bSignal));
 
-theseColors = [1 0 0; 0 0 1]; %h v m
+%theseColors = [1 0 0; 0 0 1]; %h v m
 
-fig = figure('position',[1003         219         2*588         1200]);
+fig = figure('position', figPosition);
 
 avgResp = nan(numel(param.cardinalDir), 2,2, numel(winSamps_t));
 seResp = nan(numel(param.cardinalDir), 2,2, numel(winSamps_t));
@@ -45,8 +47,10 @@ for iregress = 1:2
         switch ihm
             case 1
                 stimTrials_c = find(success); %intersect(intersect(find(success), stimtrials), divTrials);
+                thisLine = '-'; thisColor = [0 0 0]; 
             case 2
                 stimTrials_c = find(failure); %intersect(intersect(find(failure), stimtrials), divTrials);
+                thisLine = ':';thisColor = [0.5 0.5 0.5];
         end
 
         for itgtDir = 1:numel(param.cardinalDir)
@@ -68,45 +72,61 @@ for iregress = 1:2
                 avgResp(itgtDir, ihm, iregress, :) = mean(theseData,1);
                 seResp(itgtDir, ihm, iregress, :) = ste(theseData, 1);
 
+                avgResp_m(itgtDir, ihm, iregress,:) = mean(squeeze(singleResp_t(theseTrials,2,:)));
+
                 avgAmp(itgtDir, ihm, iregress) = mean(mean(theseData(:,rWin),1));
                 singleAmp{itgtDir, ihm, iregress} = mean(theseData(:,rWin),2);
         end % end of ihm
 
         %% visualization
         %% time course at preferred direction
-        axes(1,iregress) = subplot(2, 2, iregress, 'Parent', fig);
+        axes(1,iregress) = subplot(2, 1, iregress, 'Parent', fig);
 
         prefDirIdx = find(param.cardinalDir == prefDir);
         boundedline(winSamps_t, squeeze(avgResp(prefDirIdx, ihm,iregress, :)),  ...
-            squeeze(seResp(prefDirIdx, ihm, iregress, :)), 'color', theseColors(ihm,:),'transparency', 0.5); hold on;
-        %vbox(param.respWin(1), param.respWin(2));
-        %vline(param.respWin, ':', 'k');
-        xlabel(num2str(numel(theseTrials)));
+            squeeze(seResp(prefDirIdx, ihm, iregress, :)), thisLine,'color',thisColor, 'transparency', 0.5); hold on;
+       
+        % if iregress == 1 %model response
+        %     plot(winSamps_t, squeeze(avgResp_m(prefDirIdx, ihm,iregress, :)), 'linewidth',1);
+        % end
+
         xlim(tWin_t);
         title(tname);
+       
         if iregress == 2
-            legend('success','failure');
+            xlabel('Time from target onset [s]');
+            ylabel('Firing rate [Hz]')
+            legend('Success','Failure');
         end
+        set(axes(1,iregress), 'tickdir','out');
 
         %% circular distribution
-        axes(2,iregress) = subplot(2, 2, iregress+2, 'Parent', fig);
-        polarplot(pi/180*param.cardinalDir, squeeze(avgAmp(:,ihm,iregress))', 'color', theseColors(ihm,:)); hold on
-        polarscatter(pi/180*param.cardinalDir(prefDirIdx), squeeze(avgAmp(prefDirIdx,ihm,iregress)),'color', theseColors(ihm,:));
+        % axes(2,iregress) = subplot(2, 2, iregress+2, 'Parent', fig);
+        % polarplot(pi/180*param.cardinalDir, squeeze(avgAmp(:,ihm,iregress))', 'color', thisColor); hold on
+        % polarscatter(pi/180*param.cardinalDir(prefDirIdx), squeeze(avgAmp(prefDirIdx,ihm,iregress)),'color', thisColor);
     end
 
     %% hit v miss stats
     if ~isempty(singleAmp{prefDirIdx, 1, iregress}) && ~isempty(singleAmp{prefDirIdx, 2, iregress})
-        p_hm(iregress) = ranksum(singleAmp{prefDirIdx, 1, iregress}, singleAmp{prefDirIdx, 2, iregress});
+        [p_hm(iregress),  ~, stats_tmp ] = ranksum(singleAmp{prefDirIdx, 1, iregress}, singleAmp{prefDirIdx, 2, iregress});
+        ranksumval_hm(iregress) = stats_tmp.ranksum;
+        if isfield(stats_tmp,'zval')
+            ranksumz_hm(iregress) = stats_tmp.zval;
+        else
+            ranksumz_hm(iregress) = NaN;
+        end
     else
         p_hm(iregress) = NaN;
+        ranksumval_hm(iregress) = NaN;
+        ranksumz_hm(iregress) = NaN;
     end
-    title(['p = ' num2str(p_hm(iregress))])
+   % title(['p = ' num2str(p_hm(iregress))])
 
 end
 linkaxes(axes(1,:));
 
 %linkaxes(axes(2,:));%NG as axes inputs must be Cartesian.
-rlim(axes(2,:), [0 max(avgAmp(:))]);
+%rlim(axes(2,:), [0 max(avgAmp(:))]);
 
 
 

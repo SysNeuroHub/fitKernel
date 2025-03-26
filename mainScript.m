@@ -7,7 +7,7 @@ set(0,'DefaultFigureVisible','off');
 animal =  'hugo';%'ollie';% % %'andy';%
 useGPU = 1; %13/12/24
 dataType = 0;%0: each channel, 1: all channels per day
-for yyy = 2
+for yyy = 2%1:3
     switch yyy
         case 1
             year = '2021'; %hugo
@@ -26,9 +26,9 @@ for yyy = 2
 
     % to obtain index of specified month&date&channel
     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-    regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19')))));
+     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','08','*_ch1')))));
  
-    %thisdata = thisdata:numel(loadNames);
+    % thisdata = thisdata:numel(loadNames);
     nData = numel(thisdata);
 
     id_pop = cell(nData,1);
@@ -223,6 +223,12 @@ for yyy = 2
             y_r = cat(2,PSTH_f,predicted_all, predicted);
 
 
+            %% preferred direction
+            param_tmp = param;
+            param_tmp.cardinalDir = 0:359;
+            prefDir = getPrefDir_wrapper(PSTH_f, t_r, dd, catEvTimes, param_tmp, spkOkUCueTrials);
+
+
             %% explained variance for target response
             nPredictorNames = numel(param.predictorNames);
 
@@ -265,8 +271,8 @@ for yyy = 2
 
 
             %% target response hit v miss
-            [fig, avgAmp_hm, p_hm] = showTonsetResp_hm(y_r, t_r, onsets_cat, catEvTimes, param.figTWin,  ...
-                param, dd, targetTrials);
+            [fig, avgAmp_hm, p_hm, ranksumval_hm, ranksumz_hm] = showTonsetResp_hm(y_r, t_r, onsets_cat, ...
+                    catEvTimes, param.figTWin,  param, dd, targetTrials);
 
             screen2png(fullfile(saveFigFolder, ['tOnsetResp_hm_' saveSuffix]), fig);
             close(fig);
@@ -280,6 +286,8 @@ for yyy = 2
             latency_r_pop{idata} = latencyStats.latency_r;
             avgAmp_hm_pop{idata} = avgAmp_hm;
             p_hm_pop{idata} = p_hm;
+            ranksumval_hm_pop{idata} = ranksumval_hm;
+            ranksumz_hm_pop{idata} = ranksumz_hm;
             spkOk_th_pop{idata} = spkOk_th;
             spkOkTrials_pop{idata} = spkOkTrials;
             spkOkUCueTrials_pop{idata} = spkOkUCueTrials;
@@ -319,6 +327,8 @@ for yyy = 2
             mm.spkNGRate = spkNGRate;
             mm.CueTrRate = CueTrRate;
             mm.nLatencyTrials_pref_success = nLatencyTrials_pref_success;
+            mm.ranksumval_hm = ranksumval_hm;
+            mm.ranksumz_hm = ranksumz_hm;
             clear mm mFiringRate;
             close all
         catch err

@@ -1,9 +1,13 @@
 function [latency_neuro, thresh_neuro, tgtDir, fig, nlatencyTrials_pref_success, latencyStats] = ...
     getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, ThreshParam, param, dd, validEvents)
 % [latency_neuro, validEvents, thresh_neuro, tgtDir] = getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd)
-% create figure of single-trials sorted by behavioural latency
+% create figure of single-trials sorted by behavioural latency of
+% individual neurons
 
 %16/1/25 added nlatencyTrials_pref_success and latencyStats 
+
+markerSize = 10;
+figPosition = [0 0 163 2*163];
 
 if isempty(ThreshParam)
     %threshOption = 'uniform'; %uniform threshold across all trials or inidividual threshold of each trial (India)
@@ -60,12 +64,13 @@ clear prefDirTrials_c
 
 %% visualization
 if nargout>3
-    fig = figure('position',[1003         300         840         664]);
+    % fig = figure('position',[1003         300        482         664]);
+    fig = figure('position', figPosition);
 
     stimtrials = prefDirTrials;
 
-    theseTrials = []; nTrials = [];
-    for ievtype = 1:3
+    theseTrials = []; nTrials = []; difflatency = nan;
+    for ievtype = 1%:3
         switch ievtype
             case 1
                 theseTrials_c = find(success.*stimtrials);
@@ -92,42 +97,54 @@ if nargout>3
             p(ievtype) = nan;
         end
 
-        axes(2*ievtype-1) = subplot(3, 2, 2*ievtype-1);
+        axes(2*ievtype-1) = subplot(3, 1, 1);
         if sum(theseTrials)==0
             continue;
         end
         imagesc(winSamps_t, 1:numel(theseTrials_c), singleResp(theseTrials_c(idx),:));
+        colormap(1-gray);
         hold on
-        plot(latency_neuro(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'r.');
-        plot(latency_bhv_srt(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'w.');
-        plot(-diffCueFOnset(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'g.');
-        vline(0);
+        plot(latency_bhv_srt(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'m.','MarkerSize',markerSize);
+        plot(latency_neuro(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'c.','MarkerSize', markerSize);
+        legend('Behavioural','Neural','Location','northwest');
+        %plot(-diffCueFOnset(theseTrials_c(idx)), 1:numel(theseTrials_c(idx)),'g.');
+        %vline(0);
+
+        difflatency = median(latency_neuro(theseTrials_c(idx)) - latency_bhv_srt(theseTrials_c(idx)));
         if ievtype == 1
             title(['tgt stim on preferred direction ' num2str(prefDir) ]);
             xlabel('Time from target onset [s]')
-            ylabel('success');
+            %ylabel('success'); 
+            ylabel('Trial ID (sorted)');
         elseif ievtype == 2
             ylabel('hesitent');
         elseif ievtype == 3
             ylabel('failure');
         end
         set(axes(2*ievtype-1),'tickdir','out');
+        data_c = singleResp(theseTrials_c(idx),:);
+        clim([max(0, min(data_c(:))) 0.1*round(10*max(data_c(:)))]);
         mcolorbar(gca, .5);
 
-        axes(2*ievtype) = subplot(3, 2, 2*ievtype);
-        plot(latency_bhv_srt(theseTrials_c(idx)), latency_neuro(theseTrials_c(idx)),'o'); hold on;
-        xlabel('behavioural latency');
-        ylabel('neural latency');
+        %% scatter plot
+        axes(2*ievtype) = subplot(3,1, [2 3]);
+        scatter(latency_bhv_srt(theseTrials_c(idx)), latency_neuro(theseTrials_c(idx)),markerSize,'MarkerEdgeColor','k'); hold on;
+        xlabel('Behavioural');
+        ylabel('Neural');
+        ax = gca;
+        ax.XColor = 'm'; ax.YColor = 'c';
         tname = sprintf('corr: %.2f (p=%.2f)', r(ievtype), p(ievtype));
         title(tname); %title(['r=' num2str(r) ', r(success)=' num2str(r_success)]);
         squareplot;
+        box off;
         axis padded; set(gca,'TickDir','out');
 
     end
 end
-linkcaxes(axes([1 3 5]));
+%linkcaxes(axes([1 3 5]));
 
 nlatencyTrials_pref_success = nTrials(1);
 latencyStats.latency_r = r(1);
 latencyStats.latency_p = p(1);
+latencyStats.difflatency = difflatency;
 

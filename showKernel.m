@@ -55,5 +55,12 @@ set(gca,'ytick',cardinalDir);
 xlabel('time from eye movement [s]');
 mcolorbar(a4,.5);
 
-linkaxes([a2,a3,a4],'x');
-
+a5=subplot(4,2,8);
+plot(kernelInfo.tlags{4}, kernelInfo.kernel{4}');hold on
+plot(kernelInfo.tlags{5}, kernelInfo.kernel{5}');hold on
+xlabel('time from pupil dilation/blink [s]');
+axis tight;
+if useSameYrange
+    ylim([-absMax absMax]);
+end
+linkaxes([a2 a3 a4 a5],'x');

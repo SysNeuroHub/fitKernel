@@ -1,6 +1,6 @@
 function prefDir = getPrefDir_wrapper(y_r, t_r, dd, catEvTimes, param, includeTrials)
 
-%preferred direction determined from includeTrials
+%quantised preferred direction determined from includeTrials
 %originally implemented in showTonsetResp.m
 
 [choiceOutcome] = getChoiceOutcome(dd);

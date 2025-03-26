@@ -2,6 +2,8 @@ function [prefDir, amp] = getKernelPrefDirAmp(kernel_pop, tlags, tgtRange, cardi
 %[prefDir, amp] = getKernelPrefDirAmp(kernel_pop, tlags, tgtRange)
 %Input:
 % kernel_pop: {modality x units}
+% tlags: kernel time range in ms
+% tgtRange
 %
 %Output:
 % prefDir: preferred direction of the kernel (units x modality) in [deg]

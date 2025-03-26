@@ -6,15 +6,15 @@ set(0,'DefaultFigureVisible','off');
 warning('off','all');
 
 %% recorded data
-tWin_t = [-0.5 0.5];
 
-for aa = 1:2
-    switch aa
+for aaa = 1:2
+    switch aaa
         case 1
             animal = 'hugo'; %'ollie';%%'andy';% 'andy' '
         case 2
             animal = 'ollie';
     end
+
     for yyy = 1:3
         switch yyy
             case 1
@@ -24,25 +24,21 @@ for aa = 1:2
             case 3
                 year = '2023';
         end
+        logName = fullfile(saveServer,'20241212',year,animal,'log_mainScript_latency');
 
-        saveFigFolder = fullfile(saveServer, '20250207',year,animal);
+        saveFigFolder = fullfile(saveServer, '20241212',year,animal);
         mkdir(saveFigFolder);
 
 
         [loadNames, months, dates, channels] = getMonthDateCh(animal, year, rootFolder);
 
-        % if yyy ==1
-        %     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-        %         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','03March','19','*_ch8')))));%2021
-        % elseif yyy==2
-        %     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-        %         regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','08','*_ch1')))));%2022
-        % end
-        thisdata = 1:length(channels);
+        thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+              regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','03March','18','*_ch13'))))); %2023
+        % thisdata = 1:length(channels);
 
 
         % parameters
-        n=load(fullfile(saveServer,'param20250207.mat'),'param');
+        n=load(fullfile(saveServer,'param20241223.mat'),'param');
         param =n.param;
         n=[];
         ncDirs = length(param.cardinalDir);
@@ -78,24 +74,36 @@ for aa = 1:2
                 %% prepare behavioral data (common across channels per day)
                 eyeName = fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']);
 
-                load(eyeName,'catEvTimes','onsets_cat');%,...
-                % 'eyeData_rmotl_cat','startSaccNoTask', 'saccDirNoTask');%result of processEyeData
+                load(eyeName,'catEvTimes');%,...
+      
 
-                targetTrials_c = find(~isnan(catEvTimes.tOnset) .* ~isnan(catEvTimes.fOnset)); %with or without cue
-                winSamps = param.latencyTWin(1):median(diff(t_r)):param.latencyTWin(2);
-                periEventTimes = bsxfun(@plus, catEvTimes.tOnset, winSamps); % rows of absolute time points around each event
-                okEvents = intersect(find(periEventTimes(:,end)<=max(t_r)), find(periEventTimes(:,1)>=min(t_r)));
-                targetTrials = intersect(intersect(targetTrials_c, okEvents), spkOkUCueTrials);
+                %% from showTonsetResp.m
+                % figTWin = param.figTWin; %figure temporal window
+                % compTWin = [figTWin(1) - 0.2 figTWin(2)]; %triggered response is computed
+                %
+                % [choiceOutcome] = getChoiceOutcome(dd);
+                %
+                % successEvents = intersect(find((choiceOutcome==1)), spkOkUCueTrials);
+                % successEvents = intersect(successEvents, find(catEvTimes.tOnset + compTWin(2) < max(t_r)));
+                %
+                % onsetTimes = catEvTimes.tOnset(successEvents);
+                % tgtDir = getTgtDir(dd.targetloc(successEvents), param.cardinalDir);
+                %
+                % [~,dirIdx] = intersect(param.cardinalDir, unique(tgtDir));
+                %
+                % [~, winSamps, singleOnsetResp, ...
+                %     sortedOnsetLabels, uniqueOnsetLabels] ...
+                %     = eventLockedAvg(y_r', t_r, onsetTimes, tgtDir, compTWin);
+                % tonsetRespAmp = characteriseResp(singleOnsetResp, ...
+                %     winSamps, param.tOnRespWin, param.baseWin, 'mean');
 
-                [latency_neuro, thresh_neuro, tgtDir, fig_latency, nLatencyTrials_pref_success, latencyStats] = ...
-                    getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, param.latencyTWin, ...
-                    param.threshParam, param, dd, targetTrials);
-                savePaperFigure(fig_latency, fullfile(saveFigFolder, ['latencyCorr_' saveSuffix]));close(fig_latency);
-                %delete(fullfile(saveFigFolder, ['latencySingle_' saveSuffix]));
+                % prefDir = getPrefDir(y_r(:,1), t_r, onsetTimes, tgtDir, param);
+                param.cardinalDir = 0:359;
+                prefDir = getPrefDir_wrapper(PSTH_f, t_r, dd, catEvTimes, param, spkOkUCueTrials);
 
 
                 %% save results
-                save(saveName,'latencyStats','nLatencyTrials_pref_success', '-append');
+                save(saveName,'prefDir', '-append');
 
                 clear cellclassInfo mFiringRate PSTH_f t_r latency_bhv latency_neuro latency_r  latencyStats nLatencyTrials_pref_success
             catch err
@@ -104,6 +112,7 @@ for aa = 1:2
                 clear cellclassInfo mFiringRate PSTH_f t_r latency_bhv latency_neuro latency_r  mdiffCueFOnset stddiffCueFOnset
                 close all;
             end
+            save(logName, "ng",'idata');
         end
 
     end

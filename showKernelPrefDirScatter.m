@@ -2,6 +2,7 @@ function [f, pval] = showKernelPrefDirScatter(kernel_pop, tlags, tgtRange, param
 %[f, pval] = showKernelPrefDirs(kernel_pop, tlags, tgtRange, param, animalid_pop)
 
 nUnits = size(kernel_pop,2);
+figPosition = [0 0 600 400];
 
 if nargin < 5
     animalid_pop = ones(1, nUnits);
@@ -11,12 +12,12 @@ end
 %tuned = amp>param.ampTh;
 %tuned = 1:numel(okunits);
 
-f = figure('position',[ 680         485        800 1200]);
+f = figure('position',figPosition);
 for aa = 1:numel(unique(animalid_pop))
     if aa==1
-        asymbol = 'o';
+        asymbol = 'o'; histColor = [.5 .5 .5];
     elseif aa==2
-        asymbol = 'square';
+        asymbol = 'square'; histColor = [.1 .1 .1];
     end
 
     for ii = 1:3
@@ -31,7 +32,8 @@ for aa = 1:numel(unique(animalid_pop))
         %doubleTuned = find(tuned(:,v(1))+tuned(:,v(2))==2);
         
         %% scatter plot
-        subplot(3,2,2*ii-1);
+        % subplot(3,2,2*ii-1);
+         subplot(2,3,ii);
         plot(prefDir(animalid_pop==aa,v(1)), prefDir(animalid_pop==aa,v(2)), asymbol);hold on
         %plot(prefDir(doubleTuned,v(1)), prefDir(doubleTuned,v(2)), 'b.');
         squareplot;
@@ -43,17 +45,25 @@ for aa = 1:numel(unique(animalid_pop))
         set(gca,'tickdir','out');
 
         %% histogram
-        subplot(3,2,2*ii)
-        histogram(prefDir(animalid_pop==aa,v(1)) - prefDir(animalid_pop==aa,v(2)),-180:5:180); hold on;
+        %subplot(3,2,2*ii)
+        subplot(2,3,ii+3);
+        histogram(prefDir(animalid_pop==aa,v(1)) - prefDir(animalid_pop==aa,v(2)),-180:5:180,...
+            'FaceColor', histColor); hold on;
         %histogram(prefDir(doubleTuned,v(1)) - prefDir(doubleTuned,v(2)), -180:5:180,  'facecolor', 'b');
-        if aa == numel(unique(animalid_pop))
+        axis tight square; box off;
+        ylim([0 35]);
+        if ii==1
+            ylabel('# Units');
+        end
+       if aa == numel(unique(animalid_pop))
             vline(0);
         end
         xlabel([param.predictorNames{v(1)} '-' param.predictorNames{v(2)}]);
         %pval = circ_medtest(prefDir(doubleTuned,v(1)) - prefDir(doubleTuned,v(2)),0);
         %pval = circ_medtest(prefDir(:,v(1)) - prefDir(:,v(2)),0);
         %title(['pval:' num2str(pval)]);
-        set(gca,'tickdir','out');
+        set(gca,'tickdir','out','xtick',[-90 0 90]);
 
     end
 end
+legend('M1','M2');
