@@ -6,6 +6,7 @@ if nargin < 5
     %1: vision, 2: eye spd, 3: eye position
 end
 
+showRange = [-0.4 1];%[0 1]; %[-50 120]
 units_hm = ~isnan(ranksumz_hm_pop(1,:));
 msize = 7;%10;
 figPosition = [0 0 400 400];
@@ -37,6 +38,9 @@ for aa = 1:numel(unique(animalid_pop))
         s0.MarkerEdgeColor = acolor;
         hold on
 
+        if aa==1
+            line(fliplr(showRange), showRange,'linestyle',':','color','k','linewidth',0.25)
+        end
         %% alll units
         s1 = scatter(corr_tgt_rel_pop(tgtModalities(2), units_hm.*animalid_pop==aa), ...
             corr_tgt_rel_pop(tgtModalities(1), units_hm.*animalid_pop==aa), ...
@@ -62,26 +66,25 @@ for aa = 1:numel(unique(animalid_pop))
             case 1 
                 ax(2*iregress-1).YColor = 'r';
             case 2
-                ax(2*iregress-1).YColor = 'b';
-            case 3
                 ax(2*iregress-1).YColor = 'g';
+            case 3
+                ax(2*iregress-1).YColor = 'b';
         end
         switch tgtModalities(2)
             case 1 
                 ax(2*iregress-1).XColor = 'r';
             case 2
-                ax(2*iregress-1).XColor = 'b';
-            case 3
                 ax(2*iregress-1).XColor = 'g';
+            case 3
+                ax(2*iregress-1).XColor = 'b';
         end
-        tname = sprintf('Hit v Miss at preferred direction');
+        tname = sprintf('Hit v Miss');
         if iregress == 2
             tname = [tname ' after regression'];
         end
         title(tname);
         if aa==2
-            squareplots(gca, [-50 120]);
-            line([120 -50], [-50 120],'color', 'r')
+            squareplots(gca, showRange);
             [hh,gg] = mcolorbar(gca, 0.5);
             gg.Label.String = '|z|';
         end
@@ -94,21 +97,21 @@ for aa = 1:numel(unique(animalid_pop))
                 - corr_tgt_rel_pop(tgtModalities(1), units_hm);
             significant = (abs(ranksumz_hm_pop(iregress, units_hm)) > param.ranksumz_th);
 
-            histogram(thisAxis(significant == 0), -170:20:170,'facecolor',"#FFFF00"); %yellow
+            histogram(thisAxis(significant == 0), linspace(-diff(showRange),diff(showRange),20),'facecolor',"#FFFF00"); %yellow
             hold on
-            histogram(thisAxis(significant == 1), -170:20:170,'facecolor',"#7E2F8E"); %purple
+            histogram(thisAxis(significant == 1), linspace(-diff(showRange),diff(showRange),20),'facecolor',"#7E2F8E"); %purple
             axis square; box off;
             
             %p_skew(iregress) =  signrank(thisAxis(significant==1)); %whether the highly dissociable units have non-zero value
             p_skew(iregress) =  mediantest(thisAxis(significant==1), thisAxis(significant==0)); % whetehr the value changes 
             title(['p ' num2str(p_skew(iregress))]);
-            xlabel('x - y');
+            xlabel([param.predictorNames{tgtModalities(2)} ' - ' param.predictorNames{tgtModalities(1)}]);
             legend(['|z|<' num2str(param.ranksumz_th)], ['|z|>' num2str(param.ranksumz_th)],...
                 'location','northwest');
-            set(ax(2*iregress),'tickdir','out', 'xcolor','r');
+            % set(ax(2*iregress),'tickdir','out', 'xcolor','r');
         end
     end
 end
 linkaxes(ax([2 4]));
-vline(0,ax([2 4]));
+vline(0,ax([2 4]),[],[],1);
 

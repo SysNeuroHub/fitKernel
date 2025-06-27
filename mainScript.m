@@ -7,7 +7,7 @@ set(0,'DefaultFigureVisible','off');
 animal =  'hugo';%'ollie';% % %'andy';%
 useGPU = 1; %13/12/24
 dataType = 0;%0: each channel, 1: all channels per day
-for yyy = 2%1:3
+for yyy = 1%1:3
     switch yyy
         case 1
             year = '2021'; %hugo
@@ -26,7 +26,7 @@ for yyy = 2%1:3
 
     % to obtain index of specified month&date&channel
     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','08','*_ch1')))));
+     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27')))));
  
     % thisdata = thisdata:numel(loadNames);
     nData = numel(thisdata);
@@ -190,23 +190,25 @@ for yyy = 2%1:3
 
 
             %%  detect saccades outside the task
-            tOnset = catEvTimes.tOnset;
-            cOnset = catEvTimes.cOnset; %choice onset not cue %% WHY THIS CONDITION??
-            validEvents = intersect(find(~isnan(tOnset)), find(~isnan(cOnset)));
-            tOnset = tOnset(validEvents);
-            cOnset = cOnset(validEvents);
-
-            tcOnset_trace = event2Trace(t_cat, [tOnset; cOnset], 2*0.5);
-            excEventT_cat = (tcOnset_trace + blinks + outliers > 0); %28/1/22
-            [startSaccNoTask, endSaccNoTask] = selectSaccades(catEvTimes.saccadeStartTimes, ...
-                catEvTimes.saccadeEndTimes, t_cat, excEventT_cat);%param.minSaccInterval);
-            saccNoTaskTrace = event2Trace(t_cat, [startSaccNoTask endSaccNoTask]);
-            spkOkUCueTrace_tmp = getIncludeTrace(t_cat, t_cat, t_tr, onsets_cat, spkOkTrials);
-            saccNoTask_spkOkUCue_Trace = saccNoTaskTrace.*spkOkUCueTrace_tmp;
-
-            [~, startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue] = trace2Event(saccNoTask_spkOkUCue_Trace, t_cat);
-            [saccDirNoTask_spkOkUCue, dirIndexNoTask_spkOkUCue] = getSaccDir(startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue, ...
-                eyeData_rmotl_cat, param.cardinalDir);
+            [startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, dirIndexNoTask_spkOkUCue] = ...
+                getSaccNoTask(t_cat, catEvTimes, eyeData_rmotl_cat, blinks, outliers, t_tr, onsets_cat, spkOkTrials, param)
+            % tOnset = catEvTimes.tOnset;
+            % cOnset = catEvTimes.cOnset; %choice onset not cue %% WHY THIS CONDITION??
+            % validEvents = intersect(find(~isnan(tOnset)), find(~isnan(cOnset)));
+            % tOnset = tOnset(validEvents);
+            % cOnset = cOnset(validEvents);
+            % 
+            % tcOnset_trace = event2Trace(t_cat, [tOnset; cOnset], 2*0.5);
+            % excEventT_cat = (tcOnset_trace + blinks + outliers > 0); %28/1/22
+            % [startSaccNoTask, endSaccNoTask] = selectSaccades(catEvTimes.saccadeStartTimes, ...
+            %     catEvTimes.saccadeEndTimes, t_cat, excEventT_cat);%param.minSaccInterval);
+            % saccNoTaskTrace = event2Trace(t_cat, [startSaccNoTask endSaccNoTask]);
+            % spkOkUCueTrace_tmp = getIncludeTrace(t_cat, t_cat, t_tr, onsets_cat, spkOkTrials);
+            % saccNoTask_spkOkUCue_Trace = saccNoTaskTrace.*spkOkUCueTrace_tmp;
+            % 
+            % [~, startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue] = trace2Event(saccNoTask_spkOkUCue_Trace, t_cat);
+            % [saccDirNoTask_spkOkUCue, dirIndexNoTask_spkOkUCue] = getSaccDir(startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue, ...
+            %     eyeData_rmotl_cat, param.cardinalDir);
 
             %% obtain kernels!
             % if exist(saveName,'file')
@@ -229,29 +231,30 @@ for yyy = 2%1:3
             prefDir = getPrefDir_wrapper(PSTH_f, t_r, dd, catEvTimes, param_tmp, spkOkUCueTrials);
 
 
-            %% explained variance for target response
-            nPredictorNames = numel(param.predictorNames);
-
-            expval_tgt = zeros(nPredictorNames, 1);
-            corr_tgt = zeros(nPredictorNames, 1);
-            [expval_tgt(1,1), corr_tgt(1,1)] = ...
-                getExpVal_tgt(PSTH_f, predicted_all, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
-            [expval_tgt(2:nPredictorNames+1,1), corr_tgt(2:nPredictorNames+1,1)] = ...
-                getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
-            corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
-
-
-            %% figure for kernel fitting
-            f = showKernel( t_r, y_r, kernelInfo, param.cardinalDir);
-            screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
-            close(f);
+            % % %% explained variance for target response
+            % % nPredictorNames = numel(param.predictorNames);
+            % % 
+            % % expval_tgt = zeros(nPredictorNames, 1);
+            % % corr_tgt = zeros(nPredictorNames, 1);
+            % % [expval_tgt(1,1), corr_tgt(1,1)] = ...
+            % %     getExpVal_tgt(PSTH_f, predicted_all, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
+            % % [expval_tgt(2:nPredictorNames+1,1), corr_tgt(2:nPredictorNames+1,1)] = ...
+            % %     getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
+            % % corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
+            % % 
+            % % 
+            % % %% figure for kernel fitting
+            % % kernelInfo_norm = getKernelInfo_norm(kernelInfo, predictorInfo);
+            % % f = showKernel( t_r, y_r, kernelInfo_norm, param.cardinalDir);
+            % % screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
+            % % close(f);
 
             %% Figure for target onset response (only to preferred direction)
             [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
                 startSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, param, [], spkOkUCueTrials);
             cellclassInfo.datech = datech;
-            %savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
-            screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
+            savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
+            %screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_allTr']), f);
             close(f);
 
 
@@ -271,10 +274,9 @@ for yyy = 2%1:3
 
 
             %% target response hit v miss
-            [fig, avgAmp_hm, p_hm, ranksumval_hm, ranksumz_hm] = showTonsetResp_hm(y_r, t_r, onsets_cat, ...
-                    catEvTimes, param.figTWin,  param, dd, targetTrials);
-
-            screen2png(fullfile(saveFigFolder, ['tOnsetResp_hm_' saveSuffix]), fig);
+            [fig, avgAmp_hm, p_hm, ranksumval_hm, ranksumz_hm] = showTonsetResp_hm(y_r, ...
+                t_r, catEvTimes, param.figTWin,  param, dd, targetTrials);
+            savePaperFigure(fig, fullfile(saveFigFolder, ['tOnsetResp_hm_' saveSuffix]));
             close(fig);
 
             %% for population analysis
@@ -306,6 +308,7 @@ for yyy = 2%1:3
             mm.predicted_all = predicted_all;
             mm.predicted = predicted;
             mm.kernelInfo = kernelInfo;
+            mm.kernelInfo_norm = kernelInfo_norm;
             mm.t_r = t_r;
             mm.param=param;
             mm.mFiringRate=mFiringRate;

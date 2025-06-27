@@ -1,6 +1,6 @@
 
 [saveServer, rootFolder] = getReady();
-for aa = 2
+for aa = 1:2
     switch aa
         case 1
             animal = 'hugo'; yidx=1:3;
@@ -41,7 +41,11 @@ for aa = 2
             load(saveName,'expval_tgt','corr_tgt','latencyStats','avgAmp_hm','p_hm','spkOk_th', ...
                 'spkOkTrials','spkOkUCueTrials','mFiringRate','cellclassInfo','kernelInfo','ntargetTrials',...
                 'corr_tgt_rel','spkNGRate','CueTrRate','nLatencyTrials_pref_success','prefDir',...
-                'ranksumval_hm', 'ranksumz_hm');
+                'ranksumval_hm', 'ranksumz_hm', 'corr_tgt_avg','corr_tgt_avg_rel');
+            if ~exist('corr_tgt_avg','var')
+                corr_tgt_avg = nan*ones(7,1);
+                corr_tgt_avg_rel = nan*ones(7,1);
+            end
 
             if ~exist('mFiringRate','var') || mFiringRate < 5; continue; end
 
@@ -52,6 +56,8 @@ for aa = 2
             expval_tgt_pop{idata} = expval_tgt;
             corr_tgt_pop{idata} = corr_tgt;
             corr_tgt_rel_pop{idata} = corr_tgt_rel;
+            corr_tgt_avg_pop{idata} = corr_tgt_avg; 
+            corr_tgt_avg_rel_pop{idata} = corr_tgt_avg_rel;
 
             latency_r_pop{idata} = latencyStats.latency_r;
             latency_p_pop{idata} = latencyStats.latency_p; %15/2/25
@@ -89,13 +95,14 @@ for aa = 2
             'spkOkTrials_pop','spkOkUCueTrials_pop','mFiringRate_pop',...
             'PtonsetResp_pop','errorIDs','ntargetTrials_pop','spkNGRate_pop',"CueTrRate_pop",...
             'kernel_pop','tlags_pop','nLatencyTrials_pref_success_pop','prefDir_pop', ...
-            "ranksumval_hm_pop","ranksumz_hm_pop",'difflatency_pop');
+            "ranksumval_hm_pop","ranksumz_hm_pop",'difflatency_pop','corr_tgt_avg_pop','corr_tgt_avg_rel_pop');
 
         clear  id_pop expval_tgt_pop corr_tgt_pop corr_tgt_rel_pop ...
             latency_r_pop avgAmp_hm_pop p_hm_pop spkOk_th_pop ...
             spkOkTrials_pop spkOkUCueTrials_pop mFiringRate_pop...
             PtonsetResp_pop errorIDs ntargetTrials_pop spkNGRate_pop CueTrRate_pop...
             kernel_pop tlags_pop nLatencyTrials_pref_success_pop prefDir_pop...
-            ranksumval_hm_pop ranksumz_hm_pop difflatency_pop
+            ranksumval_hm_pop ranksumz_hm_pop difflatency_pop ...
+            corr_tgt_avg_pop corr_tgt_avg_rel_pop
     end
 end

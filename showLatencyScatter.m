@@ -14,6 +14,7 @@ edgeColor = [.75 .75 .75];%'none';
 figPosition = [0 0 400 200];
 alpha = 1;
 scatterLimit = [0 1];
+showRange = [-0.4 1];%[0 1]; %[-50 120]
 
 if nargin < 7
     tgtModalities = [1 2];
@@ -44,6 +45,11 @@ for aa = 1:numel(unique(animalid_pop))
     end
 
     ax = subplot(121);
+
+        if aa==1
+            line(fliplr(showRange), showRange,'linestyle',':','color','k','linewidth',0.25)
+        end
+
     % all units
     % s0 = scatter(corr_tgt_rel_pop(tgtModalities(2), animalid_pop==aa), ...
     %     corr_tgt_rel_pop(tgtModalities(1), animalid_pop==aa), ...
@@ -71,8 +77,7 @@ for aa = 1:numel(unique(animalid_pop))
         xlabel(param.predictorNames(tgtModalities(2)));
         ylabel(param.predictorNames(tgtModalities(1)));
         %title(sprintf('corr to tgt, relative to full mdl\nlatency correlation (success pref)'));
-        squareplot(gca, [-50 120]);
-        line([120 -50], [-50 120],'color', 'r')
+        squareplot(gca, showRange);
         [h,g] = mcolorbar(gca, 0.5);
         g.Label.String = 'r';
         title(['n=' num2str(sum(units_latency))]);
@@ -84,17 +89,17 @@ for aa = 1:numel(unique(animalid_pop))
             case 1 
                 ax.YColor = 'r';
             case 2
-                ax.YColor = 'b';
-            case 3
                 ax.YColor = 'g';
+            case 3
+                ax.YColor = 'b';
         end
         switch tgtModalities(2)
             case 1 
                 ax.XColor = 'r';
             case 2
-                ax.XColor = 'b';
-            case 3
                 ax.XColor = 'g';
+            case 3
+                ax.XColor = 'b';
         end
 
 
@@ -104,10 +109,10 @@ for aa = 1:numel(unique(animalid_pop))
         significant = latency_r_nb_pop(units_latency)  > param.r_latency_th;
         
         ax(1)= subplot(122);
-        histogram(thisAxis(significant == 0), -170:20:170, 'facecolor', "#FFFF00");%yellow
+        histogram(thisAxis(significant == 0),  linspace(-diff(showRange),diff(showRange),20), 'facecolor', "#FFFF00");%yellow
         set(gca,'tickdir','out');
         hold on;
-        histogram(thisAxis(significant == 1), -170:20:170, 'facecolor', "#7E2F8E"); %purple
+        histogram(thisAxis(significant == 1),  linspace(-diff(showRange),diff(showRange),20), 'facecolor', "#7E2F8E"); %purple
         axis square; box off;
         legend(['r<' num2str(param.r_latency_th)], ['r>' num2str(param.r_latency_th)],...
             'Location','northwest');
@@ -122,10 +127,10 @@ for aa = 1:numel(unique(animalid_pop))
 
 
         title(ax(1),['p: ' num2str(p)]);
-        xlabel('x - y');
-        set(gca,'tickdir','out', 'xcolor','r');
+        xlabel([param.predictorNames{tgtModalities(2)} ' - ' param.predictorNames{tgtModalities(1)}]);
+        set(gca,'tickdir','out');%, 'xcolor','r');
         linkaxes(ax);
-        vline(0,gca);
+        vline(0,gca,[],[],1);
     end
 
 end

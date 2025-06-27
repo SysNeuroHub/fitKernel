@@ -32,6 +32,8 @@ prefDir_pop = [];
 ranksumval_hm_pop = [];
 ranksumz_hm_pop = [];
 difflatency_pop = [];
+corr_tgt_avg_pop = [];
+corr_tgt_avg_rel_pop = [];
 
 for aa = 1:numel(animals)
     switch aa
@@ -80,6 +82,10 @@ for aa = 1:numel(animals)
         p_hm_pop = cat(2,p_hm_pop, [assembly.p_hm_pop(entries)]);
         ranksumval_hm_pop = cat(2, ranksumval_hm_pop, [assembly.ranksumval_hm_pop(entries)]);
         ranksumz_hm_pop = cat(2, ranksumz_hm_pop, [assembly.ranksumz_hm_pop(entries)]);
+        corr_tgt_avg_tmp = [assembly.corr_tgt_avg_pop{entries}];
+        corr_tgt_avg_pop = cat(2, corr_tgt_avg_pop, corr_tgt_avg_tmp);%[corr_tgt_rel_pop; corr_tgt_rel_tmp];
+        corr_tgt_avg_rel_tmp = [assembly.corr_tgt_avg_rel_pop{entries}];
+        corr_tgt_avg_rel_pop = cat(2, corr_tgt_avg_rel_pop, corr_tgt_avg_rel_tmp(2:4,:));%[corr_tgt_rel_pop; corr_tgt_rel_tmp];
         
         latency_r_pop = cat(2,latency_r_pop, [assembly.latency_r_pop(entries)]);
         latency_p_pop = cat(2,latency_p_pop, [assembly.latency_r_pop(entries)]);
@@ -98,8 +104,9 @@ display(['fraction of trials whose spike rates are too high: ' num2str(mean(spkN
 display(['fraction of trials where cue was presented and excluded from analysis: ' num2str(mean(CueTrRate_pop))]);
 
 %% apply inclusion critetia
+param.corr_tgtTh = 0.5; %0.1
 [okunits, corr_tgtOK, ntargetTrOK, ptonsetRespOK] ...
-    = inclusionCriteria(corr_tgt_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
+    = inclusionCriteria(corr_tgt_avg_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
 
 % omit data with the following criteria??
 % no saccade response
@@ -122,6 +129,8 @@ nLatencyTrials_pref_success_pop = nLatencyTrials_pref_success_pop(okunits);
 animalid_pop = animalid_pop(okunits);
 prefDir_pop = prefDir_pop(okunits);
 difflatency_pop = cellfun(@(a)a(1), difflatency_pop(okunits));
+corr_tgt_avg_pop = corr_tgt_avg_pop(:,okunits);
+corr_tgt_avg_rel_pop = corr_tgt_avg_rel_pop(:,okunits);
 
 %% convert from cell to matrix
 latency_r_nb_pop = cellfun(@(a)a(1), latency_r_pop);
@@ -131,7 +140,7 @@ ranksumval_hm_pop = [cellfun(@(a)a(1), ranksumval_hm_pop); cellfun(@(a)a(2), ran
 ranksumz_hm_pop = [cellfun(@(a)a(1), ranksumz_hm_pop); cellfun(@(a)a(2), ranksumz_hm_pop)];
 
 %% selected units
-theseIDs = {'hugo/2021/08August/25/27',... %vision
+theseIDs = {'hugo/2021/08August/25/27',... %vision %NG
       'hugo/2022/07July/26/19',... %eye speed
     'hugo/2022/08August/15/4'}; %integrator new 2025 
 %'hugo/2022/08August/17/3',... %eye speed+position
@@ -147,6 +156,10 @@ theseIDs = {'hugo/2021/08August/25/27',... %vision
 % 'hugo/2022/08August/05/2'; %integrater used in 2023 JNS
 % 'hugo/2021/12December/14/13'
 % 'hugo/2021/12December/07/6'
+% 'hugo/2021/08August/23/27', ... %vision
+% 'hugo/2021/08August/25/27',... %vision %NG
+% 'hugo/2021/09September/17/32',...%vision
+
 
 % high latency correlation, also eye-position driven
 theseIDs_lat = {'hugo/2022/07July/08/1', ... % visual, latency independent
@@ -162,6 +175,9 @@ theseIDs_lat = {'hugo/2022/07July/08/1', ... % visual, latency independent
 % 'hugo/2023/02February/02/11',... %independent ... excluded by inclusion criteria
 %    'hugo/2021/12December/10/26' %independent, eye driven
 % 'hugo/2022/09September/15/3',... %dependent
+% 'hugo/2022/07July/11/18' %independent
+% ''hugo/2022/08August/17/2' ' %independent
+% 'hugo/2022/08August/23/1' %independent
 
 theseIDs_hm = {  'hugo/2021/03March/23/29' ...
     'hugo/2021/09September/07/26'}; %no reduction 
@@ -225,16 +241,17 @@ close(f);
 % savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['avgKernel_centered_' animals{:}]));
 % close(f);
 
-% histogram of correlation of the full model
+%% histogram of correlation of the full model (FIG1?)
 f = figure('position', [0 0 200 200]);
-histogram(corr_tgt_pop(1,animalid_pop==1),.05:.02:.8,'FaceColor',[.5 .5 .5]); hold on;
-histogram(corr_tgt_pop(1,animalid_pop==2),.05:.02:.8,'FaceColor',[.1 .1 .1])
+histogram(corr_tgt_avg_pop(1,animalid_pop==1),linspace(param.corr_tgtTh,1,20),'FaceColor',[.5 .5 .5]); hold on;
+histogram(corr_tgt_avg_pop(1,animalid_pop==2),linspace(param.corr_tgtTh,1,20),'FaceColor',[.1 .1 .1])
 axis tight square 
 box off
 set(gca,'tickdir','out')
 xlabel('correlation of the full model'); ylabel('# units');
-legend('M1','M2');
-savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['hist_corr_tgt_pop_' animals{:}]));
+legend('M1','M2','Location','northwest');
+title(['mean: ' num2str(mean(corr_tgt_avg_pop(1, :))) ', s.d.:' num2str(std(corr_tgt_avg_pop(1, :)))]);
+savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['hist_corr_tgt_avg_pop_' animals{:}]));
 close(f);
 
 %% cell type distibution (FIG2)
@@ -244,23 +261,30 @@ close(f);
 % squareplots(fig_abs, [-.2 1]);
 % savePaperFigure(fig_abs, fullfile(saveServer,saveSuffix_p,['corr_tgt_' animals{:}]));close(fig_abs);
 
-fig_rel = showScatterTriplets(corr_tgt_rel_pop, ...
-    param.predictorNames, [-50 120], selectedIDs,'linear',animalid_pop);
-% squareplots(fig_rel, [-50 120]);
-savePaperFigure(fig_rel, fullfile(saveServer,saveSuffix_p,['corr_tgt_r_' animals{:}]), 'dum');close(fig_rel);
+% fig_rel = showScatterTriplets(corr_tgt_rel_pop, ...
+%     param.predictorNames, [-50 120], selectedIDs,'linear',animalid_pop);
+% savePaperFigure(fig_rel, fullfile(saveServer,saveSuffix_p,['corr_tgt_r_' animals{:}]), 'dum');close(fig_rel);
+
+fig_avg = showScatterTriplets(corr_tgt_avg_pop(2:4,:), ...
+    param.predictorNames, [-0.4 1], selectedIDs,'linear',animalid_pop);
+savePaperFigure(fig_avg, fullfile(saveServer,saveSuffix_p,['corr_tgt_avg_' animals{:}]), 'dum');close(fig_avg);
+
+% fig_avg_rel = showScatterTriplets(corr_tgt_avg_rel_pop, ...
+%     param.predictorNames, [0 1], selectedIDs,'linear',animalid_pop);
+% savePaperFigure(fig_avg_rel, fullfile(saveServer,saveSuffix_p,['corr_tgt_avg_rel_' animals{:}]), 'dum');close(fig_avg_rel);
 
 
 %% hit v miss (FIG 3)
-param.ranksumz_th = 2;
+param.ranksumz_th = 3; %2
 tgtModalities = [1 2];
-f = showHMScatter(corr_tgt_rel_pop, ranksumz_hm_pop, selectedIDs_hm, animalid_pop, tgtModalities, param);
+f = showHMScatter(corr_tgt_avg_pop(2:4,:), ranksumz_hm_pop, selectedIDs_hm, animalid_pop, tgtModalities, param);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_hm_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:} ]), 'dum');close;
 % disp(['The number of significant units before regression: '  num2str(sum(p_hm_pop_before<0.05))]);
 % disp(['The number of significant units after regression: '  num2str(sum(p_hm_pop_after<0.05))]);
 
 tgtModalities = [1 3];
-f = showHMScatter(corr_tgt_rel_pop, ranksumz_hm_pop, [], animalid_pop, tgtModalities, param);
+f = showHMScatter(corr_tgt_avg_pop(2:4,:), ranksumz_hm_pop, [], animalid_pop, tgtModalities, param);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_hm_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:} ]), 'dum');close;
 % disp(['The number of significant units before regression: '  num2str(sum(p_hm_pop_before<0.05))]);
@@ -272,7 +296,7 @@ savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_hm_' param.predictorName
 param.nLatencyTr_pref_th = 7;
 param.r_latency_th = 0.5; 
 tgtModalities = [1 2];
-f = showLatencyScatter(corr_tgt_rel_pop, latency_r_nb_pop,   ...
+f = showLatencyScatter(corr_tgt_avg_pop(2:4,:), latency_r_nb_pop,   ...
     nLatencyTrials_pref_success_pop, param, selectedIDs_lat, animalid_pop, tgtModalities);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_latency_r_pref_success_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:}]),'dum'); close(f);
@@ -283,12 +307,12 @@ tgtUnits = find(latency_r_nb_pop > param.r_latency_th &...
 histogram(1e3*difflatency_pop(tgtUnits), 10, 'facecolor', "#7E2F8E");
  axis square; box off;
  set(gca,'tickdir','out');
- xlabel('Neural - behavioural latency [ms]');ylabel('#Units');title(['n=' num2str(numel(tgtUnits))]);
+ xlabel('Neural - behavioural latency [ms]');ylabel('#Units');title(['n=' num2str(numel(tgtUnits)) ', median=' num2str(median(1e3*difflatency_pop(tgtUnits)))]);
  savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['hist_difflatency_' animals{:}]),'dum'); close(f);
 
 
 tgtModalities = [1 3];
-f = showLatencyScatter(corr_tgt_rel_pop, latency_r_nb_pop,   ...
+f = showLatencyScatter(corr_tgt_avg_pop(2:4,:), latency_r_nb_pop,   ...
     nLatencyTrials_pref_success_pop, param, selectedIDs_lat, animalid_pop, tgtModalities);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_latency_r_pref_success_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:}]),'dum'); close(f);

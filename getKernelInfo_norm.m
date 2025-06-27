@@ -1,4 +1,6 @@
 function  kernelInfo_norm = getKernelInfo_norm(kernelInfo, predictorInfo)
+% kernelInfo_norm = getKernelInfo_norm(kernelInfo, predictorInfo)
+% returns kernel that is normalized 
 
 kernelInfo_norm = kernelInfo;
 npredVars = predictorInfo.npredVars;

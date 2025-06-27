@@ -89,7 +89,7 @@ for aa = 1:numel(unique(animalid))
 
         set(ax,'tickdir','out');
         if aa==2
-            squareplots(ax, valueRange);
+            squareplot(ax, valueRange);
         end
         if aa==2 && ii ==1
             legend('M1','','M2');
