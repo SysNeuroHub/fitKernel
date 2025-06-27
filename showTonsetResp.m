@@ -198,104 +198,106 @@ medianSaccDelay = nanmedian(catEvTimes.cOnset(successEvents) - catEvTimes.tOnset
 medianFixationDelay = nanmedian(catEvTimes.fOnset(successEvents) - catEvTimes.tOnset(successEvents));
 
 %% visualize the result
-f=figure('position',[0 0 800 1000]);
-ax(1) = subplot(511);
+f=figure('position',[0 0 200 355]);
+ax(1) = subplot(311);
 %plot(winSamps, mtOnsetResp([allMdlIdx visionIdx eyevelIdx],:));hold on;
 boundedline(winSamps, mtOnsetResp(psthIdx,:), setOnsetResp(psthIdx,:),'k', 'linewidth',2);
 hold on;
-boundedline(winSamps, mtOnsetResp(allMdlIdx,:), setOnsetResp(allMdlIdx,:),'b', 'transparency', 0.5);
-boundedline(winSamps, mtOnsetResp(visionIdx,:), setOnsetResp(visionIdx,:),'m', 'transparency', 0.5);
+boundedline(winSamps, mtOnsetResp(allMdlIdx,:), setOnsetResp(allMdlIdx,:),'--','cmap',[.5 .5 .5], 'transparency', 0.5);
+boundedline(winSamps, mtOnsetResp(visionIdx,:), setOnsetResp(visionIdx,:),'r', 'transparency', 0.5);
+boundedline(winSamps, mtOnsetResp(eyeposIdx,:), setOnsetResp(eyeposIdx,:),'b', 'transparency', 0.5);
 if ~isempty(eyevelIdx)
-    boundedline(winSamps, mtOnsetResp(eyevelIdx,:), setOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
+    boundedline(winSamps, mtOnsetResp(eyevelIdx,:), setOnsetResp(eyevelIdx,:),'g', 'transparency', 0.5);
 end
-boundedline(winSamps, mtOnsetResp(eyeposIdx,:), setOnsetResp(eyeposIdx,:),'g', 'transparency', 0.5);
 %boundedline(winSamps, mtOnsetResp(5,:), setOnsetResp(5,:),'g', 'transparency', 0.5);
 %vbox(param.baseWin(1), param.baseWin(2))
 %vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
 set(gca,'tickdir','out');
-ylabel(sprintf('tOnset (success)\n n=%d',numel(theseTrials)));
+title(sprintf('tOnset (success)\n n=%d',numel(theseTrials)));
 [~,ch]=fileparts(dd.path);
 tname = [dd.subject ' ' dd.date ' ' ch];
-if allTr
-    title(['resp to all directions']);
-else
-    title(['resp to' num2str(prefDir) 'deg']);
-end
 axis tight;
+ax(1).XAxis.Visible = 'off';
 xlim([-0.1 0.5]);
 
-ax(2) = subplot(512);
+%% stimulus without saccade
+ax(2) = subplot(312);
 boundedline(winSamps, mtOnsetResp_v(psthIdx,:), setOnsetResp_v(psthIdx,:),'k', 'linewidth',2);
 hold on;
-boundedline(winSamps, mtOnsetResp_v(allMdlIdx,:), setOnsetResp_v(allMdlIdx,:),'b', 'transparency', 0.5);
-boundedline(winSamps, mtOnsetResp_v(visionIdx,:), setOnsetResp_v(visionIdx,:),'m', 'transparency', 0.5);
+boundedline(winSamps, mtOnsetResp_v(allMdlIdx,:), setOnsetResp_v(allMdlIdx,:),'--','cmap',[.5 .5 .5], 'transparency', 0.5);
+boundedline(winSamps, mtOnsetResp_v(visionIdx,:), setOnsetResp_v(visionIdx,:),'r', 'transparency', 0.5);
+boundedline(winSamps, mtOnsetResp_v(eyeposIdx,:), setOnsetResp_v(eyeposIdx,:),'b', 'transparency', 0.5);
 if ~isempty(eyevelIdx)
-    boundedline(winSamps, mtOnsetResp_v(eyevelIdx,:), setOnsetResp_v(eyevelIdx,:),'c', 'transparency', 0.5);
+    boundedline(winSamps, mtOnsetResp_v(eyevelIdx,:), setOnsetResp_v(eyevelIdx,:),'g', 'transparency', 0.5);
 end
-boundedline(winSamps, mtOnsetResp_v(eyeposIdx,:), setOnsetResp_v(eyeposIdx,:),'g', 'transparency', 0.5);
 %vbox(param.baseWin(1), param.baseWin(2))
 %vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
 axis tight;
-ylabel(sprintf('tOnset (quiescent) \nn=%d', numel(theseTrials_v)));
+ax(2).XAxis.Visible = 'off';
+title(sprintf('tOnset (quiescent) \nn=%d', numel(theseTrials_v)));
 set(gca,'tickdir','out');
 
-ax(3) = subplot(513);
-boundedline(winSamps, mtOnsetResp_f(psthIdx,:), setOnsetResp_f(psthIdx,:),'k', 'linewidth',2);
-hold on;
-boundedline(winSamps, mtOnsetResp_f(allMdlIdx,:), setOnsetResp_f(allMdlIdx,:),'b', 'transparency', 0.5);
-boundedline(winSamps, mtOnsetResp_f(visionIdx,:), setOnsetResp_f(visionIdx,:),'m', 'transparency', 0.5);
-if ~isempty(eyevelIdx)
-    boundedline(winSamps, mtOnsetResp_f(eyevelIdx,:), setOnsetResp_f(eyevelIdx,:),'c', 'transparency', 0.5);
-end
-boundedline(winSamps, mtOnsetResp_f(eyeposIdx,:), setOnsetResp_f(eyeposIdx,:),'g', 'transparency', 0.5);
-%vbox(param.baseWin(1), param.baseWin(2))
-%vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
-axis tight;
-ylabel(sprintf('tOnset (fail) \nn=%d', numel(theseTrials_f)) );
-set(gca,'tickdir','out');
-linkaxes(ax(1:3),'x');
-xlim(figTWin);
+%% stimulus with saccade to wrong direction
+% ax(3) = subplot(513);
+% boundedline(winSamps, mtOnsetResp_f(psthIdx,:), setOnsetResp_f(psthIdx,:),'k', 'linewidth',2);
+% hold on;
+% boundedline(winSamps, mtOnsetResp_f(allMdlIdx,:), setOnsetResp_f(allMdlIdx,:),'b', 'transparency', 0.5);
+% boundedline(winSamps, mtOnsetResp_f(visionIdx,:), setOnsetResp_f(visionIdx,:),'m', 'transparency', 0.5);
+% if ~isempty(eyevelIdx)
+%     boundedline(winSamps, mtOnsetResp_f(eyevelIdx,:), setOnsetResp_f(eyevelIdx,:),'c', 'transparency', 0.5);
+% end
+% boundedline(winSamps, mtOnsetResp_f(eyeposIdx,:), setOnsetResp_f(eyeposIdx,:),'g', 'transparency', 0.5);
+% %vbox(param.baseWin(1), param.baseWin(2))
+% %vbox(param.tOnRespWin(1), param.tOnRespWin(2),[],[.7 1 .7]);
+% axis tight;
+% ylabel(sprintf('tOnset (fail) \nn=%d', numel(theseTrials_f)) );
+% set(gca,'tickdir','out');
 
-ax(4) = subplot(514);
-boundedline(winSamps, msaccResp(psthIdx,:), sesaccResp(psthIdx,:),'k', 'linewidth',2);
-hold on;
-boundedline(winSamps, msaccResp(allMdlIdx,:), sesaccResp(allMdlIdx,:),'b', 'transparency', 0.5);
-boundedline(winSamps, msaccResp(visionIdx,:), sesaccResp(visionIdx,:),'m', 'transparency', 0.5);
-if ~isempty(eyevelIdx)
-    boundedline(winSamps, msaccResp(eyevelIdx,:), sesaccResp(eyevelIdx,:),'c', 'transparency', 0.5);
-end
-boundedline(winSamps, msaccResp(eyeposIdx,:), sesaccResp(eyeposIdx,:),'g', 'transparency', 0.5);
-axis tight;
-xlim([figTWin(1)-medianSaccDelay figTWin(end)-medianSaccDelay])
-ylabel(sprintf('saccade(outside task) \nn=%d', numel(theseSaccTrials)));
 
-ax(5) = subplot(515);
-boundedline(winSamps, mcOnsetResp(psthIdx,:), secOnsetResp(psthIdx,:),'k', 'linewidth',2);
+%% spontaneous saccade
+ax(3) = subplot(313);
+boundedline(winSamps+medianSaccDelay, msaccResp(psthIdx,:), sesaccResp(psthIdx,:),'k', 'linewidth',2);
 hold on;
-boundedline(winSamps, mcOnsetResp(allMdlIdx,:), secOnsetResp(allMdlIdx,:),'b', 'transparency', 0.5);
-boundedline(winSamps, mcOnsetResp(visionIdx,:), secOnsetResp(visionIdx,:),'m', 'transparency', 0.5);
+boundedline(winSamps+medianSaccDelay, msaccResp(allMdlIdx,:), sesaccResp(allMdlIdx,:),'--','cmap',[.5 .5 .5], 'transparency', 0.5);
+boundedline(winSamps+medianSaccDelay, msaccResp(visionIdx,:), sesaccResp(visionIdx,:),'r', 'transparency', 0.5);
+boundedline(winSamps+medianSaccDelay, msaccResp(eyeposIdx,:), sesaccResp(eyeposIdx,:),'b', 'transparency', 0.5);
 if ~isempty(eyevelIdx)
-    boundedline(winSamps, mcOnsetResp(eyevelIdx,:), secOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
+    boundedline(winSamps+medianSaccDelay, msaccResp(eyevelIdx,:), sesaccResp(eyevelIdx,:),'g', 'transparency', 0.5);
 end
-boundedline(winSamps, mcOnsetResp(eyeposIdx,:), secOnsetResp(eyeposIdx,:),'g', 'transparency', 0.5);
 axis tight;
-xlim([figTWin(1)-medianSaccDelay figTWin(end)-medianSaccDelay])
+ax(3).XAxis.Visible = 'off';
+% xlim([figTWin(1)-medianSaccDelay figTWin(end)-medianSaccDelay])
+title(sprintf('saccade(outside task) \nn=%d', numel(theseSaccTrials)));
 
-linkaxes(ax(:),'y');
-vline(medianSaccDelay, ax(1));
-vline(medianSaccDelay, ax(2));
-vline(medianSaccDelay, ax(3));
+% ax(5) = subplot(515);
+% boundedline(winSamps, mcOnsetResp(psthIdx,:), secOnsetResp(psthIdx,:),'k', 'linewidth',2);
+% hold on;
+% boundedline(winSamps, mcOnsetResp(allMdlIdx,:), secOnsetResp(allMdlIdx,:),'b', 'transparency', 0.5);
+% boundedline(winSamps, mcOnsetResp(visionIdx,:), secOnsetResp(visionIdx,:),'m', 'transparency', 0.5);
+% if ~isempty(eyevelIdx)
+%     boundedline(winSamps, mcOnsetResp(eyevelIdx,:), secOnsetResp(eyevelIdx,:),'c', 'transparency', 0.5);
+% end
+% boundedline(winSamps, mcOnsetResp(eyeposIdx,:), secOnsetResp(eyeposIdx,:),'g', 'transparency', 0.5);
+% axis tight;
+% xlim([figTWin(1)-medianSaccDelay figTWin(end)-medianSaccDelay])
+
+linkaxes(ax(:)); 
+vline(0, ax(1), '--','r'); vline(medianSaccDelay, ax(1), '--','g');
+vline(0, ax(2),'--','r');
+vline(medianSaccDelay, ax(3),'--','g');
 if medianFixationDelay>winSamps(1)
     vline(medianFixationDelay, ax(1));
     vline(medianFixationDelay, ax(2));
     vline(medianFixationDelay, ax(3));
 end
-vline(0, ax(4));
-vline(0, ax(5));
-set(gca,'tickdir','out');
+% vline(0, ax(4));
+% vline(0, ax(5));
+%set(gca,'tickdir','out');
+ylimit = get(ax(1), 'Ylim');
+line(ax(1), [.4 .5], [ylimit(1) ylimit(1)],'color','k')
+xlim([-0.1 0.5]);
 
-ylabel(sprintf('cOnset (success)\nn=%d',numel(theseTrials)));
-legend('observed','all mdl','vision','eye velocity','eye position','location','northwest')
+legend('observed','all mdl','vision','eye position','eye velocity','location','northwest')
 %legend('observed','all mdl','vision','eye velocity','location','northwest')
 
 end
