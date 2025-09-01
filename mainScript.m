@@ -231,23 +231,23 @@ for yyy = 1%1:3
             prefDir = getPrefDir_wrapper(PSTH_f, t_r, dd, catEvTimes, param_tmp, spkOkUCueTrials);
 
 
-            % % %% explained variance for target response
-            % % nPredictorNames = numel(param.predictorNames);
-            % % 
-            % % expval_tgt = zeros(nPredictorNames, 1);
-            % % corr_tgt = zeros(nPredictorNames, 1);
-            % % [expval_tgt(1,1), corr_tgt(1,1)] = ...
-            % %     getExpVal_tgt(PSTH_f, predicted_all, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
-            % % [expval_tgt(2:nPredictorNames+1,1), corr_tgt(2:nPredictorNames+1,1)] = ...
-            % %     getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
-            % % corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
-            % % 
-            % % 
-            % % %% figure for kernel fitting
-            % % kernelInfo_norm = getKernelInfo_norm(kernelInfo, predictorInfo);
-            % % f = showKernel( t_r, y_r, kernelInfo_norm, param.cardinalDir);
-            % % screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
-            % % close(f);
+            %% explained variance for target response
+            nPredictorNames = numel(param.predictorNames);
+
+            expval_tgt = zeros(nPredictorNames, 1);
+            corr_tgt = zeros(nPredictorNames, 1);
+            [expval_tgt(1,1), corr_tgt(1,1)] = ...
+                getExpVal_tgt(PSTH_f, predicted_all, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
+            [expval_tgt(2:nPredictorNames+1,1), corr_tgt(2:nPredictorNames+1,1)] = ...
+                getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
+            corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
+
+
+            %% figure for kernel fitting
+            kernelInfo_norm = getKernelInfo_norm(kernelInfo, predictorInfo);
+            f = showKernel( t_r, y_r, kernelInfo_norm, param.cardinalDir);
+            screen2png(fullfile(saveFigFolder,['kernels_exp' saveSuffix]), f);
+            close(f);
 
             %% Figure for target onset response (only to preferred direction)
             [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
@@ -274,8 +274,8 @@ for yyy = 1%1:3
 
 
             %% target response hit v miss
-            [fig, avgAmp_hm, p_hm, ranksumval_hm, ranksumz_hm] = showTonsetResp_hm(y_r, ...
-                t_r, catEvTimes, param.figTWin,  param, dd, targetTrials);
+            [fig, avgAmp_hm, auc_hm] = showTonsetResp_hm(y_r, ...
+                    t_r, catEvTimes, param.figTWin,  param, dd, targetTrials);
             savePaperFigure(fig, fullfile(saveFigFolder, ['tOnsetResp_hm_' saveSuffix]));
             close(fig);
 
@@ -288,8 +288,7 @@ for yyy = 1%1:3
             latency_r_pop{idata} = latencyStats.latency_r;
             avgAmp_hm_pop{idata} = avgAmp_hm;
             p_hm_pop{idata} = p_hm;
-            ranksumval_hm_pop{idata} = ranksumval_hm;
-            ranksumz_hm_pop{idata} = ranksumz_hm;
+            auc_hm_pop{idata} = auc_hm;
             spkOk_th_pop{idata} = spkOk_th;
             spkOkTrials_pop{idata} = spkOkTrials;
             spkOkUCueTrials_pop{idata} = spkOkUCueTrials;
@@ -330,8 +329,7 @@ for yyy = 1%1:3
             mm.spkNGRate = spkNGRate;
             mm.CueTrRate = CueTrRate;
             mm.nLatencyTrials_pref_success = nLatencyTrials_pref_success;
-            mm.ranksumval_hm = ranksumval_hm;
-            mm.ranksumz_hm = ranksumz_hm;
+            mm.auc_hm = auc_hm;
             clear mm mFiringRate;
             close all
         catch err

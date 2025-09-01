@@ -1,6 +1,6 @@
-function [fig, avgAmp, p_hm, ranksumval_hm, ranksumz_hm] = showTonsetResp_hm(y_r, t_r, catEvTimes, tWin_t,  ...
+function [fig, avgAmp, auc] = showTonsetResp_hm(y_r, t_r, catEvTimes, tWin_t,  ...
     param, dd, validEvents)
-% [fig, avgAmp, p_hm] = showTonsetResp_hm(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t,  param, dd, validEvents)
+% [fig, avgAmp, AUROC] = showTonsetResp_hm(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t,  param, dd, validEvents)
 % 
 %
 
@@ -108,17 +108,24 @@ for iregress = 1:2
 
     %% hit v miss stats
     if ~isempty(singleAmp{prefDirIdx, 1, iregress}) && ~isempty(singleAmp{prefDirIdx, 2, iregress})
-        [p_hm(iregress),  ~, stats_tmp ] = ranksum(singleAmp{prefDirIdx, 1, iregress}, singleAmp{prefDirIdx, 2, iregress});
-        ranksumval_hm(iregress) = stats_tmp.ranksum;
-        if isfield(stats_tmp,'zval')
-            ranksumz_hm(iregress) = stats_tmp.zval;
-        else
-            ranksumz_hm(iregress) = NaN;
+        % [p_hm(iregress),  ~, stats_tmp ] = ranksum(singleAmp{prefDirIdx, 1, iregress}, singleAmp{prefDirIdx, 2, iregress});
+        % ranksumval_hm(iregress) = stats_tmp.ranksum;
+        % if isfield(stats_tmp,'zval')
+        %     ranksumz_hm(iregress) = stats_tmp.zval;
+        % else
+        %     ranksumz_hm(iregress) = NaN;
+        % end
+        labels = [zeros(1,numel(singleAmp{prefDirIdx, 1, iregress})) ones(1,numel(singleAmp{prefDirIdx, 2, iregress}))];
+        scores = [singleAmp{prefDirIdx, 1, iregress}; singleAmp{prefDirIdx, 2, iregress}]';
+        [~,~,~,auc(iregress)] = perfcurve(labels, scores, 1);
+        if auc(iregress)<0.5
+            auc(iregress) = 1-auc(iregress);
         end
     else
-        p_hm(iregress) = NaN;
-        ranksumval_hm(iregress) = NaN;
-        ranksumz_hm(iregress) = NaN;
+        auc(iregress) = NaN;
+        % p_hm(iregress) = NaN;
+        % ranksumval_hm(iregress) = NaN;
+        % ranksumz_hm(iregress) = NaN;
     end
    % title(['p = ' num2str(p_hm(iregress))])
 

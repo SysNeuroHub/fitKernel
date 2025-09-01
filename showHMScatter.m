@@ -1,4 +1,4 @@
-function f = showHMScatter(corr_tgt_rel_pop, ranksumz_hm_pop, selectedIDs, animalid_pop, tgtModalities, param)
+function f = showHMScatter(corr_tgt_rel_pop,  auc_hm_pop,  selectedIDs,  animalid_pop, tgtModalities, param)
 %f = showHMScatter(corr_tgt_rel_pop, p_hm_pop, animalid_pop)
 
 if nargin < 5
@@ -7,12 +7,12 @@ if nargin < 5
 end
 
 showRange = [-0.4 1];%[0 1]; %[-50 120]
-units_hm = ~isnan(ranksumz_hm_pop(1,:));
+units_hm = ~isnan(auc_hm_pop(1,:));
 msize = 7;%10;
 figPosition = [0 0 400 400];
 edgeColor = [.75 .75 .75];%'none';
 alpha = 1;
-scatterLimit = [0 4];
+scatterLimit = [0.5 1];
 
 nUnits = size(corr_tgt_rel_pop,2);
 
@@ -44,7 +44,7 @@ for aa = 1:numel(unique(animalid_pop))
         %% alll units
         s1 = scatter(corr_tgt_rel_pop(tgtModalities(2), units_hm.*animalid_pop==aa), ...
             corr_tgt_rel_pop(tgtModalities(1), units_hm.*animalid_pop==aa), ...
-            msize, abs(ranksumz_hm_pop(iregress, units_hm.*animalid_pop==aa)), 'filled', asymbol);
+            msize, auc_hm_pop(iregress, units_hm.*animalid_pop==aa), 'filled', asymbol);
         s1.MarkerEdgeColor = acolor;
         s1.MarkerFaceAlpha = alpha;
         s1.LineWidth = .25;
@@ -86,7 +86,7 @@ for aa = 1:numel(unique(animalid_pop))
         if aa==2
             squareplots(gca, showRange);
             [hh,gg] = mcolorbar(gca, 0.5);
-            gg.Label.String = '|z|';
+            gg.Label.String = 'AUC';
         end
 
         if aa==2 %use both animals for stats
@@ -95,20 +95,24 @@ for aa = 1:numel(unique(animalid_pop))
 
             thisAxis = corr_tgt_rel_pop(tgtModalities(2), units_hm) ...
                 - corr_tgt_rel_pop(tgtModalities(1), units_hm);
-            significant = (abs(ranksumz_hm_pop(iregress, units_hm)) > param.ranksumz_th);
+            significant = (abs(auc_hm_pop(iregress, units_hm)) > param.auc_th);
 
             histogram(thisAxis(significant == 0), linspace(-diff(showRange),diff(showRange),20),'facecolor',"#FFFF00"); %yellow
             hold on
             histogram(thisAxis(significant == 1), linspace(-diff(showRange),diff(showRange),20),'facecolor',"#7E2F8E"); %purple
             axis square; box off;
-            
+            xlim([-1 1]); ylim([0 140]);
+             
             %p_skew(iregress) =  signrank(thisAxis(significant==1)); %whether the highly dissociable units have non-zero value
-            p_skew(iregress) =  mediantest(thisAxis(significant==1), thisAxis(significant==0)); % whetehr the value changes 
-            title(['p ' num2str(p_skew(iregress))]);
+            %p_skew(iregress) =  mediantest(thisAxis(significant==1), thisAxis(significant==0)); % whetehr the value changes 
+            p_skew(iregress) =  ranksum(thisAxis(significant==1), thisAxis(significant==0)); % whetehr the value changes
+
+            title(sprintf('p = %.1e', p_skew(iregress)))
             xlabel([param.predictorNames{tgtModalities(2)} ' - ' param.predictorNames{tgtModalities(1)}]);
-            legend(['|z|<' num2str(param.ranksumz_th)], ['|z|>' num2str(param.ranksumz_th)],...
+            lgd = legend(['AUC < ' num2str(param.auc_th)], ['AUC > ' num2str(param.auc_th)],...
                 'location','northwest');
-            % set(ax(2*iregress),'tickdir','out', 'xcolor','r');
+            lgd.ItemTokenSize(1) = .25*lgd.ItemTokenSize(1);
+            set(ax(2*iregress),'tickdir','out');%, 'xcolor','r');
         end
     end
 end

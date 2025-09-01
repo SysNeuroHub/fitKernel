@@ -1,4 +1,4 @@
-function f = showLatencyScatter(corr_tgt_rel_pop, latency_r_nb_pop,  ...
+function f = showLatencyScatter(corr_tgt_rel_pop, latency_r_nb_pop,  latency_p_nb_pop, ...
     nLatencyTrials_pref_pop, param, selectedIDs, animalid_pop, tgtModalities)
 %f = showLatencyScatter(corr_tgt_rel_pop, latency_r_nb_pop, param, selectedIDs, animalid_pop)
 %single-trial latency correlation 2024June
@@ -47,7 +47,7 @@ for aa = 1:numel(unique(animalid_pop))
     ax = subplot(121);
 
         if aa==1
-            line(fliplr(showRange), showRange,'linestyle',':','color','k','linewidth',0.25)
+            line(fliplr(showRange), showRange,'linestyle',':','color','k','linewidth',0.25); hold on;
         end
 
     % all units
@@ -106,7 +106,8 @@ for aa = 1:numel(unique(animalid_pop))
     if aa==2 %use both animals for stats
         thisAxis = corr_tgt_rel_pop(tgtModalities(2), units_latency) ...
             - corr_tgt_rel_pop(tgtModalities(1), units_latency);
-        significant = latency_r_nb_pop(units_latency)  > param.r_latency_th;
+        significant = (latency_r_nb_pop(units_latency)  > param.r_latency_th) .* ...
+            (latency_p_nb_pop(units_latency)  < param.p_latency_th);
         
         ax(1)= subplot(122);
         histogram(thisAxis(significant == 0),  linspace(-diff(showRange),diff(showRange),20), 'facecolor', "#FFFF00");%yellow
@@ -114,20 +115,24 @@ for aa = 1:numel(unique(animalid_pop))
         hold on;
         histogram(thisAxis(significant == 1),  linspace(-diff(showRange),diff(showRange),20), 'facecolor', "#7E2F8E"); %purple
         axis square; box off;
-        legend(['r<' num2str(param.r_latency_th)], ['r>' num2str(param.r_latency_th)],...
+        lgd =  legend(['r < ' num2str(param.r_latency_th) '| p > ' num2str(param.p_latency_th)], ['r > ' num2str(param.r_latency_th) '& p < ' num2str(param.p_latency_th)],...
             'Location','northwest');
-
+        lgd.ItemTokenSize(1) = .25*lgd.ItemTokenSize(1);
+ 
         %p_skew_all =  signrank(thisAxis);
         %p_skew_selected =  signrank(thisAxis(significant==1));
-        %p = ranksum(thisAxis(significant==0), thisAxis(significant==1));
-        p = mediantest(thisAxis(significant==0), thisAxis(significant==1));
+        p = ranksum(thisAxis(significant==0), thisAxis(significant==1));
+        %p = mediantest(thisAxis(significant==0), thisAxis(significant==1));
         %[~, p] = adtest2(thisAxis(significant==0)', thisAxis(significant==1)');
         % [p, tbl] = anova1(thisAxis, significant)
         % p = kruskalwallis(thisAxis', significant');
 
 
-        title(ax(1),['p: ' num2str(p)]);
+        title(ax(1),sprintf('p = %.1e', p))
+          
         xlabel([param.predictorNames{tgtModalities(2)} ' - ' param.predictorNames{tgtModalities(1)}]);
+        xlim([-1 1]);  ylim([0 150]);
+          
         set(gca,'tickdir','out');%, 'xcolor','r');
         linkaxes(ax);
         vline(0,gca,[],[],1);

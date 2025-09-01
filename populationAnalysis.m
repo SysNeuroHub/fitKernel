@@ -7,7 +7,7 @@ animals = {'hugo', 'ollie'};
 n=load(fullfile(saveServer, ['param' saveSuffix_p '.mat']),'param');
 param =n.param;
 
-%% load result of mainscript_assemble.m
+%% load result of mainscript_assembly.m
 mFiringRate_pop = [];
 expval_ind_pop = [];
 ntargetTrials_pop = [];
@@ -29,8 +29,7 @@ CueTrRate_pop = [];
 nLatencyTrials_pref_success_pop = [];
 animalid_pop = [];
 prefDir_pop = [];
-ranksumval_hm_pop = [];
-ranksumz_hm_pop = [];
+auc_hm_pop = [];
 difflatency_pop = [];
 corr_tgt_avg_pop = [];
 corr_tgt_avg_rel_pop = [];
@@ -80,15 +79,14 @@ for aa = 1:numel(animals)
         corr_tgt_rel_tmp = [assembly.corr_tgt_rel_pop{entries}];
         corr_tgt_rel_pop = cat(2, corr_tgt_rel_pop, corr_tgt_rel_tmp);%[corr_tgt_rel_pop; corr_tgt_rel_tmp];
         p_hm_pop = cat(2,p_hm_pop, [assembly.p_hm_pop(entries)]);
-        ranksumval_hm_pop = cat(2, ranksumval_hm_pop, [assembly.ranksumval_hm_pop(entries)]);
-        ranksumz_hm_pop = cat(2, ranksumz_hm_pop, [assembly.ranksumz_hm_pop(entries)]);
+        auc_hm_pop = cat(2, auc_hm_pop, [assembly.auc_hm_pop(entries)]);
         corr_tgt_avg_tmp = [assembly.corr_tgt_avg_pop{entries}];
         corr_tgt_avg_pop = cat(2, corr_tgt_avg_pop, corr_tgt_avg_tmp);%[corr_tgt_rel_pop; corr_tgt_rel_tmp];
         corr_tgt_avg_rel_tmp = [assembly.corr_tgt_avg_rel_pop{entries}];
         corr_tgt_avg_rel_pop = cat(2, corr_tgt_avg_rel_pop, corr_tgt_avg_rel_tmp(2:4,:));%[corr_tgt_rel_pop; corr_tgt_rel_tmp];
         
         latency_r_pop = cat(2,latency_r_pop, [assembly.latency_r_pop(entries)]);
-        latency_p_pop = cat(2,latency_p_pop, [assembly.latency_r_pop(entries)]);
+        latency_p_pop = cat(2,latency_p_pop, [assembly.latency_p_pop(entries)]);
         difflatency_pop = cat(2,difflatency_pop, [assembly.difflatency_pop(entries)]);
         spkNGRate_pop = cat(2,spkNGRate_pop, [assembly.spkNGRate_pop{entries}]);
         CueTrRate_pop = cat(2, CueTrRate_pop, [assembly.CueTrRate_pop{entries}]);
@@ -123,8 +121,7 @@ mFiringRate_pop = mFiringRate_pop(okunits);
 latency_r_pop = latency_r_pop(okunits);
 latency_p_pop = latency_p_pop(okunits);
 p_hm_pop = p_hm_pop(okunits);
-ranksumval_hm_pop = ranksumval_hm_pop(okunits);
-ranksumz_hm_pop = ranksumz_hm_pop(okunits);
+auc_hm_pop = auc_hm_pop(okunits);
 nLatencyTrials_pref_success_pop = nLatencyTrials_pref_success_pop(okunits);
 animalid_pop = animalid_pop(okunits);
 prefDir_pop = prefDir_pop(okunits);
@@ -132,12 +129,13 @@ difflatency_pop = cellfun(@(a)a(1), difflatency_pop(okunits));
 corr_tgt_avg_pop = corr_tgt_avg_pop(:,okunits);
 corr_tgt_avg_rel_pop = corr_tgt_avg_rel_pop(:,okunits);
 
+disp(['total ' num2str(numel(animalid_pop)) ' units, M1: ' num2str(sum(animalid_pop==1)) ', M2:' num2str(sum(animalid_pop==2))]);
+
 %% convert from cell to matrix
 latency_r_nb_pop = cellfun(@(a)a(1), latency_r_pop);
 latency_p_nb_pop = cellfun(@(a)a(1), latency_p_pop);
 p_hm_pop = [cellfun(@(a)a(1), p_hm_pop); cellfun(@(a)a(2), p_hm_pop)];
-ranksumval_hm_pop = [cellfun(@(a)a(1), ranksumval_hm_pop); cellfun(@(a)a(2), ranksumval_hm_pop)];
-ranksumz_hm_pop = [cellfun(@(a)a(1), ranksumz_hm_pop); cellfun(@(a)a(2), ranksumz_hm_pop)];
+auc_hm_pop = [cellfun(@(a)a(1), auc_hm_pop); cellfun(@(a)a(2), auc_hm_pop)];
 
 %% selected units
 theseIDs = {'hugo/2021/08August/25/27',... %vision %NG
@@ -275,35 +273,45 @@ savePaperFigure(fig_avg, fullfile(saveServer,saveSuffix_p,['corr_tgt_avg_' anima
 
 
 %% hit v miss (FIG 3)
-param.ranksumz_th = 3; %2
+param.auc_th = .8;
 tgtModalities = [1 2];
-f = showHMScatter(corr_tgt_avg_pop(2:4,:), ranksumz_hm_pop, selectedIDs_hm, animalid_pop, tgtModalities, param);
+f = showHMScatter(corr_tgt_avg_pop(2:4,:), auc_hm_pop, selectedIDs_hm, animalid_pop, tgtModalities, param);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_hm_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:} ]), 'dum');close;
 % disp(['The number of significant units before regression: '  num2str(sum(p_hm_pop_before<0.05))]);
 % disp(['The number of significant units after regression: '  num2str(sum(p_hm_pop_after<0.05))]);
+disp(['AUC of ' num2str(selectedIDs_hm(1)) ': ' num2str(auc_hm_pop(1, selectedIDs_hm(1)))]);
+disp(['AUC of ' num2str(selectedIDs_hm(2)) ': ' num2str(auc_hm_pop(1, selectedIDs_hm(2)))]);
 
 tgtModalities = [1 3];
-f = showHMScatter(corr_tgt_avg_pop(2:4,:), ranksumz_hm_pop, [], animalid_pop, tgtModalities, param);
+f = showHMScatter(corr_tgt_avg_pop(2:4,:), auc_hm_pop, [], animalid_pop, tgtModalities, param);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_hm_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:} ]), 'dum');close;
 % disp(['The number of significant units before regression: '  num2str(sum(p_hm_pop_before<0.05))]);
 % disp(['The number of significant units after regression: '  num2str(sum(p_hm_pop_after<0.05))]);
+disp(['AUC of ' num2str(selectedIDs_hm(1)) ' afer regression: ' num2str(auc_hm_pop(2, selectedIDs_hm(1)))]);
+disp(['AUC of ' num2str(selectedIDs_hm(2)) ' afer regression: ' num2str(auc_hm_pop(2, selectedIDs_hm(2)))])
 
 
 
 %% latency stats on correlation to tgt (FIG4)
-param.nLatencyTr_pref_th = 7;
+param.nLatencyTr_pref_th = 3; %7
 param.r_latency_th = 0.5; 
+param.p_latency_th = 0.05; 
 tgtModalities = [1 2];
-f = showLatencyScatter(corr_tgt_avg_pop(2:4,:), latency_r_nb_pop,   ...
+f = showLatencyScatter(corr_tgt_avg_pop(2:4,:), latency_r_nb_pop,   latency_p_nb_pop, ...
     nLatencyTrials_pref_success_pop, param, selectedIDs_lat, animalid_pop, tgtModalities);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_latency_r_pref_success_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:}]),'dum'); close(f);
 
+disp(['ID: ' num2str(selectedIDs_lat(1)) ', r: ' num2str(latency_r_nb_pop(selectedIDs_lat(1))) ', p: ' num2str(latency_p_nb_pop(selectedIDs_lat(1)))])
+disp(['ID: ' num2str(selectedIDs_lat(2)) ', r: ' num2str(latency_r_nb_pop(selectedIDs_lat(2))) ', p: ' num2str(latency_p_nb_pop(selectedIDs_lat(2)))])
+
+% histogram of neural - behavioural latencies
 f = figure('position',[0 0 200 200]);
-tgtUnits = find(latency_r_nb_pop > param.r_latency_th &...
-    nLatencyTrials_pref_success_pop > param.nLatencyTr_pref_th);
+tgtUnits = find(nLatencyTrials_pref_success_pop >= param.nLatencyTr_pref_th   &...
+    latency_r_nb_pop > param.r_latency_th &...
+    latency_p_nb_pop < param.p_latency_th);
 histogram(1e3*difflatency_pop(tgtUnits), 10, 'facecolor', "#7E2F8E");
  axis square; box off;
  set(gca,'tickdir','out');
@@ -312,7 +320,7 @@ histogram(1e3*difflatency_pop(tgtUnits), 10, 'facecolor', "#7E2F8E");
 
 
 tgtModalities = [1 3];
-f = showLatencyScatter(corr_tgt_avg_pop(2:4,:), latency_r_nb_pop,   ...
+f = showLatencyScatter(corr_tgt_avg_pop(2:4,:), latency_r_nb_pop,      latency_p_nb_pop, ...
     nLatencyTrials_pref_success_pop, param, selectedIDs_lat, animalid_pop, tgtModalities);
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_latency_r_pref_success_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:}]),'dum'); close(f);
