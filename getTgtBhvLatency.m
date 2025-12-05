@@ -1,8 +1,8 @@
 function latency_bhv = getTgtBhvLatency(onsets_cat, dd, validEvents, option)
 %latency_bhv = getTgtBhvLatency(onsets_cat, dd, validEvents. option)
 %
-% option = 0: use "srt" stored in dd
-% option = 1: cOnset - tOnset
+% option = 1: use "srt" stored in dd
+% option = 0: cOnset - tOnset
 
 if nargin < 4
     option = 0;

@@ -4,10 +4,10 @@ set(0,'DefaultFigureVisible','off');
 
 
 %% recorded data
-animal =  'hugo';%'ollie';% % %'andy';%
+animal =  'Seneca';%'ollie';% % %'andy';%
 useGPU = 1; %13/12/24
 dataType = 0;%0: each channel, 1: all channels per day
-for yyy = 1%1:3
+for yyy = 2%1:3
     switch yyy
         case 1
             year = '2021'; %hugo

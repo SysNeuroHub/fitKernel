@@ -97,3 +97,40 @@ for aa = 1:numel(unique(animalid))
     end
 end
 
+end
+
+function ax = squareplot(ax, xyrange)
+%ax = squareplot(ax)
+%makes a plot figure square and add a diagonal line
+%ax = square(ax, xyrange) 
+%lets use specified range to plot
+% currently does NOT work well after marginplot
+% currently only tested with figure plot plot command
+% 2017/10/12 created
+%2018/2/19 added 2nd input. 
+% TODO: if image, minimum = minimum + 0.5;
+
+if nargin<1
+    ax=gca;
+else
+    axes(ax);
+end
+
+if nargin < 2 || isempty(xyrange)
+    axis tight;
+    xyrange = [ax.XLim ax.YLim];
+end
+    
+hold on;
+h=line([min(xyrange) max(xyrange)],[min(xyrange) max(xyrange)],'color','k','linestyle','--');
+h.HandleVisibility = 'off'; %20/6/22
+
+uistack(h,'bottom');
+xlim([min(xyrange) max(xyrange)]);
+ylim([min(xyrange) max(xyrange)]);
+
+axis square;
+set(ax,'YTick',ax.XTick);
+set(gca,'tickdir','out');
+end
+

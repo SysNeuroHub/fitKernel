@@ -1,8 +1,8 @@
 function [latency_neuro, thresh_neuro, tgtDir, fig, nlatencyTrials_pref_success, latencyStats] = ...
     getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, ThreshParam, param, dd, validEvents)
 % [latency_neuro, validEvents, thresh_neuro, tgtDir] = getTgtNeuroLatency(PSTH_f, t_r, onsets_cat, catEvTimes, tWin_t, Thresh, param, dd)
-% create figure of single-trials sorted by behavioural latency of
-% individual neurons
+% create figure of single-trials sorted by behavioural latency of individual neurons
+% only consider trials where target is presented to the unit's preferred direction
 
 %16/1/25 added nlatencyTrials_pref_success and latencyStats 
 
@@ -26,9 +26,7 @@ diffCueFOnset = getDiffCueTgtOnset(onsets_cat, catEvTimes); %3/6/24
 diffCueFOnset = diffCueFOnset(validEvents);
 
 %% from showTonsetByCue:
-onsetTimes_t = catEvTimes.tOnset(validEvents);
-tgtDir = getTgtDir(dd.targetloc(validEvents), param.cardinalDir);
-% onsetTimes_t = catEvTimes.tOnset; %13/12/24
+onsetTimes_t = catEvTimes.tOnset(validEvents);targetTrials% onsetTimes_t = catEvTimes.tOnset; %13/12/24
 % tgtDir = getTgtDir(dd.targetloc, param.cardinalDir); %13/12/24
 
 [~,dirIdx]=intersect(param.cardinalDir, unique(tgtDir));

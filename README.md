@@ -17,7 +17,8 @@ Environments under linux and windows machines are tested.
 # Usage
 mainScript.m is the main script to to "everything": obtain linear kernel and event-triggered spiking traces
 mainScript_assembly.m: create an "assembly" file for each year and animal
-populationAnalysis.m compile all assembly files and produces all the main figures across units and subjects
+populationAnalysis.m: compile all assembly files and produces all the main figures across units and subjects
+Reaction time stats in Method/Center-out saccade task design was from D'Souza PhD thesis
 
 Functions about concatenating trial-based data
 * concatenate_eye: mamordata.eye concatenated across trials
