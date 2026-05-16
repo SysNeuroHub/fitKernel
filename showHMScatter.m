@@ -113,6 +113,15 @@ for aa = 1:numel(unique(animalid_pop))
                 'location','northwest');
             lgd.ItemTokenSize(1) = .25*lgd.ItemTokenSize(1);
             set(ax(2*iregress),'tickdir','out');%, 'xcolor','r');
+
+            %% stats for each animal
+            for ianimal = 1:2
+                thisAxis = corr_tgt_rel_pop(tgtModalities(2), animalid_pop==ianimal.*units_hm) ...
+                    - corr_tgt_rel_pop(tgtModalities(1), animalid_pop==ianimal.*units_hm);
+                significant = (abs(auc_hm_pop(iregress, animalid_pop==ianimal.*units_hm)) > param.auc_th);
+                p_skew_animal(iregress,ianimal) =  ranksum(thisAxis(significant==1), thisAxis(significant==0)); % whetehr the value changes
+                disp(['regress: ' num2str(iregress) ', animal: ' num2str(ianimal) ', p-value: ' num2str(p_skew_animal(iregress, ianimal))]);
+            end
         end
     end
 end

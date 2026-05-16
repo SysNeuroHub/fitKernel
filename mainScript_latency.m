@@ -1,4 +1,4 @@
-%% TOBE DELETED
+%% For figure 4A,B
 
 set(0,'DefaultFigureVisible','off');
 [saveServer, rootFolder] = getReady();

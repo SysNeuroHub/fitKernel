@@ -5,12 +5,12 @@ rootFolder =  '/media/daisuke/cuesaccade_data';
 animal =  'hugo';%'ollie';%
 useGPU = 1; %13/12/24
 dataType = 0;%0: each channel, 1: all channels per day
-
+loadResult = 1; %if 1, use already saved model fitting result
 
 saveFigFolder = fullfile(rootFolder, animal);
 mkdir(saveFigFolder);
 
-for idata = 1:3
+for idata = 2:3
 
     n=load(fullfile(rootFolder,'param20250207.mat'),'param');
     param =n.param;
@@ -43,35 +43,38 @@ for idata = 1:3
 
     saveSuffix = [animal replace(datech,filesep,'_') '_linear_rReg'];
 
-    if loadResult
+    thisDate = [month '_' date];
+    saveFolder = fullfile(rootFolder, year,animal);%17/6/23
+    if ~exist(saveFolder, 'dir')
+        mkdir(saveFolder);
+    end
 
+    EE = load(loadName,'ephysdata','dd');
+    dd = EE.dd;
+
+    %% prepare predictor variables after downsampling
+    spk_all = EE.ephysdata.spikes.spk;
+    EE = [];
+    if ~isempty(spk_all)
+        %% concatenate across trials
+        [spk_all_cat, t_cat] = concatenate_spk(spk_all,  dd.eye);
+        mFiringRate = length(spk_all_cat)/(t_cat(end)-t_cat(1)); %spks/s
     else
-        thisDate = [month '_' date];
-        saveFolder = fullfile(rootFolder, year,animal);%17/6/23
-        if ~exist(saveFolder, 'dir')
-            mkdir(saveFolder);
-        end
+        mFiringRate = 0;
+    end
+    clear spk_all;
 
+    %% prepare behavioral data (common across channels per day)
+    eyeName = fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']);
+
+    [eyeData_rmotl_cat, catEvTimes, t_tr, onsets_cat,meta_cat,blinks,outliers] ...
+        = processEyeData(dd.eye, dd, param);
+
+    if loadResult
+        saveName = fullfile(saveFolder, [saveSuffix '.mat']);
+        load(saveName);
         EE = load(loadName,'ephysdata','dd');
         dd = EE.dd;
-
-        %% prepare predictor variables after downsampling
-        spk_all = EE.ephysdata.spikes.spk;
-        EE = [];
-        if ~isempty(spk_all)
-            %% concatenate across trials
-            [spk_all_cat, t_cat] = concatenate_spk(spk_all,  dd.eye);
-            mFiringRate = length(spk_all_cat)/(t_cat(end)-t_cat(1)); %spks/s
-        else
-            mFiringRate = 0;
-        end
-        clear spk_all;
-
-        %% prepare behavioral data (common across channels per day)
-        eyeName = fullfile(saveFolder,['eyeCat_' animal thisDate '.mat']);
-
-        [eyeData_rmotl_cat, catEvTimes, t_tr, onsets_cat,meta_cat,blinks,outliers] ...
-            = processEyeData(dd.eye, dd, param);
 
         %% prepare predictor variables after downsampling
         t_r = (eyeData_rmotl_cat.t(1):param.dt_r:eyeData_rmotl_cat.t(end))';
@@ -99,6 +102,8 @@ for idata = 1:3
         [startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, dirIndexNoTask_spkOkUCue] = ...
             getSaccNoTask(t_cat, catEvTimes, eyeData_rmotl_cat, blinks, outliers, t_tr, onsets_cat, spkOkTrials, param);
 
+        close all
+    else      
 
         %% obtain kernels!
         disp('fit kernels');
@@ -107,35 +112,49 @@ for idata = 1:3
             predictorInfo.npredVars,param.psth_sigma, param.kernelInterval, ...
             param.lagRange, param.ridgeParams, trIdx_r(spkOkUCueTrials),param.fitoption,useGPU, ...
             param.kfolds);
-
-        y_r = cat(2,PSTH_f,predicted_all, predicted);
-
-
-        %% preferred direction
-        param_tmp = param;
-        param_tmp.cardinalDir = 0:359;
-        prefDir = getPrefDir_wrapper(PSTH_f, t_r, dd, catEvTimes, param_tmp, spkOkUCueTrials);
-
-
-        %% explained variance for target response
-        nPredictorNames = numel(param.predictorNames);
-
-        expval_tgt = zeros(nPredictorNames, 1);
-        corr_tgt = zeros(nPredictorNames, 1);
-        [expval_tgt(1,1), corr_tgt(1,1)] = ...
-            getExpVal_tgt(PSTH_f, predicted_all, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
-        [expval_tgt(2:nPredictorNames+1,1), corr_tgt(2:nPredictorNames+1,1)] = ...
-            getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
-        corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
-
-
     end
 
-    %% Figure for target onset response (only to preferred direction)
-    [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-        startSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, param, [], spkOkUCueTrials);
-    cellclassInfo.datech = datech;
-    screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix]), f);
-    close(f);
+    y_r = cat(2,PSTH_f,predicted_all, predicted);
+
+
+    %% preferred direction
+    param_tmp = param;
+    param_tmp.cardinalDir = 0:359;
+    prefDir = getPrefDir_wrapper(PSTH_f, t_r, dd, catEvTimes, param_tmp, spkOkUCueTrials);
+
+
+    %% explained variance for target response
+    nPredictorNames = numel(param.predictorNames);
+
+    expval_tgt = zeros(nPredictorNames, 1);
+    corr_tgt = zeros(nPredictorNames, 1);
+    [expval_tgt(1,1), corr_tgt(1,1)] = ...
+        getExpVal_tgt(PSTH_f, predicted_all, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
+    [expval_tgt(2:nPredictorNames+1,1), corr_tgt(2:nPredictorNames+1,1)] = ...
+        getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
+    corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
+
+    
+    %% Figure for target onset response (only to preferred direction) for Fig2A-I
+    % [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
+    %     startSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, param, [], spkOkUCueTrials);
+    % cellclassInfo.datech = datech;
+    % screen2png(fullfile(saveFigFolder,['cellclassFig_' saveSuffix]), f);
+    % close(f);
+
+    %% Figure for saccade direction outside task
+    binEdges = [param.cardinalDir 360] - 0.5*mean(diff(param.cardinalDir)); %cf.getSaccDir
+    fhist=figure('position',[0 0 200 200]);
+    histogram(saccDirNoTask_spkOkUCue, 'BinEdges', binEdges);
+    set(gca,'tickdir','out','XTick',param.cardinalDir);
+    ylabel('# saccades');xlabel('Direction [deg]');
+    savePaperFigure(fhist, fullfile(saveFigFolder,['sptSaccDir_' saveSuffix '_pupil_blink']));
+    close(fhist);
+
+    %% Figure for pupil diameter and blinks
+    [f2, cellclassInfo] = showTonsetResp_pb(t_r, y_r, catEvTimes, dd, psthNames, ...
+        startSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, param, [], spkOkUCueTrials, 1);
+    savePaperFigure(f2, fullfile(saveFigFolder,['cellclassFig_' saveSuffix '_pupil_blink']));
+    close(f2);
 
 end

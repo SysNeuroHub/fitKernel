@@ -38,8 +38,9 @@ for aaa = 1%:2
         %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','07July','26','*_ch19'))))); %2022
         % thisdata = [thisdata find(1-cellfun(@isempty, regexp(loadNames, ...
         %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','15','*_ch4')))))]; %2022
-        thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-            regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','09September','17','*_ch32'))))); %2021
+        % thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
+        %     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','03March','16','*_ch13'))))); %2021
+        thisdata = [4 6 7 8];
         % thisdata = 1:length(channels);
 
 
@@ -84,16 +85,16 @@ for aaa = 1%:2
 
                 [corr_tgt_avg, corr_tgt_avg_rel] = getCorr_tgt_avg(t_r, y_r, catEvTimes, dd, param, spkOkUCueTrials);
 
-                %% event triggered traces
-                load(eyeName,'eyeData_rmotl_cat', 'blinks', 'outliers', 't_tr', 'onsets_cat');
-                [startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, dirIndexNoTask_spkOkUCue] = ...
-                    getSaccNoTask(t_cat, catEvTimes, eyeData_rmotl_cat, blinks, outliers, t_tr, onsets_cat, spkOkTrials, param);
-
-                [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
-                    startSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, param, [], spkOkUCueTrials);
-                cellclassInfo.datech = datech;
-                savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
-                close all
+                % %% event triggered traces
+                % load(eyeName,'eyeData_rmotl_cat', 'blinks', 'outliers', 't_tr', 'onsets_cat');
+                % [startSaccNoTask_spkOkUCue, endSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, dirIndexNoTask_spkOkUCue] = ...
+                %     getSaccNoTask(t_cat, catEvTimes, eyeData_rmotl_cat, blinks, outliers, t_tr, onsets_cat, spkOkTrials, param);
+                % 
+                % [f, cellclassInfo] = showTonsetResp(t_r, y_r, catEvTimes, dd, psthNames, ...
+                %     startSaccNoTask_spkOkUCue, saccDirNoTask_spkOkUCue, param, [], spkOkUCueTrials);
+                % cellclassInfo.datech = datech;
+                % savePaperFigure(f, fullfile(saveFigFolder,['cellclassFig_' saveSuffix]));
+                % close all
 
                 %% save results
                 save(saveName,'corr_tgt_avg','corr_tgt_avg_rel', '-append');

@@ -4,10 +4,10 @@ set(0,'DefaultFigureVisible','off');
 
 
 %% recorded data
-animal =  'Seneca';%'ollie';% % %'andy';%
+animal =  'hugo';%'ollie';% % %'andy';%
 useGPU = 1; %13/12/24
 dataType = 0;%0: each channel, 1: all channels per day
-for yyy = 2%1:3
+for yyy = 1%1:3
     switch yyy
         case 1
             year = '2021'; %hugo
@@ -26,7 +26,7 @@ for yyy = 2%1:3
 
     % to obtain index of specified month&date&channel
     thisdata = find(1-cellfun(@isempty, regexp(loadNames, ...
-     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','08August','25','*_ch27')))));
+     regexptranslate('wildcard',fullfile(rootFolder, year, 'cuesaccade_data','03March','16','*_ch13')))));
  
     % thisdata = thisdata:numel(loadNames);
     nData = numel(thisdata);
@@ -242,6 +242,7 @@ for yyy = 2%1:3
                 getExpVal_tgt(PSTH_f, predicted, catEvTimes, t_r, param.tOnRespWin, spkOkUCueTrials);
             corr_tgt_rel = 100*corr_tgt(2:4)./corr_tgt(1);
 
+            [corr_tgt_avg, corr_tgt_avg_rel] = getCorr_tgt_avg(t_r, y_r, catEvTimes, dd, param, spkOkUCueTrials);
 
             %% figure for kernel fitting
             kernelInfo_norm = getKernelInfo_norm(kernelInfo, predictorInfo);
@@ -273,7 +274,7 @@ for yyy = 2%1:3
             screen2png(fullfile(saveFigFolder, ['latencyCorr_' saveSuffix]), fig_latency);close(fig_latency);
 
 
-            %% target response hit v miss
+            %% target response hit v miss for Figure 3
             [fig, avgAmp_hm, auc_hm] = showTonsetResp_hm(y_r, ...
                     t_r, catEvTimes, param.figTWin,  param, dd, targetTrials);
             savePaperFigure(fig, fullfile(saveFigFolder, ['tOnsetResp_hm_' saveSuffix]));
@@ -330,6 +331,8 @@ for yyy = 2%1:3
             mm.CueTrRate = CueTrRate;
             mm.nLatencyTrials_pref_success = nLatencyTrials_pref_success;
             mm.auc_hm = auc_hm;
+            mm.corr_tgt_avg = corr_tgt_avg;
+            mm.corr_tgt_avg_rel = corr_tgt_avg_rel;
             clear mm mFiringRate;
             close all
         catch err

@@ -117,10 +117,22 @@ for iregress = 1:2
         % end
         labels = [zeros(1,numel(singleAmp{prefDirIdx, 1, iregress})) ones(1,numel(singleAmp{prefDirIdx, 2, iregress}))];
         scores = [singleAmp{prefDirIdx, 1, iregress}; singleAmp{prefDirIdx, 2, iregress}]';
-        [~,~,~,auc(iregress)] = perfcurve(labels, scores, 1);
+        [X,Y,~,auc(iregress)] = perfcurve(labels, scores, 1);
         if auc(iregress)<0.5
             auc(iregress) = 1-auc(iregress);
         end
+
+        %% how ROC analysis works:
+        subplot(121);
+        histogram();
+        subplot(122);
+        plot(X,Y);squareplot;
+        xlabel('False positive rate')
+        ylabel('True positive rate')
+        title('ROC for Classification by Logistic Regression');
+        % rocObj = rocmetrics(species(51:end,:),scores,'virginica');
+        % plot(rocObj)
+
     else
         auc(iregress) = NaN;
         % p_hm(iregress) = NaN;

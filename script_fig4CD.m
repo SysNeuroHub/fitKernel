@@ -1,3 +1,4 @@
+%load('data_fig4CD.mat')
 param.nLatencyTr_pref_th = 3;
 param.r_latency_th = 0.5; 
 param.p_latency_th = 0.05; 

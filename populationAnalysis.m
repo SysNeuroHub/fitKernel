@@ -1,7 +1,7 @@
 %16/12/24 created from fitPSTH_pop.m
 [saveServer, rootFolder] = getReady();
 
-saveSuffix_p = ['20250207'];
+saveSuffix_p = ['20260514'];%['20250207'];
 animals = {'hugo', 'ollie'};
 
 n=load(fullfile(saveServer, ['param' saveSuffix_p '.mat']),'param');
@@ -33,6 +33,7 @@ auc_hm_pop = [];
 difflatency_pop = [];
 corr_tgt_avg_pop = [];
 corr_tgt_avg_rel_pop = [];
+saccDirNoTask_spkOkUCue_hist_pop = [];
 
 for aa = 1:numel(animals)
     switch aa
@@ -93,6 +94,14 @@ for aa = 1:numel(animals)
         nLatencyTrials_pref_success_pop = cat(2, nLatencyTrials_pref_success_pop, assembly.nLatencyTrials_pref_success_pop{entries});
         prefDir_pop = cat(2,prefDir_pop, [assembly.prefDir_pop{entries}]);
 
+        binEdges = [param.cardinalDir 360] - 0.5*mean(diff(param.cardinalDir)); %cf.getSaccDir
+        hist_tmp = nan(numel(binEdges)-1, numel(entries));
+        for ee = 1:numel(entries)
+            data = assembly.saccDirNoTask_spkOkUCue_pop(entries(ee));
+            hist_tmp(:,ee) = histcounts(data{1}, 'BinEdges', binEdges);
+        end
+        saccDirNoTask_spkOkUCue_hist_pop = cat(2, saccDirNoTask_spkOkUCue_hist_pop, hist_tmp);
+        
         %load just once
         tlags = assembly.tlags_pop{entries(1)};
     end
@@ -103,13 +112,39 @@ display(['fraction of trials where cue was presented and excluded from analysis:
 
 %% apply inclusion critetia
 param.corr_tgtTh = 0.5; %0.1
-[okunits, corr_tgtOK, ntargetTrOK, ptonsetRespOK] ...
+[~, corr_tgtOK, ntargetTrOK, ptonsetRespOK] ...
     = inclusionCriteria(corr_tgt_avg_pop(1,:), ntargetTrials_pop, PtonsetResp_pop, param);
+okunits = find(ntargetTrOK .* ptonsetRespOK); % for Revision 1
+
+%% unit rejection in both animals
+nTotalUnits = numel(ntargetTrOK);
+disp(['criteria 1: ' num2str(nTotalUnits - sum(ntargetTrOK))]);
+disp(['criteria 2:' num2str(nTotalUnits - sum(ptonsetRespOK))]);
+
+%% unit rejection in each animal
+for aa = 1:2
+    disp(animals{aa})
+    nTotalUnits = numel(intersect(1:numel(ntargetTrOK), find(animalid_pop==aa)));
+    disp(['amongst ' num2str(nTotalUnits) ' that passed criteria 2, ']);
+    disp(['rejected units by criteria 1: ' num2str(nTotalUnits - sum(ntargetTrOK.*(animalid_pop==aa)))]);
+    disp(['rejected units by criteria 2:' num2str(nTotalUnits - sum(ptonsetRespOK.*(animalid_pop==aa)))]);
+    rejectRate = 100*(1 - numel(intersect(okunits, find(animalid_pop==aa)))/nTotalUnits);
+    disp([num2str(rejectRate) '% units rejected in total']);
+end
+
+disp(['mean correlation that passed all the criteria:' num2str(mean(corr_tgt_avg_pop(1,okunits)))]);
+disp(['std correlation that passed all the criteria:' num2str(std(corr_tgt_avg_pop(1,okunits)))]);
+
+
+
+% units_ng4 = find(ntargetTrOK .* ptonsetRespOK .* ~corr_tgtOK);
+% id_pop(units_ng4)'
 
 % omit data with the following criteria??
 % no saccade response
 % low spontaneous firing
 % low number of successful trials
+
 
 %% retain included units
 % units x 1
@@ -128,6 +163,7 @@ prefDir_pop = prefDir_pop(okunits);
 difflatency_pop = cellfun(@(a)a(1), difflatency_pop(okunits));
 corr_tgt_avg_pop = corr_tgt_avg_pop(:,okunits);
 corr_tgt_avg_rel_pop = corr_tgt_avg_rel_pop(:,okunits);
+saccDirNoTask_spkOkUCue_hist_pop = saccDirNoTask_spkOkUCue_hist_pop(:,okunits);
 
 disp(['total ' num2str(numel(animalid_pop)) ' units, M1: ' num2str(sum(animalid_pop==1)) ', M2:' num2str(sum(animalid_pop==2))]);
 % save('ppcPaper_id','id_pop'); % To Jo 5/11/2025
@@ -154,8 +190,10 @@ theseIDs_hm = {  'hugo/2021/03March/23/29' ...
     'hugo/2021/09September/07/26'}; %no reduction 
 [~, selectedIDs_hm] = intersect(id_pop, theseIDs_hm);
 
+selectedIDs_lc = find(corr_tgt_avg_pop(1,:)<0.5);
 
 %% preferred direction (FIG1)
+disp('fig 1');
 scriptFileName = 'script_fig1.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)
@@ -171,9 +209,20 @@ close(f);
 % savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['tuning_pop_' animals{:}]));
 % close(f);
 
+%% spontaneous saccade direction (Fig1 SUPPLEMENT)
+disp('fig supplement 1');
+scriptFileName = 'script_fig1_supplement.m';
+lines = readlines(scriptFileName);
+for i = 1:numel(lines)
+    eval(lines(i));
+end
+savePaperFigure(f, fullfile(saveServer, saveSuffix_p, ['hist_saccDir_' animals{:}]));
+save('data_fig1_supplement','saccDirNoTask_spkOkUCue_hist_pop','param','binEdges');
+close(f);
 
 %% cell type distibution (FIG2)
-scriptFileName = 'script_fig2.m';
+disp('fig 2');
+scriptFileName = 'script_fig2JK.m';
 lines = readlines(scriptFileName);
 eval(lines);
 savePaperFigure(fig_avg, fullfile(saveServer,saveSuffix_p,['corr_tgt_avg_' animals{:}]), 'dum');close(fig_avg);
@@ -181,6 +230,7 @@ save('data_fig2','corr_tgt_avg_pop','animalid_pop','selectedIDs','param','lines'
 
 
 %% histogram of correlation of the full model (FIG SUPPLEMENT 2)
+disp('fig supplement 2');
 scriptFileName = 'script_fig2_supplement.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)
@@ -192,6 +242,7 @@ close(f);
 
 
 %% hit v miss (FIG 3)
+disp('fig 3');
 scriptFileName = 'script_fig3.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)
@@ -206,6 +257,7 @@ disp(['AUC of ' num2str(selectedIDs_hm(1)) ': ' num2str(auc_hm_pop(1, selectedID
 disp(['AUC of ' num2str(selectedIDs_hm(2)) ': ' num2str(auc_hm_pop(1, selectedIDs_hm(2)))]);
 
 %% hit v miss (FIG SUPPLEMENT 3)
+disp('fig supplement 3');
 scriptFileName = 'script_fig3_supplement.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)
@@ -223,6 +275,7 @@ disp(['AUC of ' num2str(selectedIDs_hm(2)) ' afer regression: ' num2str(auc_hm_p
 
 
 %% latency stats on correlation to tgt (FIG4)
+disp('fig 4');
 scriptFileName = 'script_fig4CD.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)
@@ -244,7 +297,9 @@ end
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['hist_difflatency_' animals{:}]),'dum'); close(f);
 save('data_fig4E','difflatency_pop','nLatencyTrials_pref_success_pop', 'latency_r_nb_pop','latency_p_nb_pop', 'param','tgtUnits','lines');
 
+
 %% latency stats on correlation to tgt (FIG SUPPLEMENT 4)
+disp('fig 4 supplement');
 scriptFileName = 'script_fig4_supplement.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)

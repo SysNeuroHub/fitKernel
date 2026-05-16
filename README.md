@@ -17,7 +17,7 @@ Environments under linux and windows machines are tested.
 # Usage
 mainScript.m is the main script to to "everything": obtain linear kernel and event-triggered spiking traces
 mainScript_assembly.m: create an "assembly" file for each year and animal
-populationAnalysis.m: compile all assembly files and produces all the main figures across units and subjects
+populationAnalysis.m: compile all assembly files and produces all the main figures across units and subjects. Also report excluded units, as reported in Method/Unit inclusion criteria
 Reaction time stats in Method/Center-out saccade task design was from D'Souza PhD thesis
 
 Functions about concatenating trial-based data
@@ -44,7 +44,7 @@ Functions about preparing predictor signals
 * getSaccMtx: matrix of saccade direction over time
 * getTgtDirMtx: matrix of target direction over time
 * getPupilDiameter: converts pupil area into diameter and its percentile
-* getSaccDir: classifies each saccade events into one of quantized bins of directions
+* getSaccDir: classifies each saccade events into one of quantized bins of directions (param.cardinalDir)
 * removeBlinksEDF: eye data after removing times of blinks detected by eyelink
 * removePareaOutliers: eye data after removing times of outliers that crossed a specified threshold
 * selectSaccades: saccade times after eliminating those at specified exclusion periods
@@ -55,7 +55,7 @@ Functions for analysis/visualization
 * showSaccOnsetResp: shows observed/predicted PSTH traces triggered by saccade onset OUTSIDE of the task
 * showFixCueOnsetResp: shows observed/predicted PSTH triggered by fixation and cue onsets
 * showTonsetResp: shows observed/predicted PSTH triggered by target and saccade onsets of preferred target direction. Also computes cell class (under development)
-* showTonsetByCue: show observed/predicted PSTH triggered by target onsets with/without cues
+* showTonsetByCue: show observed/predicted PSTH triggered by target onsets with/without cues, used for Figure 2A-I
 * (dirTuning): preferred direction of spikes at specified time window (TO BE DELETED)
 * (parea_spike_ms): computes correlation between spikes and pupil diameter at specified temporal frequencies
 * (pupilFigure): figure of single-trial traces of pupil position/area and spikes triggered at specified type of events 
@@ -65,7 +65,9 @@ Functions for analysis/visualization
 * getExpVal: computes explained variance of a given period. Called in fitPSTH_cv
 * getExpVal_tgt: computes explained variance after the target stimuli. Called in fitPSTH_pop
 * getExpVal_avgtgt: Called in fitPSTH_pop
-* inclusionCriteria: Called in fitPSTH_pop
+* inclusionCriteria: judge whether to use units for main analysis. Called in fitPSTH_pop
+* showScatterTriplets: 2D scatter plots used for Figure2J,K
+* showScatterTriplets3D: 3D scatter plot
 
 Latency analysis
 * getTgtBhvLatency: obtain behavioural latency of a single trial
@@ -74,7 +76,7 @@ Latency analysis
 * showLatencyScatter: 
 
 Neural correlate of task performance
-* showTonsetResp_hm: event-triggered traces for hit and miss trials
+* showTonsetResp_hm: event-triggered traces for hit and miss trials for Figure 3A,B,E,F
 * showHMScatter: scatter plot for discriminability
 
 Utility functions
@@ -86,6 +88,7 @@ Utility functions
 * getPSTH: convert spike times into a trace
 * fitResponse: fit a 1D circular gaussian to single trial data of a given time
 * id2loadName: convert channel id (animal / year / date / ch) to original data file name
+* computenSessions: compute number of recording session per animal, as reported in Method/Electrophysiologial recordings
 
 Other Analysis Scripts
 * classifyUnits_pop: curates results of showTonsetResp

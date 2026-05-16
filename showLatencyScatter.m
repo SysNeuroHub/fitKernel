@@ -119,14 +119,11 @@ for aa = 1:numel(unique(animalid_pop))
             'Location','northwest');
         lgd.ItemTokenSize(1) = .25*lgd.ItemTokenSize(1);
  
-        %p_skew_all =  signrank(thisAxis);
-        %p_skew_selected =  signrank(thisAxis(significant==1));
-        p = ranksum(thisAxis(significant==0), thisAxis(significant==1));
-        %p = mediantest(thisAxis(significant==0), thisAxis(significant==1));
-        %[~, p] = adtest2(thisAxis(significant==0)', thisAxis(significant==1)');
-        % [p, tbl] = anova1(thisAxis, significant)
-        % p = kruskalwallis(thisAxis', significant');
-
+        if sum(significant)>0
+            p = ranksum(thisAxis(significant==0), thisAxis(significant==1));
+        else
+            p = nan;
+        end
 
         title(ax(1),sprintf('p = %.1e', p))
           
@@ -136,6 +133,20 @@ for aa = 1:numel(unique(animalid_pop))
         set(gca,'tickdir','out');%, 'xcolor','r');
         linkaxes(ax);
         vline(0,gca,[],[],1);
+
+        %% stats for each animal
+            for ianimal = 1:2
+                 thisAxis = corr_tgt_rel_pop(tgtModalities(2), units_latency.*animalid_pop==ianimal) ...
+                     - corr_tgt_rel_pop(tgtModalities(1), units_latency.*animalid_pop==ianimal);
+                 significant = (latency_r_nb_pop(units_latency.*animalid_pop==ianimal)  > param.r_latency_th) .* ...
+                     (latency_p_nb_pop(units_latency.*animalid_pop==ianimal)  < param.p_latency_th);
+                 if sum(thisAxis(significant==1))>0
+                     p_animal(ianimal) =  ranksum(thisAxis(significant==0), thisAxis(significant==1));
+                 else
+                     p_animal(ianimal) = nan;
+                 end
+                 disp(['animal: ' num2str(ianimal) ', p-value: ' num2str(p_animal(ianimal))]);
+            end
     end
 
 end

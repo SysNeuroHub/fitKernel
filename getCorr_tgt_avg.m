@@ -42,9 +42,12 @@ tonsetRespAmp = characteriseResp(singleOnsetResp, ...
 %     theseTrials = find(tgtDir == prefDir);
 % end
 
+mtOnsetResp = nan(size(singleOnsetResp,2), size(singleOnsetResp,3), numel(param.cardinalDir));
 for iDir = 1: numel(param.cardinalDir)
     theseTrials = find(tgtDir == param.cardinalDir(iDir));
-    mtOnsetResp(:,:,iDir) = squeeze(mean(singleOnsetResp(theseTrials,:,:)));%avg response to preferred direction
+    if ~isempty(theseTrials)
+        mtOnsetResp(:,:,iDir) = squeeze(mean(singleOnsetResp(theseTrials,:,:),1));%avg response to preferred direction
+    end
 end
 
 noNanDirs = find(~isnan(squeeze(sum(sum(mtOnsetResp,1),2))));
