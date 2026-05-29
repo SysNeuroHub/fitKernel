@@ -67,13 +67,29 @@ Functions for analysis/visualization
 * getExpVal_avgtgt: Called in fitPSTH_pop
 * inclusionCriteria: judge whether to use units for main analysis. Called in fitPSTH_pop
 * showScatterTriplets: 2D scatter plots used for Figure2J,K
-* showScatterTriplets3D: 3D scatter plot
+
+Functions and scripts for published figures
+* script_fig
+* script_fig2AI
+* script_fig2JKL
+* script_fig3
+* script_fig4CD
+* script_fig4E
+* script_fig_supplement1
+* function_fig_supplement2_1
+* function_fig_supplement2_3
+* script_fig_supplement3_1
+* script_fig_supplement3_2
+* script_fig_supplement4
 
 Latency analysis
 * getTgtBhvLatency: obtain behavioural latency of a single trial
 * getSingleTrialLatency: obtain neuronal response latency of a single trial 
 * getTgtNeuroLatency: produce summary of latency across trials
-* showLatencyScatter: 
+* showLatencyScatter: for figure 4
+
+Depth analysis
+* showDepthScatter: for figure supplement 2-3
 
 Neural correlate of task performance
 * showTonsetResp_hm: event-triggered traces for hit and miss trials for Figure 3A,B,E,F

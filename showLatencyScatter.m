@@ -145,7 +145,8 @@ for aa = 1:numel(unique(animalid_pop))
                  else
                      p_animal(ianimal) = nan;
                  end
-                 disp(['animal: ' num2str(ianimal) ', p-value: ' num2str(p_animal(ianimal))]);
+                 disp(['animal: ' num2str(ianimal) ', #sig units: ' num2str(sum(significant)) ...
+                     ', p-value: ' num2str(p_animal(ianimal))]);
             end
     end
 

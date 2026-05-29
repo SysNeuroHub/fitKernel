@@ -46,13 +46,13 @@ for aa = 1:numel(animals)
     for yy = 1:3
         switch yy
             case 1
-                year = '2021';
+                thisyear = '2021';
             case 2
-                year = '2022';
+                thisyear = '2022';
             case 3
-                year = '2023';
+                thisyear = '2023';
         end
-        saveFolder = fullfile(saveServer, year,animal);%17/6/23
+        saveFolder = fullfile(saveServer, thisyear,animal);%17/6/23
 
         assemblyData = fullfile(saveFolder, ['assembly' saveSuffix_p '.mat']);
 
@@ -166,7 +166,7 @@ corr_tgt_avg_rel_pop = corr_tgt_avg_rel_pop(:,okunits);
 saccDirNoTask_spkOkUCue_hist_pop = saccDirNoTask_spkOkUCue_hist_pop(:,okunits);
 
 disp(['total ' num2str(numel(animalid_pop)) ' units, M1: ' num2str(sum(animalid_pop==1)) ', M2:' num2str(sum(animalid_pop==2))]);
-% save('ppcPaper_id','id_pop'); % To Jo 5/11/2025
+save('ppcPaper_id','id_pop'); % To Jo 5/11/2025; 17/5/2026
 
 %% convert from cell to matrix
 latency_r_nb_pop = cellfun(@(a)a(1), latency_r_pop);
@@ -211,34 +211,40 @@ close(f);
 
 %% spontaneous saccade direction (Fig1 SUPPLEMENT)
 disp('fig supplement 1');
-scriptFileName = 'script_fig1_supplement.m';
+scriptFileName = 'script_fig_supplement1.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)
     eval(lines(i));
 end
 savePaperFigure(f, fullfile(saveServer, saveSuffix_p, ['hist_saccDir_' animals{:}]));
-save('data_fig1_supplement','saccDirNoTask_spkOkUCue_hist_pop','param','binEdges');
+save('data_fig_supplement1','saccDirNoTask_spkOkUCue_hist_pop','param','binEdges');
 close(f);
 
 %% cell type distibution (FIG2)
-disp('fig 2');
-scriptFileName = 'script_fig2JK.m';
+disp('fig 2JKL');
+scriptFileName = 'script_fig2JKL.m';
 lines = readlines(scriptFileName);
-eval(lines);
+eval(lines); %fig_avg, fig3D_avg
 savePaperFigure(fig_avg, fullfile(saveServer,saveSuffix_p,['corr_tgt_avg_' animals{:}]), 'dum');close(fig_avg);
-save('data_fig2','corr_tgt_avg_pop','animalid_pop','selectedIDs','param','lines');
+save('data_fig2JKL','corr_tgt_avg_pop','animalid_pop','selectedIDs','param','lines');
 
 
-%% histogram of correlation of the full model (FIG SUPPLEMENT 2)
-disp('fig supplement 2');
-scriptFileName = 'script_fig2_supplement.m';
-lines = readlines(scriptFileName);
-for i = 1:numel(lines)
-    eval(lines(i));
-end
-savePaperFigure(gcf,fullfile(saveServer,saveSuffix_p,['hist_corr_tgt_avg_pop_' animals{:}]));
-save('data_fig2_supplement','corr_tgt_avg_pop','animalid_pop','param','lines');
-close(f);
+%% histogram of correlation of the full model (FIG SUPPLEMENT 2-1)
+disp('fig supplement 2-1');
+figs2_1 = function_fig_supplement2_1(corr_tgt_avg_pop, animalid_pop, param);
+savePaperFigure(figs2_1,fullfile(saveServer,saveSuffix_p,['hist_corr_tgt_avg_pop_' animals{:}]));
+save('data_fig_supplement2_1','corr_tgt_avg_pop','animalid_pop','param');
+close(figs2_1);
+
+
+%% recording depth (FIG SUPPLEMENT 2-3)
+disp('fig supplement 2-3');
+load('ppcDepths.mat','ppcdays','ppcdepths');
+[f, depth_pop] = function_fig_supplement2_3(corr_tgt_avg_pop, animalid_pop, ...
+    animals, ppcdays, ppcdepths, id_pop, param);
+savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_depth_' animals{:} ]), 'dum');close;
+save('data_fig_supplement2_3','corr_tgt_avg_pop','animalid_pop','animals',...
+    'param','ppcdays','ppcdepths','id_pop');
 
 
 %% hit v miss (FIG 3)
@@ -256,16 +262,17 @@ save('data_fig3','corr_tgt_avg_pop', 'auc_hm_pop', 'selectedIDs_hm', 'animalid_p
 disp(['AUC of ' num2str(selectedIDs_hm(1)) ': ' num2str(auc_hm_pop(1, selectedIDs_hm(1)))]);
 disp(['AUC of ' num2str(selectedIDs_hm(2)) ': ' num2str(auc_hm_pop(1, selectedIDs_hm(2)))]);
 
+
 %% hit v miss (FIG SUPPLEMENT 3)
-disp('fig supplement 3');
-scriptFileName = 'script_fig3_supplement.m';
+disp('fig supplement 3_2');
+scriptFileName = 'script_fig_supplement3_2.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)
     eval(lines(i));
 end
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_hm_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:} ]), 'dum');close;
-save('data_fig3_supplement','corr_tgt_avg_pop', 'auc_hm_pop', 'selectedIDs_hm', 'animalid_pop', ...
+save('data_fig_supplement3_2','corr_tgt_avg_pop', 'auc_hm_pop', 'selectedIDs_hm', 'animalid_pop', ...
     'tgtModalities', 'param','lines');
 % disp(['The number of significant units before regression: '  num2str(sum(p_hm_pop_before<0.05))]);
 % disp(['The number of significant units after regression: '  num2str(sum(p_hm_pop_after<0.05))]);
@@ -285,8 +292,8 @@ savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_latency_r_pref_success_'
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:}]),'dum'); close(f);
 save('data_fig4CD','corr_tgt_avg_pop', 'latency_r_nb_pop', 'latency_p_nb_pop',  ...
     'nLatencyTrials_pref_success_pop', 'param', 'selectedIDs_lat', 'animalid_pop','tgtModalities','lines');
-disp(['ID: ' num2str(selectedIDs_lat(1)) ', r: ' num2str(latency_r_nb_pop(selectedIDs_lat(1))) ', p: ' num2str(latency_p_nb_pop(selectedIDs_lat(1)))])
-disp(['ID: ' num2str(selectedIDs_lat(2)) ', r: ' num2str(latency_r_nb_pop(selectedIDs_lat(2))) ', p: ' num2str(latency_p_nb_pop(selectedIDs_lat(2)))])
+disp(['unit ID: ' num2str(selectedIDs_lat(1)) ', r: ' num2str(latency_r_nb_pop(selectedIDs_lat(1))) ', p: ' num2str(latency_p_nb_pop(selectedIDs_lat(1)))])
+disp(['unit ID: ' num2str(selectedIDs_lat(2)) ', r: ' num2str(latency_r_nb_pop(selectedIDs_lat(2))) ', p: ' num2str(latency_p_nb_pop(selectedIDs_lat(2)))])
 
 % histogram of neural - behavioural latencies
 scriptFileName = 'script_fig4E.m';
@@ -299,13 +306,13 @@ save('data_fig4E','difflatency_pop','nLatencyTrials_pref_success_pop', 'latency_
 
 
 %% latency stats on correlation to tgt (FIG SUPPLEMENT 4)
-disp('fig 4 supplement');
-scriptFileName = 'script_fig4_supplement.m';
+disp('fig supplement 4');
+scriptFileName = 'script_fig_supplement4.m';
 lines = readlines(scriptFileName);
 for i = 1:numel(lines)
     eval(lines(i));
 end
 savePaperFigure(f, fullfile(saveServer,saveSuffix_p,['p_latency_r_pref_success_' param.predictorNames{tgtModalities(1)} ...
     '_'  param.predictorNames{tgtModalities(2)} '_' animals{:}]),'dum'); close(f);
-save('data_fig4_supplement','corr_tgt_avg_pop', 'latency_r_nb_pop', 'latency_p_nb_pop',  'nLatencyTrials_pref_success_pop', 'param', 'selectedIDs_lat', 'animalid_pop', 'tgtModalities','lines');
+save('data_fig_supplement4','corr_tgt_avg_pop', 'latency_r_nb_pop', 'latency_p_nb_pop',  'nLatencyTrials_pref_success_pop', 'param', 'selectedIDs_lat', 'animalid_pop', 'tgtModalities','lines');
 
